@@ -1,3 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Vindex</string>
+
+    <!-- Actions -->
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_share">Share</string>
+    <string name="action_select">Select</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_deselect_all">Deselect all</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_close">Close</string>
+
+    <!-- Generics messages -->
+    <string name="msg_loading">Loading…</string>
+    <string name="msg_error_generic">An error occurred</string>
+    <string name="msg_no_results">No results</string>
+    <string name="msg_empty">Nothing here yet</string>
+
+    <!-- Bottom Navigation Bar -->
+    <string name="nav_gallery">Gallery</string>
+    <string name="nav_albums">Albums</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_people">People</string>
+
+    <!-- First launch -->
+    <string name="welcome_title">Welcome to Vindex</string>
+    <string name="welcome_message">To get started, please select a folder containing your photos.</string>
+    <string name="welcome_select_folder">Select folder</string>
+    <string name="welcome_permission_needed">Storage permission is required to access your photos.</string>
+    <string name="welcome_grant_permission">Grant permission</string>
+
+    <!-- Gallery -->
+    <string name="gallery_title">Gallery</string>
+    <string name="gallery_empty">No photos found</string>
+    <string name="gallery_empty_hint">Select a folder in settings to start browsing your photos.</string>
+    <string name="gallery_scanning">Scanning photos…</string>
+    <string name="gallery_photo_count">%d photos</string>
+    <string name="gallery_photo_count_singular">1 photo</string>
+    <string name="gallery_selected_count">%d selected</string>
+
+    <!-- Date separator -->
+    <string name="date_today">Today</string>
+    <string name="date_yesterday">Yesterday</string>
+    <string name="date_this_week">This week</string>
+    <string name="date_this_month">This month</string>
+    <string name="date_last_month">Last month</string>
+
+    <!-- Photo viewer -->
+    <string name="viewer_info">Information</string>
+    <string name="viewer_no_info">No information available</string>
+
+    <!-- Metadata -->
+    <string name="viewer_date">Date</string>
+    <string name="viewer_location">Location</string>
+    <string name="viewer_camera">Camera</string>
+    <string name="viewer_dimensions">Dimensions</string>
+    <string name="viewer_file_size">File size</string>
+    <string name="viewer_file_path">Path</string>
+
+    <!-- AI Sections -->
+    <string name="viewer_description">Description</string>
+    <string name="viewer_description_empty">No description yet</string>
+    <string name="viewer_tags">Tags</string>
+    <string name="viewer_tags_empty">No tags yet</string>
+    <string name="viewer_people">People</string>
+    <string name="viewer_people_empty">No people identified</string>
+    <string name="viewer_ocr">Detected text (OCR)</string>
+    <string name="viewer_ocr_empty">No text detected</string>
+
+    <!-- Albums -->
+    <string name="albums_title">Albums</string>
+    <string name="albums_empty">No albums</string>
+    <string name="albums_empty_hint">Albums will appear here once you scan your photos.</string>
+    <string name="albums_folder_albums">Folders</string>
+    <string name="albums_auto_albums">Auto albums</string>
+    <string name="albums_manual_albums">My albums</string>
+    <string name="albums_create">Create album</string>
+    <string name="albums_create_title">New album</string>
+    <string name="albums_create_hint">Album name</string>
+
+    <!-- Search -->
+    <string name="search_title">Search</string>
+    <string name="search_hint">Search photos…</string>
+    <string name="search_empty">No photos match your search</string>
+    <string name="search_start">Search for photos by name, date, or content</string>
+    <string name="search_results">%d results</string>
+    <string name="search_result_singular">1 result</string>
+
+    <!-- People -->
+    <string name="people_title">People</string>
+    <string name="people_empty">No people identified</string>
+    <string name="people_empty_hint">People will appear here once face recognition analyzes your photos.</string>
+    <string name="people_to_identify">To identify</string>
+    <string name="people_to_identify_count">%d faces to identify</string>
+    <string name="people_unknown">Unknown</string>
+    <string name="people_photo_count">%d photos</string>
+    <string name="people_photo_count_singular">1 photo</string>
+
+    <!-- Identification dialog -->
+    <string name="people_identify_title">Who is this?</string>
+    <string name="people_identify_new_name">Enter a new name…</string>
+    <string name="people_identify_suggestions">Suggestions</string>
+    <string name="people_identify_skip">Skip</string>
+    <string name="people_identify_not_a_person">Not a person</string>
+
+    <!-- Actions on people -->
+    <string name="people_rename">Rename</string>
+    <string name="people_merge">Merge with…</string>
+    <string name="people_split">Separate faces</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+
+    <!-- Settings - General -->
+    <string name="settings_general">General</string>
+    <string name="settings_source_folder">Source folder</string>
+    <string name="settings_source_folder_summary">Select the folder containing your photos</string>
+    <string name="settings_source_folder_none">No folder selected</string>
+    <string name="settings_grid_columns">Grid columns</string>
+    <string name="settings_grid_columns_summary">Number of columns in the gallery grid</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
+
+    <!-- Settings - AI -->
+    <string name="settings_ai">AI Analysis</string>
+    <string name="settings_ai_not_configured">Not configured</string>
+    <string name="settings_captioning_model">Captioning model</string>
+    <string name="settings_embedding_model">Embedding model</string>
+    <string name="settings_tagging_model">Tagging model</string>
+    <string name="settings_import_model">Import model</string>
+    <string name="settings_analyze_all">Analyze all photos</string>
+    <string name="settings_analyze_all_summary">Run AI analysis on all photos</string>
+
+    <!-- Settings - Advanced -->
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_face_threshold">Face recognition threshold</string>
+    <string name="settings_face_threshold_summary">Lower = more matches, higher = fewer false positives</string>
+    <string name="settings_show_scores">Show similarity scores</string>
+    <string name="settings_show_scores_summary">Display confidence scores in search results</string>
+    <string name="settings_reset">Reset settings</string>
+    <string name="settings_reset_summary">Restore default settings</string>
+    <string name="settings_reset_confirm">Are you sure you want to reset all settings?</string>
+
+    <!-- Settings - About -->
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_license">License</string>
+    <string name="settings_license_value">GPL-3.0</string>
+    <string name="settings_source_code">Source code</string>
+    <string name="settings_source_code_summary">View on GitHub</string>
+
+    <!-- Notification and Progress -->
+    <string name="notification_channel_scan">Photo scanning</string>
+    <string name="notification_channel_scan_description">Notifications for photo scanning progress</string>
+    <string name="notification_channel_analysis">AI analysis</string>
+    <string name="notification_channel_analysis_description">Notifications for AI analysis progress</string>
+
+    <string name="notification_scan_title">Scanning photos</string>
+    <string name="notification_scan_progress">%1$d of %2$d photos</string>
+    <string name="notification_scan_complete">Scan complete</string>
+    <string name="notification_scan_complete_message">Found %d photos</string>
+
+    <string name="notification_analysis_title">Analyzing photos</string>
+    <string name="notification_analysis_progress">%1$d of %2$d photos</string>
+    <string name="notification_analysis_complete">Analysis complete</string>
+
+    <!-- Error -->
+    <string name="error_folder_access">Cannot access the selected folder</string>
+    <string name="error_folder_empty">No photos found in this folder</string>
+    <string name="error_file_not_found">File not found</string>
+    <string name="error_file_corrupted">Cannot read this file</string>
+    <string name="error_permission_denied">Permission denied</string>
+    <string name="error_storage_full">Storage is full</string>
+    <string name="error_database">Database error</string>
+
+    <!-- Format and units -->
+    <string name="format_dimensions">%1$d × %2$d</string>
+    <string name="format_megapixels">%s MP</string>
+    <string name="format_file_size_bytes">%d B</string>
+    <string name="format_file_size_kb">%s KB</string>
+    <string name="format_file_size_mb">%s MB</string>
+    <string name="format_file_size_gb">%s GB</string>
+    <string name="format_percentage">%d%%</string>
+    <string name="format_confidence">%d%% match</string>
+
 </resources>
