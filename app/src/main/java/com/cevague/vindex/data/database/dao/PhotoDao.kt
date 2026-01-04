@@ -1,0 +1,120 @@
+package com.cevague.vindex.data.database.dao
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
+import com.cevague.vindex.data.database.entity.Photo
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface PhotoDao {
+
+    // Queries - reactive (Flow updates automatically when data changes)
+
+    @Query("SELECT * FROM photos ORDER BY date_taken DESC")
+    fun getAllPhotos(): Flow<List<Photo>>
+
+    @Query("SELECT * FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
+    fun getVisiblePhotos(): Flow<List<Photo>>
+
+    @Query("SELECT * FROM photos WHERE folder_path = :folderPath ORDER BY date_taken DESC")
+    fun getPhotosByFolder(folderPath: String): Flow<List<Photo>>
+
+    @Query("SELECT * FROM photos WHERE id = :id")
+    fun getPhotoById(id: Long): Flow<Photo?>
+
+    @Query("SELECT * FROM photos WHERE file_path = :filePath LIMIT 1")
+    fun getPhotoByPath(filePath: String): Flow<Photo?>
+
+    @Query("SELECT COUNT(*) FROM photos")
+    fun getPhotoCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM photos WHERE is_hidden = 0")
+    fun getVisiblePhotoCount(): Flow<Int>
+
+    @Query("SELECT DISTINCT folder_path FROM photos ORDER BY folder_path")
+    fun getAllFolders(): Flow<List<String>>
+
+    // Search
+    @Query("""
+        SELECT * FROM photos 
+        WHERE file_name LIKE '%' || :query || '%' 
+           OR file_path LIKE '%' || :query || '%'
+        ORDER BY date_taken DESC
+    """)
+    fun searchByFileName(query: String): Flow<List<Photo>>
+
+    @Query("SELECT * FROM photos WHERE needs_reanalysis = 1")
+    fun getPhotosNeedingAnalysis(): Flow<List<Photo>>
+
+    // Queries - one-shot (suspend for single operations)
+
+    @Query("SELECT * FROM photos WHERE id = :id")
+    suspend fun getPhotoByIdOnce(id: Long): Photo?
+
+    @Query("SELECT * FROM photos WHERE file_path = :filePath LIMIT 1")
+    suspend fun getPhotoByPathOnce(filePath: String): Photo?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM photos WHERE file_path = :filePath)")
+    suspend fun existsByPath(filePath: String): Boolean
+
+    @Query("SELECT * FROM photos WHERE id IN (:ids)")
+    suspend fun getPhotosByIds(ids: List<Long>): List<Photo>
+
+    // Insert
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(photo: Photo): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(photos: List<Photo>): List<Long>
+
+    // Update
+
+    @Update
+    suspend fun update(photo: Photo)
+
+    @Query("UPDATE photos SET is_favorite = :isFavorite WHERE id = :id")
+    suspend fun setFavorite(id: Long, isFavorite: Boolean)
+
+    @Query("UPDATE photos SET is_hidden = :isHidden WHERE id = :id")
+    suspend fun setHidden(id: Long, isHidden: Boolean)
+
+    @Query("UPDATE photos SET description = :description, description_model = :model, last_analyzed = :timestamp WHERE id = :id")
+    suspend fun updateDescription(id: Long, description: String?, model: String?, timestamp: Long)
+
+    @Query("UPDATE photos SET description_embedding = :embedding WHERE id = :id")
+    suspend fun updateEmbedding(id: Long, embedding: ByteArray?)
+
+    @Query("UPDATE photos SET tags_json = :tagsJson, tags_model = :model WHERE id = :id")
+    suspend fun updateTags(id: Long, tagsJson: String?, model: String?)
+
+    @Query("UPDATE photos SET ocr_text = :ocrText, ocr_model = :model WHERE id = :id")
+    suspend fun updateOcr(id: Long, ocrText: String?, model: String?)
+
+    @Query("UPDATE photos SET needs_reanalysis = :needsReanalysis WHERE id = :id")
+    suspend fun setNeedsReanalysis(id: Long, needsReanalysis: Boolean)
+
+    @Query("UPDATE photos SET needs_reanalysis = 1")
+    suspend fun markAllForReanalysis()
+
+    // Delete
+
+    @Delete
+    suspend fun delete(photo: Photo)
+
+    @Query("DELETE FROM photos WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM photos WHERE file_path = :filePath")
+    suspend fun deleteByPath(filePath: String)
+
+    @Query("DELETE FROM photos WHERE folder_path = :folderPath")
+    suspend fun deleteByFolder(folderPath: String)
+
+    @Query("DELETE FROM photos")
+    suspend fun deleteAll()
+}
