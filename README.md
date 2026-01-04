@@ -111,7 +111,7 @@ The Room database includes tables prepared for all planned features:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/Vindex.git
+   git clone https://github.com/CeVague/Vindex_Base.git
    ```
 
 2. Open the project in Android Studio (Ladybug or newer recommended)
