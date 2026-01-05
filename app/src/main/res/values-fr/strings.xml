@@ -86,6 +86,7 @@
     <!-- Search -->
     <string name="search_title">Recherche</string>
     <string name="search_hint">Rechercher des photos…</string>
+    <string name="search_ongoing">Recherche en cours…</string>
     <string name="search_empty">Aucune photo ne correspond à votre recherche</string>
     <string name="search_start">Recherchez des photos par nom, date ou contenu</string>
     <string name="search_results">%d résultats</string>

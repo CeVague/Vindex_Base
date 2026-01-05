@@ -48,6 +48,7 @@ ksp = "2.0.21-1.0.27"  # Doit correspondre à la version Kotlin
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+fragmentVersion = "1.8.9"
 
 
 [libraries]
@@ -99,6 +100,7 @@ androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview"
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragmentVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

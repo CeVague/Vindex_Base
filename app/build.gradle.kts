@@ -72,6 +72,7 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.fragment)
     ksp(libs.androidx.room.compiler)
 
     // WorkManager
