@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "556ee2b9233d30b8f87622bf887f9228",
+    "identityHash": "fcae96c9d501984dc903cd5c8f0be8ea",
     "entities": [
       {
         "tableName": "photos",
@@ -218,6 +218,15 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_folder_path` ON `${TABLE_NAME}` (`folder_path`)"
+          },
+          {
+            "name": "index_photos_file_path",
+            "unique": true,
+            "columnNames": [
+              "file_path"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_photos_file_path` ON `${TABLE_NAME}` (`file_path`)"
           },
           {
             "name": "index_photos_location_name",
@@ -896,7 +905,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '556ee2b9233d30b8f87622bf887f9228')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fcae96c9d501984dc903cd5c8f0be8ea')"
     ]
   }
 }
