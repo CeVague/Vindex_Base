@@ -38,6 +38,9 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.welcome.WelcomeActivity"
+            android:theme="@style/Theme.Vindex" />
     </application>
 
 </manifest>

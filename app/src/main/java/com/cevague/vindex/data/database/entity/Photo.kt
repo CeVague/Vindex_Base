@@ -14,6 +14,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["date_taken"]),
         Index(value = ["folder_path"]),
+        Index(value = ["file_path"], unique = true),
         Index(value = ["location_name"])
     ]
 )
