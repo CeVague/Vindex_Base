@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 
 class PhotoRepository(
@@ -57,27 +58,34 @@ class PhotoRepository(
 
     suspend fun getPhotosByIds(ids: List<Long>): List<Photo> = photoDao.getPhotosByIds(ids)
 
+    suspend fun getPhotosNeedingMetadataExtraction(): List<Photo> =
+        photoDao.getPhotosNeedingMetadataExtraction()
+
     // Synchronize
-
     suspend fun syncPhotos(scannedPhotos: List<Photo>) {
-        // On utilise la valeur actuelle du StateFlow (déjà en mémoire et à jour)
-        val dbPhotosMap = dbPhotosMetadata.value.associateBy { it.filePath }
+        // Au lieu de .value qui peut être vide au démarrage du Worker,
+        // on s'assure d'avoir la donnée réelle du Flow (une seule émission).
+        val dbPhotos = photoDao.getAllPathsAndSizes().first()
+        val dbPhotosMap = dbPhotos.associateBy { it.filePath }
 
-        // 1. Identifier les disparus (présents en DB mais plus sur le disque)
+        // 1. Suppressions (Inchangé mais utilise dbPhotosMap fiable)
         val scannedPaths = scannedPhotos.map { it.filePath }.toSet()
         val toDelete = dbPhotosMap.keys.filter { it !in scannedPaths }
 
-        // 2. Identifier les nouveaux ou modifiés (taille différente)
+        // 2. Identification des ajouts/updates (Inchangé)
         val toUpsert = scannedPhotos.filter { scanned ->
             val inDb = dbPhotosMap[scanned.filePath]
             inDb == null || inDb.fileSize != scanned.fileSize
+        }.map { scanned ->
+            val existingId = dbPhotosMap[scanned.filePath]?.id ?: 0L
+            scanned.copy(id = existingId)
         }
 
-        // 3. Exécuter les opérations en base
+        // 3. Exécution groupée (Plus efficace)
         if (toDelete.isNotEmpty()) {
-            toDelete.forEach { photoDao.deleteByPath(it) }
+            photoDao.deleteByPaths(toDelete) // Utilise le DELETE groupé
         }
-        
+
         if (toUpsert.isNotEmpty()) {
             photoDao.insertAll(toUpsert)
         }
@@ -114,6 +122,10 @@ class PhotoRepository(
     suspend fun delete(photo: Photo) = photoDao.delete(photo)
 
     suspend fun deleteById(id: Long) = photoDao.deleteById(id)
+
+    suspend fun deleteByPath(filePath: String) = photoDao.deleteByPath(filePath)
+
+    suspend fun deleteByPaths(filePaths: List<String>) = photoDao.deleteByPaths(filePaths)
 
     suspend fun deleteByFolder(folderPath: String) = photoDao.deleteByFolder(folderPath)
 

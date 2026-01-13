@@ -24,7 +24,18 @@ class MediaScanner {
         val photoList = mutableListOf<Photo>()
 
         if (rootFolder != null && rootFolder.exists()) {
-            scanDirectory(context, rootFolder, photoList)
+            scanDirectory(context, rootFolder, photoList, true)
+        }
+
+        return photoList
+    }
+
+    suspend fun scanFolderShallow(context: Context, folderUri: Uri): List<Photo> {
+        val rootFolder = DocumentFile.fromTreeUri(context, folderUri)
+        val photoList = mutableListOf<Photo>()
+
+        if (rootFolder != null && rootFolder.exists()) {
+            scanDirectory(context, rootFolder, photoList, false)
         }
 
         return photoList
@@ -33,13 +44,14 @@ class MediaScanner {
     private fun scanDirectory(
         context: Context,
         directory: DocumentFile,
-        photoList: MutableList<Photo>
+        photoList: MutableList<Photo>,
+        extractExif: Boolean
     ) {
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
-                scanDirectory(context, file, photoList)
+                scanDirectory(context, file, photoList, extractExif)
             } else if (file.isFile && isImage(file)) {
-                val photo = createPhotoFromFile(context, file)
+                val photo = createPhotoFromFile(context, file, extractExif)
                 photoList.add(photo)
             }
         }
@@ -49,14 +61,26 @@ class MediaScanner {
         return file.type in imageMimeTypes
     }
 
-    private fun createPhotoFromFile(context: Context, file: DocumentFile): Photo {
+    fun createPhotoFromFile(context: Context, file: DocumentFile, extractExif: Boolean): Photo {
         val filePath = file.uri.toString()
         val fileName = file.name ?: "unknown"
         val folderPath = file.parentFile?.uri?.toString() ?: ""
         val fileSize = file.length()
         val mimeType = file.type
         val dateAdded = System.currentTimeMillis()
-
+        
+        if(!extractExif){
+            return Photo(
+                filePath = filePath,
+                fileName = fileName,
+                folderPath = folderPath,
+                fileSize = fileSize,
+                mimeType = mimeType,
+                dateAdded = dateAdded,
+                isMetadataExtracted = false
+            )
+        }
+        
         // Valeurs par défaut
         var dateTaken: Long? = file.lastModified().takeIf { it > 0 }
         var width: Int? = null
@@ -113,7 +137,8 @@ class MediaScanner {
             latitude = latitude,
             longitude = longitude,
             cameraMake = cameraMake,
-            cameraModel = cameraModel
+            cameraModel = cameraModel,
+            isMetadataExtracted = true
         )
     }
 

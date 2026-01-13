@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Vindex</string>
+
     <!-- Actions -->
     <string name="action_ok">OK</string>
     <string name="action_cancel">Annuler</string>
@@ -14,6 +16,10 @@
     <string name="action_settings">Paramètres</string>
     <string name="action_retry">Réessayer</string>
     <string name="action_close">Fermer</string>
+
+    <!-- Progress message -->
+    <string name="progress_generic">Travail en cours…</string>
+    <string name="progress_exif">Lecture des données EXIF…</string>
 
     <!-- Generics messages -->
     <string name="msg_loading">Chargement…</string>

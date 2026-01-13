@@ -17,6 +17,10 @@
     <string name="action_retry">Retry</string>
     <string name="action_close">Close</string>
 
+    <!-- Progress message -->
+    <string name="progress_generic">Do some work…</string>
+    <string name="progress_exif">Reading EXIF data…</string>
+
     <!-- Generics messages -->
     <string name="msg_loading">Loading…</string>
     <string name="msg_error_generic">An error occurred</string>

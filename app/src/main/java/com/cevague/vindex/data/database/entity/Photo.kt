@@ -5,17 +5,13 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Represents a photo indexed in the database.
- * Contains file metadata, EXIF data, and AI-generated fields (for future use).
- */
 @Entity(
     tableName = "photos",
     indices = [
         Index(value = ["date_taken"]),
         Index(value = ["folder_path"]),
         Index(value = ["file_path"], unique = true),
-        Index(value = ["location_name"])
+        Index(value = ["is_metadata_extracted"])
     ]
 )
 data class Photo(
@@ -65,6 +61,9 @@ data class Photo(
     @ColumnInfo(name = "is_hidden", defaultValue = "0")
     val isHidden: Boolean = false,
 
+    @ColumnInfo(name = "is_metadata_extracted", defaultValue = "0")
+    val isMetadataExtracted: Boolean = false,
+
     @ColumnInfo(name = "media_type", defaultValue = "'photo'")
     val mediaType: String = "photo",
 
@@ -74,7 +73,6 @@ data class Photo(
     @ColumnInfo(name = "is_blurry", defaultValue = "0")
     val isBlurry: Boolean = false,
 
-    // AI fields (empty for now, prepared for future)
     val description: String? = null,
 
     @ColumnInfo(name = "description_embedding", typeAffinity = ColumnInfo.BLOB)
@@ -101,17 +99,11 @@ data class Photo(
     @ColumnInfo(name = "needs_reanalysis", defaultValue = "1")
     val needsReanalysis: Boolean = true
 ) {
-    // ByteArray needs custom equals/hashCode
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-
         other as Photo
-
-        if (id != other.id) return false
-        if (filePath != other.filePath) return false
-
-        return true
+        return id == other.id && filePath == other.filePath
     }
 
     override fun hashCode(): Int {

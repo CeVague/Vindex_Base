@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 interface PhotoDao {
 
     data class FilePathAndSize(
+        @ColumnInfo(name = "id") val id: Long,
         @ColumnInfo(name = "file_path") val filePath: String,
         @ColumnInfo(name = "file_size") val fileSize: Long
     )
@@ -24,7 +25,7 @@ interface PhotoDao {
     fun getAllPhotos(): Flow<List<Photo>>
 
     // Dans PhotoDao.kt
-    @Query("SELECT file_path, file_size FROM photos")
+    @Query("SELECT id, file_path, file_size FROM photos")
     fun getAllPathsAndSizes(): Flow<List<FilePathAndSize>>
 
     @Query("SELECT * FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
@@ -73,12 +74,15 @@ interface PhotoDao {
     @Query("SELECT * FROM photos WHERE id IN (:ids)")
     suspend fun getPhotosByIds(ids: List<Long>): List<Photo>
 
+    @Query("SELECT * FROM photos WHERE is_metadata_extracted = 0")
+    suspend fun getPhotosNeedingMetadataExtraction(): List<Photo>
+
     // Insert
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(photo: Photo): Long
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(photos: List<Photo>): List<Long>
 
     // Update
@@ -120,6 +124,9 @@ interface PhotoDao {
 
     @Query("DELETE FROM photos WHERE file_path = :filePath")
     suspend fun deleteByPath(filePath: String)
+
+    @Query("DELETE FROM photos WHERE file_path IN (:filePaths)")
+    suspend fun deleteByPaths(filePaths: List<String>)
 
     @Query("DELETE FROM photos WHERE folder_path = :folderPath")
     suspend fun deleteByFolder(folderPath: String)

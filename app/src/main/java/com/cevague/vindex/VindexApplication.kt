@@ -59,6 +59,7 @@ class VindexApplication : Application() {
             val uri = settingsRepository.getSourceFolderUriOnce()
             if (uri != null) {
                 val workRequest = OneTimeWorkRequestBuilder<ScanWorker>()
+                    .addTag("SCAN_TAG")
                     .setInputData(workDataOf("FOLDER_URI" to uri.toString()))
                     .build()
                 // On utilise KEEP pour ne pas relancer si un scan est déjà en cours

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "fcae96c9d501984dc903cd5c8f0be8ea",
+    "identityHash": "2b1fedd40d512489b66daebc4aec16bd",
     "entities": [
       {
         "tableName": "photos",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `file_path` TEXT NOT NULL, `file_name` TEXT NOT NULL, `folder_path` TEXT NOT NULL, `date_taken` INTEGER, `date_added` INTEGER NOT NULL, `width` INTEGER, `height` INTEGER, `orientation` INTEGER, `latitude` REAL, `longitude` REAL, `location_name` TEXT, `camera_make` TEXT, `camera_model` TEXT, `file_size` INTEGER, `mime_type` TEXT, `is_favorite` INTEGER NOT NULL DEFAULT 0, `is_hidden` INTEGER NOT NULL DEFAULT 0, `media_type` TEXT NOT NULL DEFAULT 'photo', `quality_score` REAL, `is_blurry` INTEGER NOT NULL DEFAULT 0, `description` TEXT, `description_embedding` BLOB, `description_model` TEXT, `tags_json` TEXT, `tags_model` TEXT, `ocr_text` TEXT, `ocr_model` TEXT, `last_analyzed` INTEGER, `needs_reanalysis` INTEGER NOT NULL DEFAULT 1)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `file_path` TEXT NOT NULL, `file_name` TEXT NOT NULL, `folder_path` TEXT NOT NULL, `date_taken` INTEGER, `date_added` INTEGER NOT NULL, `width` INTEGER, `height` INTEGER, `orientation` INTEGER, `latitude` REAL, `longitude` REAL, `location_name` TEXT, `camera_make` TEXT, `camera_model` TEXT, `file_size` INTEGER, `mime_type` TEXT, `is_favorite` INTEGER NOT NULL DEFAULT 0, `is_hidden` INTEGER NOT NULL DEFAULT 0, `is_metadata_extracted` INTEGER NOT NULL DEFAULT 0, `media_type` TEXT NOT NULL DEFAULT 'photo', `quality_score` REAL, `is_blurry` INTEGER NOT NULL DEFAULT 0, `description` TEXT, `description_embedding` BLOB, `description_model` TEXT, `tags_json` TEXT, `tags_model` TEXT, `ocr_text` TEXT, `ocr_model` TEXT, `last_analyzed` INTEGER, `needs_reanalysis` INTEGER NOT NULL DEFAULT 1)",
         "fields": [
           {
             "fieldPath": "id",
@@ -114,6 +114,13 @@
           {
             "fieldPath": "isHidden",
             "columnName": "is_hidden",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isMetadataExtracted",
+            "columnName": "is_metadata_extracted",
             "affinity": "INTEGER",
             "notNull": true,
             "defaultValue": "0"
@@ -229,13 +236,13 @@
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_photos_file_path` ON `${TABLE_NAME}` (`file_path`)"
           },
           {
-            "name": "index_photos_location_name",
+            "name": "index_photos_is_metadata_extracted",
             "unique": false,
             "columnNames": [
-              "location_name"
+              "is_metadata_extracted"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_location_name` ON `${TABLE_NAME}` (`location_name`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_is_metadata_extracted` ON `${TABLE_NAME}` (`is_metadata_extracted`)"
           }
         ],
         "foreignKeys": []
@@ -905,7 +912,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fcae96c9d501984dc903cd5c8f0be8ea')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2b1fedd40d512489b66daebc4aec16bd')"
     ]
   }
 }
