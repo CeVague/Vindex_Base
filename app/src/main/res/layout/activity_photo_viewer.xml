@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
@@ -37,7 +36,7 @@
                 android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:background="@drawable/vector_drag_handle"/>
+                android:background="@drawable/vector_drag_handle" />
         </FrameLayout>
 
         <!-- Conteneur scrollable pour les infos -->
@@ -76,8 +75,8 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/vector_calendar"
                         android:contentDescription="@string/viewer_date"
+                        android:src="@drawable/vector_calendar"
                         app:tint="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -101,8 +100,8 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/vector_dimensions"
                         android:contentDescription="@string/viewer_dimensions"
+                        android:src="@drawable/vector_dimensions"
                         app:tint="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -126,8 +125,8 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/vector_file_size"
                         android:contentDescription="@string/viewer_file_size"
+                        android:src="@drawable/vector_file_size"
                         app:tint="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -152,8 +151,8 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/vector_camera"
                         android:contentDescription="@string/viewer_camera"
+                        android:src="@drawable/vector_camera"
                         app:tint="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -178,8 +177,8 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/vector_location"
                         android:contentDescription="@string/viewer_location"
+                        android:src="@drawable/vector_location"
                         app:tint="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -203,8 +202,8 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/vector_folder"
                         android:contentDescription="@string/viewer_file_path"
+                        android:src="@drawable/vector_folder"
                         app:tint="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -226,7 +225,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginTop="16dp"
-                    android:background="?attr/colorOutlineVariant"/>
+                    android:background="?attr/colorOutlineVariant" />
 
                 <!-- Section : IA (préparée pour le futur) -->
                 <TextView
@@ -236,7 +235,7 @@
                     android:layout_marginTop="16dp"
                     android:text="@string/viewer_ai_section"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:textColor="?attr/colorOnSurface" />
 
                 <!-- Description IA -->
                 <LinearLayout

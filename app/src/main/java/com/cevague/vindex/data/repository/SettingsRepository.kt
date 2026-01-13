@@ -29,8 +29,8 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     // Grid columns
 
-    fun getGridColumns(): Flow<Int> = getValue(Setting.KEY_GRID_COLUMNS).map { 
-        it?.toIntOrNull() ?: DEFAULT_GRID_COLUMNS 
+    fun getGridColumns(): Flow<Int> = getValue(Setting.KEY_GRID_COLUMNS).map {
+        it?.toIntOrNull() ?: DEFAULT_GRID_COLUMNS
     }
 
     suspend fun getGridColumnsOnce(): Int =
@@ -41,8 +41,8 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     // Theme
 
-    fun getTheme(): Flow<String> = getValue(Setting.KEY_THEME).map { 
-        it ?: Setting.THEME_SYSTEM 
+    fun getTheme(): Flow<String> = getValue(Setting.KEY_THEME).map {
+        it ?: Setting.THEME_SYSTEM
     }
 
     suspend fun getThemeOnce(): String =
@@ -52,8 +52,8 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     // Language
 
-    fun getLanguage(): Flow<String> = getValue(Setting.KEY_LANGUAGE).map { 
-        it ?: Setting.LANGUAGE_SYSTEM 
+    fun getLanguage(): Flow<String> = getValue(Setting.KEY_LANGUAGE).map {
+        it ?: Setting.LANGUAGE_SYSTEM
     }
 
     suspend fun getLanguageOnce(): String =
@@ -63,8 +63,8 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     // Show similarity scores (debug/advanced)
 
-    fun getShowScores(): Flow<Boolean> = getValue(Setting.KEY_SHOW_SCORES).map { 
-        it?.toBoolean() ?: DEFAULT_SHOW_SCORES 
+    fun getShowScores(): Flow<Boolean> = getValue(Setting.KEY_SHOW_SCORES).map {
+        it?.toBoolean() ?: DEFAULT_SHOW_SCORES
     }
 
     suspend fun getShowScoresOnce(): Boolean =

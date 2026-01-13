@@ -68,8 +68,8 @@ class MediaScanner {
         val fileSize = file.length()
         val mimeType = file.type
         val dateAdded = System.currentTimeMillis()
-        
-        if(!extractExif){
+
+        if (!extractExif) {
             return Photo(
                 filePath = filePath,
                 fileName = fileName,
@@ -80,7 +80,7 @@ class MediaScanner {
                 isMetadataExtracted = false
             )
         }
-        
+
         // Valeurs par défaut
         var dateTaken: Long? = file.lastModified().takeIf { it > 0 }
         var width: Int? = null
@@ -101,7 +101,10 @@ class MediaScanner {
                 height = exif.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0).takeIf { it > 0 }
 
                 // Orientation
-                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+                orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
 
                 // Date de prise de vue
                 exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL)?.let { dateStr ->

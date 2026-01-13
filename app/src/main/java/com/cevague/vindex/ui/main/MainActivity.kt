@@ -1,16 +1,15 @@
 package com.cevague.vindex.ui.main
 
-import com.cevague.vindex.R
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.observe
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.databinding.ActivityMainBinding
 import com.cevague.vindex.ui.welcome.WelcomeActivity

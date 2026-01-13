@@ -1,10 +1,6 @@
 package com.cevague.vindex
 
 import android.app.Application
-import android.net.Uri
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -19,7 +15,6 @@ import com.cevague.vindex.worker.DiscoveryWorker
 import com.cevague.vindex.worker.MetadataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 class VindexApplication : Application() {
 
@@ -30,27 +25,26 @@ class VindexApplication : Application() {
     val database: AppDatabase by lazy { AppDatabase.getInstance(this) }
 
     // Repositories
-    val photoRepository: PhotoRepository by lazy { 
-        PhotoRepository(database.photoDao(), applicationScope) 
+    val photoRepository: PhotoRepository by lazy {
+        PhotoRepository(database.photoDao(), applicationScope)
     }
-    
-    val personRepository: PersonRepository by lazy { 
-        PersonRepository(database.personDao(), database.faceDao()) 
+
+    val personRepository: PersonRepository by lazy {
+        PersonRepository(database.personDao(), database.faceDao())
     }
-    
-    val albumRepository: AlbumRepository by lazy { 
-        AlbumRepository(database.albumDao()) 
+
+    val albumRepository: AlbumRepository by lazy {
+        AlbumRepository(database.albumDao())
     }
-    
-    val settingsRepository: SettingsRepository by lazy { 
-        SettingsRepository(database.settingDao()) 
+
+    val settingsRepository: SettingsRepository by lazy {
+        SettingsRepository(database.settingDao())
     }
 
     override fun onCreate() {
         super.onCreate()
         instance = this
     }
-
 
 
     fun startGalleryScan(selectedUri: String) {
@@ -73,7 +67,6 @@ class VindexApplication : Application() {
             .then(metadataReq)
             .enqueue()
     }
-
 
 
     fun startFullScan(selectedUri: String) {

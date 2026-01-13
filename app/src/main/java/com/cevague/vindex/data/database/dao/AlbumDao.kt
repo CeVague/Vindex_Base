@@ -49,34 +49,42 @@ interface AlbumDao {
 
     // Photos in album
 
-    @Query("""
+    @Query(
+        """
         SELECT p.* FROM photos p
         INNER JOIN album_photos ap ON p.id = ap.photo_id
         WHERE ap.album_id = :albumId
         ORDER BY p.date_taken DESC
-    """)
+    """
+    )
     fun getPhotosInAlbum(albumId: Long): Flow<List<Photo>>
 
-    @Query("""
+    @Query(
+        """
         SELECT p.* FROM photos p
         INNER JOIN album_photos ap ON p.id = ap.photo_id
         WHERE ap.album_id = :albumId
         ORDER BY p.date_taken DESC
-    """)
+    """
+    )
     suspend fun getPhotosInAlbumOnce(albumId: Long): List<Photo>
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) FROM album_photos WHERE album_id = :albumId
-    """)
+    """
+    )
     fun getPhotoCountInAlbum(albumId: Long): Flow<Int>
 
     // Albums containing photo
 
-    @Query("""
+    @Query(
+        """
         SELECT a.* FROM albums a
         INNER JOIN album_photos ap ON a.id = ap.album_id
         WHERE ap.photo_id = :photoId
-    """)
+    """
+    )
     fun getAlbumsContainingPhoto(photoId: Long): Flow<List<Album>>
 
     // Album insert/update/delete
@@ -96,18 +104,22 @@ interface AlbumDao {
     @Query("UPDATE albums SET photo_count = :count WHERE id = :id")
     suspend fun updatePhotoCount(id: Long, count: Int)
 
-    @Query("""
+    @Query(
+        """
         UPDATE albums SET photo_count = (
             SELECT COUNT(*) FROM album_photos ap WHERE ap.album_id = albums.id
         )
-    """)
+    """
+    )
     suspend fun recalculateAllPhotoCounts()
 
-    @Query("""
+    @Query(
+        """
         UPDATE albums SET photo_count = (
             SELECT COUNT(*) FROM album_photos ap WHERE ap.album_id = :id
         ) WHERE id = :id
-    """)
+    """
+    )
     suspend fun recalculatePhotoCount(id: Long)
 
     @Delete

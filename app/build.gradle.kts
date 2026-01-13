@@ -6,9 +6,7 @@ plugins {
 
 android {
     namespace = "com.cevague.vindex"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.cevague.vindex"
@@ -19,19 +17,31 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Export des schémas Room
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
+    }
+
+    ksp {
+        arg("room.schemaLocation", file("$projectDir/schemas").path)
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            applicationIdSuffix = ".release"
+            versionNameSuffix = "-release"
+        }
+
+        getByName("debug") {
+            isMinifyEnabled = false
+
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
     }
 

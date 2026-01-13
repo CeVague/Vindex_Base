@@ -1,10 +1,10 @@
 package com.cevague.vindex.ui.people
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import com.cevague.vindex.R
 
 // TODO: Rename parameter arguments, choose names that match

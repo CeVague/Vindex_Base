@@ -9,12 +9,12 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <!-- Icône (optionnel) -->
         <ImageView
@@ -40,8 +40,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
             android:text="@string/welcome_message"
-            android:textAppearance="?attr/textAppearanceBodyLarge"
-            android:textAlignment="center" />
+            android:textAlignment="center"
+            android:textAppearance="?attr/textAppearanceBodyLarge" />
 
         <!-- Bouton -->
         <Button

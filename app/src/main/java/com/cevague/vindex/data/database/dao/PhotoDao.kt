@@ -49,12 +49,14 @@ interface PhotoDao {
     @Query("SELECT DISTINCT folder_path FROM photos ORDER BY folder_path")
     fun getAllFolders(): Flow<List<String>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM photos 
         WHERE file_name LIKE '%' || :query || '%' 
            OR file_path LIKE '%' || :query || '%'
         ORDER BY date_taken DESC
-    """)
+    """
+    )
     fun searchByFileName(query: String): Flow<List<Photo>>
 
     @Query("SELECT * FROM photos WHERE needs_reanalysis = 1")

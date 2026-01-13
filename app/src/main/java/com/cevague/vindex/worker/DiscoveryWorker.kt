@@ -19,7 +19,12 @@ class DiscoveryWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_scanning), "PROGRESS" to 0))
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_scanning),
+                    "PROGRESS" to 0
+                )
+            )
 
             val folderUriString =
                 inputData.getString("FOLDER_URI") ?: return@withContext Result.failure()
@@ -30,13 +35,23 @@ class DiscoveryWorker(
             // Scan rapide (shallow)
             val photosFound = scanner.scanFolderShallow(applicationContext, folderUriString.toUri())
 
-            setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_scanning), "PROGRESS" to 50))
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_scanning),
+                    "PROGRESS" to 50
+                )
+            )
             delay(1000)
 
             // Synchronisation DB (ajouts/suppressions)
             repository.syncPhotos(photosFound)
 
-            setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_scanning), "PROGRESS" to 100))
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_scanning),
+                    "PROGRESS" to 100
+                )
+            )
             delay(1000)
 
             Result.success()

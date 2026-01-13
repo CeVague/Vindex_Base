@@ -67,7 +67,8 @@ interface FaceDao {
     @Update
     suspend fun update(face: Face)
 
-    @Query("""
+    @Query(
+        """
         UPDATE faces SET 
             person_id = :personId, 
             assignment_type = :assignmentType, 
@@ -75,7 +76,8 @@ interface FaceDao {
             weight = :weight,
             assigned_at = :timestamp 
         WHERE id = :id
-    """)
+    """
+    )
     suspend fun assignToPerson(
         id: Long,
         personId: Long?,

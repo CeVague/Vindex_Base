@@ -61,18 +61,22 @@ interface PersonDao {
     @Query("UPDATE persons SET centroid_embedding = :embedding, centroid_updated_at = :timestamp WHERE id = :id")
     suspend fun updateCentroid(id: Long, embedding: ByteArray?, timestamp: Long)
 
-    @Query("""
+    @Query(
+        """
         UPDATE persons SET photo_count = (
             SELECT COUNT(DISTINCT f.photo_id) FROM faces f WHERE f.person_id = persons.id
         )
-    """)
+    """
+    )
     suspend fun recalculateAllPhotoCounts()
 
-    @Query("""
+    @Query(
+        """
         UPDATE persons SET photo_count = (
             SELECT COUNT(DISTINCT f.photo_id) FROM faces f WHERE f.person_id = :id
         ) WHERE id = :id
-    """)
+    """
+    )
     suspend fun recalculatePhotoCount(id: Long)
 
     // Delete

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.work.CoroutineWorker
-import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
@@ -22,7 +21,12 @@ class MetadataWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
 
         try {
-            setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to 0))
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_exif),
+                    "PROGRESS" to 0
+                )
+            )
 
             delay(500)
 
@@ -60,7 +64,12 @@ class MetadataWorker(
                 // Mise à jour de la progression (0 à 100)
                 val processedCount = (index + 1) * batchSize
                 val progress = if (processedCount >= total) 100 else (processedCount * 100 / total)
-                setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to progress))
+                setProgress(
+                    workDataOf(
+                        "WORK" to applicationContext.getString(R.string.progress_exif),
+                        "PROGRESS" to progress
+                    )
+                )
 
                 delay(1000)
             }

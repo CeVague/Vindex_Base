@@ -15,13 +15,15 @@ interface CityDao {
     @Query("SELECT * FROM cities WHERE name = :name AND country_code = :countryCode LIMIT 1")
     suspend fun getCityByNameAndCountry(name: String, countryCode: String): City?
 
-    @Query("""
+    @Query(
+        """
         SELECT *, 
         ((:lat - latitude) * (:lat - latitude) + (:lon - longitude) * (:lon - longitude)) AS distance
         FROM cities 
         ORDER BY distance ASC 
         LIMIT 1
-    """)
+    """
+    )
     suspend fun findNearestCity(lat: Double, lon: Double): City?
 
     @Query("SELECT COUNT(*) FROM cities")
