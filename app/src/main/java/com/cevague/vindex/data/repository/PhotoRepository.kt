@@ -1,10 +1,29 @@
 package com.cevague.vindex.data.repository
 
 import com.cevague.vindex.data.database.dao.PhotoDao
+import com.cevague.vindex.data.database.dao.PhotoDao.FilePathAndSize
 import com.cevague.vindex.data.database.entity.Photo
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 
-class PhotoRepository(private val photoDao: PhotoDao) {
+class PhotoRepository(
+    private val photoDao: PhotoDao,
+    externalScope: CoroutineScope
+) {
+
+    /**
+     * Cache réactif des métadonnées de base (chemin et taille) de toutes les photos en DB.
+     * Permet une comparaison (diffing) instantanée sans refaire de requête SQL complète.
+     */
+    val dbPhotosMetadata: StateFlow<List<FilePathAndSize>> = photoDao.getAllPathsAndSizes()
+        .stateIn(
+            scope = externalScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     // Reactive queries
 
@@ -38,13 +57,37 @@ class PhotoRepository(private val photoDao: PhotoDao) {
 
     suspend fun getPhotosByIds(ids: List<Long>): List<Photo> = photoDao.getPhotosByIds(ids)
 
-    // Insert
+    // Synchronize
+
+    suspend fun syncPhotos(scannedPhotos: List<Photo>) {
+        // On utilise la valeur actuelle du StateFlow (déjà en mémoire et à jour)
+        val dbPhotosMap = dbPhotosMetadata.value.associateBy { it.filePath }
+
+        // 1. Identifier les disparus (présents en DB mais plus sur le disque)
+        val scannedPaths = scannedPhotos.map { it.filePath }.toSet()
+        val toDelete = dbPhotosMap.keys.filter { it !in scannedPaths }
+
+        // 2. Identifier les nouveaux ou modifiés (taille différente)
+        val toUpsert = scannedPhotos.filter { scanned ->
+            val inDb = dbPhotosMap[scanned.filePath]
+            inDb == null || inDb.fileSize != scanned.fileSize
+        }
+
+        // 3. Exécuter les opérations en base
+        if (toDelete.isNotEmpty()) {
+            toDelete.forEach { photoDao.deleteByPath(it) }
+        }
+        
+        if (toUpsert.isNotEmpty()) {
+            photoDao.insertAll(toUpsert)
+        }
+    }
+
+    // Insert / Update / Delete (classique)
 
     suspend fun insert(photo: Photo): Long = photoDao.insert(photo)
 
     suspend fun insertAll(photos: List<Photo>): List<Long> = photoDao.insertAll(photos)
-
-    // Update
 
     suspend fun update(photo: Photo) = photoDao.update(photo)
 
@@ -67,8 +110,6 @@ class PhotoRepository(private val photoDao: PhotoDao) {
         photoDao.updateOcr(id, ocrText, model)
 
     suspend fun markAllForReanalysis() = photoDao.markAllForReanalysis()
-
-    // Delete
 
     suspend fun delete(photo: Photo) = photoDao.delete(photo)
 

@@ -15,28 +15,26 @@ class ScanWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        // 1. Récupérer l'URI du dossier à scanner (passée en paramètre au Worker)
+        // 1. Récupérer l'URI du dossier à scanner
         val folderUriString = inputData.getString("FOLDER_URI") ?: return@withContext Result.failure()
         val folderUri = folderUriString.toUri()
 
         try {
-            // 2. Utiliser MediaScanner pour lister les photos
+            // 2. Utiliser MediaScanner pour lister les photos actuelles sur le disque
             val scanner = MediaScanner()
             val photosFound = scanner.scanFolder(applicationContext, folderUri)
 
-            // 3. Récupérer la base de données via l'Application
-            val photoDao = (applicationContext as VindexApplication).photoRepository
+            // 3. Récupérer le repository via l'Application
+            val repository = (applicationContext as VindexApplication).photoRepository
 
-            // 4. Insérer les photos trouvées dans la base de données
-            // On utilise une liste pour faire une insertion groupée (plus performant)
-            if (photosFound.isNotEmpty()) {
-                photoDao.insertAll(photosFound)
-            }
+            // 4. Synchroniser : cette méthode gère maintenant les ajouts,
+            // les mises à jour et les suppressions en une seule passe.
+            repository.syncPhotos(photosFound)
 
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
-            Result.retry() // Réessaie plus tard en cas d'erreur (ex: dossier inaccessible temporairement)
+            Result.retry()
         }
     }
 }

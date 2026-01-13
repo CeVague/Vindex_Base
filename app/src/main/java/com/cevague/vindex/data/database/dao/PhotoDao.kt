@@ -1,5 +1,6 @@
 package com.cevague.vindex.data.database.dao
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -12,10 +13,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PhotoDao {
 
+    data class FilePathAndSize(
+        @ColumnInfo(name = "file_path") val filePath: String,
+        @ColumnInfo(name = "file_size") val fileSize: Long
+    )
+
     // Queries - reactive (Flow updates automatically when data changes)
 
     @Query("SELECT * FROM photos ORDER BY date_taken DESC")
     fun getAllPhotos(): Flow<List<Photo>>
+
+    // Dans PhotoDao.kt
+    @Query("SELECT file_path, file_size FROM photos")
+    fun getAllPathsAndSizes(): Flow<List<FilePathAndSize>>
 
     @Query("SELECT * FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
     fun getVisiblePhotos(): Flow<List<Photo>>
@@ -38,7 +48,6 @@ interface PhotoDao {
     @Query("SELECT DISTINCT folder_path FROM photos ORDER BY folder_path")
     fun getAllFolders(): Flow<List<String>>
 
-    // Search
     @Query("""
         SELECT * FROM photos 
         WHERE file_name LIKE '%' || :query || '%' 

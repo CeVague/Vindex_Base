@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.fragment)
+    implementation(libs.androidx.lifecycle.process)
     ksp(libs.androidx.room.compiler)
 
     // WorkManager
