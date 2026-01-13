@@ -1,9 +1,11 @@
 package com.cevague.vindex
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -12,7 +14,9 @@ import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.SettingsRepository
-import com.cevague.vindex.workers.ScanWorker
+import com.cevague.vindex.worker.AIAnalysisWorker
+import com.cevague.vindex.worker.DiscoveryWorker
+import com.cevague.vindex.worker.MetadataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -45,27 +49,57 @@ class VindexApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-
-        // Observer le passage au premier plan
-        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                triggerSync()
-            }
-        })
     }
 
-    private fun triggerSync() {
-        applicationScope.launch {
-            val uri = settingsRepository.getSourceFolderUriOnce()
-            if (uri != null) {
-                val workRequest = OneTimeWorkRequestBuilder<ScanWorker>()
-                    .addTag("SCAN_TAG")
-                    .setInputData(workDataOf("FOLDER_URI" to uri.toString()))
-                    .build()
-                // On utilise KEEP pour ne pas relancer si un scan est déjà en cours
-                WorkManager.getInstance(this@VindexApplication).enqueue(workRequest)
-            }
-        }
+
+
+    fun startGalleryScan(selectedUri: String) {
+
+        val discoveryReq = OneTimeWorkRequestBuilder<DiscoveryWorker>()
+            .setInputData(workDataOf("FOLDER_URI" to selectedUri))
+            .addTag("SCAN_TAG")
+            .build()
+
+        val metadataReq = OneTimeWorkRequestBuilder<MetadataWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
+        WorkManager.getInstance(this)
+            .beginUniqueWork(
+                "VINDEX_SCAN_PROCESS",
+                ExistingWorkPolicy.KEEP,
+                discoveryReq
+            )
+            .then(metadataReq)
+            .enqueue()
+    }
+
+
+
+    fun startFullScan(selectedUri: String) {
+
+        val discoveryReq = OneTimeWorkRequestBuilder<DiscoveryWorker>()
+            .setInputData(workDataOf("FOLDER_URI" to selectedUri))
+            .addTag("SCAN_TAG")
+            .build()
+
+        val metadataReq = OneTimeWorkRequestBuilder<MetadataWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
+        val aiReq = OneTimeWorkRequestBuilder<AIAnalysisWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
+        WorkManager.getInstance(this)
+            .beginUniqueWork(
+                "VINDEX_SCAN_PROCESS",
+                ExistingWorkPolicy.KEEP,
+                discoveryReq
+            )
+            .then(metadataReq)
+            .then(aiReq)
+            .enqueue()
     }
 
     companion object {

@@ -19,7 +19,12 @@
 
     <!-- Progress message -->
     <string name="progress_generic">Travail en cours…</string>
-    <string name="progress_exif">Lecture des données EXIF…</string>
+    <string name="progress_scanning">Analyse en cours…</string>
+    <string name="progress_exif">Extraction des métadonnées…</string>
+    <string name="progress_summary">Création des description…</string>
+    <string name="progress_vector">Génération des vecteurs…</string>
+    <string name="progress_faces">Analyse des visages…</string>
+
 
     <!-- Generics messages -->
     <string name="msg_loading">Chargement…</string>

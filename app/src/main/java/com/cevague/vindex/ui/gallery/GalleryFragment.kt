@@ -4,13 +4,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.launch
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.databinding.FragmentGalleryBinding
 import com.cevague.vindex.ui.gallery.PhotoAdapter
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
+import kotlinx.coroutines.launch
 
 class GalleryFragment : Fragment() {
 
@@ -50,6 +53,16 @@ class GalleryFragment : Fragment() {
                 binding.textEmpty.visibility = View.GONE
                 binding.recyclerGallery.visibility = View.VISIBLE
                 photoAdapter.submitList(photos)
+            }
+        }
+
+        binding.swipeRefreshGallery.setOnRefreshListener {
+            lifecycleScope.launch {
+                val uri = app.settingsRepository.getSourceFolderUriOnce()
+                if (uri != null) {
+                    app.startFullScan(uri)
+                }
+                binding.swipeRefreshGallery.isRefreshing = false
             }
         }
     }

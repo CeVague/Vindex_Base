@@ -13,7 +13,9 @@ import androidx.work.workDataOf
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
 import com.cevague.vindex.ui.main.MainActivity
-import com.cevague.vindex.workers.ScanWorker
+import com.cevague.vindex.worker.DiscoveryWorker
+import com.cevague.vindex.worker.MetadataWorker
+import com.cevague.vindex.worker.AIAnalysisWorker
 import kotlinx.coroutines.launch
 
 class WelcomeActivity : AppCompatActivity() {
@@ -36,7 +38,7 @@ class WelcomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleFolderSelected(uri: android.net.Uri) {
+    private fun handleFolderSelected(uri: Uri) {
         contentResolver.takePersistableUriPermission(
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -46,29 +48,11 @@ class WelcomeActivity : AppCompatActivity() {
         lifecycleScope.launch {
             app.settingsRepository.setSourceFolderUri(uri.toString())
 
-            startBackgroundScan(uri)
+            (application as VindexApplication).startFullScan(uri.toString())
 
             startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
             finish()
         }
-    }
-
-    private fun startBackgroundScan(selectedUri: Uri) {
-        // Préparer les données à envoyer au Worker
-        val data = workDataOf("FOLDER_URI" to selectedUri.toString())
-
-        // Créer la requête de travail
-        val scanRequest = OneTimeWorkRequestBuilder<ScanWorker>()
-            .setInputData(data)
-            .addTag("media_scan")
-            .build()
-
-        // Lancer le travail de manière unique (évite de lancer 2 scans en même temps)
-        WorkManager.getInstance(this).enqueueUniqueWork(
-            "initial_folder_scan",
-            ExistingWorkPolicy.REPLACE, // Remplace l'ancien scan s'il y en avait un
-            scanRequest
-        )
     }
 
 }

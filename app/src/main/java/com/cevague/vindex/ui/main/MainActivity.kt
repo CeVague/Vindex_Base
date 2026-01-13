@@ -52,7 +52,8 @@ class MainActivity : AppCompatActivity() {
 
                 if (workInfo != null) {
                     val progress = workInfo.progress.getInt("PROGRESS", 0)
-                    val work = workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
+                    val work =
+                        workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
                     binding.layoutProgressBar.visibility = View.VISIBLE
                     binding.syncProgressBar.progress = progress
                     binding.textProgressBar.text = "$work $progress%"

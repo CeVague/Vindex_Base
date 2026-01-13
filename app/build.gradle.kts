@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.fragment)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.swiperefreshlayout)
     ksp(libs.androidx.room.compiler)
 
     // WorkManager
