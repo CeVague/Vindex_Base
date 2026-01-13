@@ -41,6 +41,10 @@
         <activity
             android:name=".ui.welcome.WelcomeActivity"
             android:theme="@style/Theme.Vindex" />
+
+        <activity
+            android:name=".ui.viewer.PhotoViewerActivity"
+            android:theme="@style/Theme.Vindex" />
     </application>
 
 </manifest>

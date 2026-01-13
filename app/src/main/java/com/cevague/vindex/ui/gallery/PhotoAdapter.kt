@@ -10,7 +10,7 @@ import com.bumptech.glide.Glide
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.databinding.ItemPhotoBinding
 
-class PhotoAdapter : ListAdapter<Photo, PhotoAdapter.PhotoViewHolder>(DIFF_CALLBACK) {
+class PhotoAdapter(private val onPhotoClick: (position: Int) -> Unit) : ListAdapter<Photo, PhotoAdapter.PhotoViewHolder>(DIFF_CALLBACK) {
 
     class PhotoViewHolder(binding: ItemPhotoBinding) : RecyclerView.ViewHolder(binding.root) {
         val imageView = binding.imageItem
@@ -28,6 +28,10 @@ class PhotoAdapter : ListAdapter<Photo, PhotoAdapter.PhotoViewHolder>(DIFF_CALLB
             .load(photo.filePath.toUri())
             .centerCrop()
             .into(holder.imageView)
+
+        holder.itemView.setOnClickListener {
+            onPhotoClick(position)
+        }
     }
 
     companion object {

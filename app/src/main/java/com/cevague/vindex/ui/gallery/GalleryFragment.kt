@@ -9,6 +9,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.databinding.FragmentGalleryBinding
+import com.cevague.vindex.ui.gallery.PhotoAdapter
+import com.cevague.vindex.ui.viewer.PhotoViewerActivity
 
 class GalleryFragment : Fragment() {
 
@@ -33,7 +35,9 @@ class GalleryFragment : Fragment() {
         val factory = GalleryViewModelFactory(repository)
         val viewModel = ViewModelProvider(this, factory)[GalleryViewModel::class.java]
 
-        val photoAdapter = PhotoAdapter()
+        val photoAdapter = PhotoAdapter { position ->
+            PhotoViewerActivity.start(requireContext(), position)
+        }
 
         binding.recyclerGallery.layoutManager = GridLayoutManager(requireContext(), 3)
         binding.recyclerGallery.adapter = photoAdapter

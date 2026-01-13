@@ -55,6 +55,7 @@
     <!-- Photo viewer -->
     <string name="viewer_info">Information</string>
     <string name="viewer_no_info">No information available</string>
+    <string name="viewer_no_info_short">--</string>
 
     <!-- Metadata -->
     <string name="viewer_date">Date</string>
@@ -65,6 +66,7 @@
     <string name="viewer_file_path">Path</string>
 
     <!-- AI Sections -->
+    <string name="viewer_ai_section">AI Analysis</string>
     <string name="viewer_description">Description</string>
     <string name="viewer_description_empty">No description yet</string>
     <string name="viewer_tags">Tags</string>

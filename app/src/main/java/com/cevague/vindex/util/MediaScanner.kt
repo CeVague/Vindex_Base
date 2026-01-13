@@ -3,6 +3,7 @@ package com.cevague.vindex.util
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import androidx.exifinterface.media.ExifInterface
 import com.cevague.vindex.data.database.entity.Photo
 
 class MediaScanner {
@@ -49,34 +50,54 @@ class MediaScanner {
     }
 
     private fun createPhotoFromFile(context: Context, file: DocumentFile): Photo {
+        val filePath = file.uri.toString()
+        val fileName = file.name ?: "unknown"
+        val folderPath = file.parentFile?.uri?.toString() ?: ""
+        val fileSize = file.length()
+        val mimeType = file.type
+        val dateAdded = System.currentTimeMillis()
 
-
-        var filePath = file.uri.toString()
-        var fileName = file.name ?: "unknown"
-        var folderPath = file.parentFile?.uri?.toString() ?: ""
-        var fileSize = file.length()
-        var mimeType = file.type
-        var dateAdded = System.currentTimeMillis()
-        var dateTaken = file.lastModified()
-
-        // Extraction EXIF (à ajouter plus tard)
+        // Valeurs par défaut
+        var dateTaken: Long? = file.lastModified().takeIf { it > 0 }
         var width: Int? = null
         var height: Int? = null
+        var orientation: Int? = null
         var latitude: Double? = null
         var longitude: Double? = null
         var cameraMake: String? = null
         var cameraModel: String? = null
 
-        /*
+        // Extraction EXIF
         try {
             context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
                 val exif = ExifInterface(inputStream)
-                // Extraire les données...
+
+                // Dimensions
+                width = exif.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0).takeIf { it > 0 }
+                height = exif.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0).takeIf { it > 0 }
+
+                // Orientation
+                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+
+                // Date de prise de vue
+                exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL)?.let { dateStr ->
+                    dateTaken = parseExifDate(dateStr)
+                }
+
+                // Appareil
+                cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE)?.trim()
+                cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)?.trim()
+
+                // GPS
+                val latLong = exif.latLong
+                if (latLong != null) {
+                    latitude = latLong[0]
+                    longitude = latLong[1]
+                }
             }
         } catch (e: Exception) {
-            // Ignorer les erreurs EXIF
+            // Ignorer les erreurs EXIF (fichier corrompu, format non supporté, etc.)
         }
-        */
 
         return Photo(
             filePath = filePath,
@@ -85,7 +106,25 @@ class MediaScanner {
             fileSize = fileSize,
             mimeType = mimeType,
             dateAdded = dateAdded,
-            dateTaken = dateTaken
+            dateTaken = dateTaken,
+            width = width,
+            height = height,
+            orientation = orientation,
+            latitude = latitude,
+            longitude = longitude,
+            cameraMake = cameraMake,
+            cameraModel = cameraModel
         )
+    }
+
+    // Fonction helper pour parser la date EXIF
+    private fun parseExifDate(dateStr: String): Long? {
+        return try {
+            // Format EXIF : "2024:08:15 14:32:00"
+            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
+            sdf.parse(dateStr)?.time
+        } catch (e: Exception) {
+            null
+        }
     }
 }
