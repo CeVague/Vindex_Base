@@ -12,23 +12,18 @@ import kotlinx.coroutines.flow.*
 @OptIn(FlowPreview::class)
 class SearchViewModel(private val repository: PhotoRepository) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+    // On remplace le flux réactif par une recherche déclenchée manuellement
+    private val _searchTrigger = MutableSharedFlow<String>(replay = 1)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val searchResults: StateFlow<List<Photo>> = _searchQuery
-        .debounce(300)
+    val searchResults: StateFlow<List<Photo>> = _searchTrigger
         .flatMapLatest { query ->
             if (query.trim().length < 2) flowOf(emptyList())
             else repository.searchByFileName(query)
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun updateQuery(newQuery: String) {
-        _searchQuery.value = newQuery
+    fun performSearch(query: String) {
+        _searchTrigger.tryEmit(query)
     }
 }

@@ -49,11 +49,13 @@ class SearchFragment : Fragment() {
         // Écouter la saisie de l'utilisateur
         binding.inputSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
+                viewModel.performSearch(query ?: "")
+                binding.inputSearch.clearFocus() // Ferme le clavier
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                viewModel.updateQuery(newText ?: "")
+                // On ne fait rien ici pour économiser les ressources
                 return true
             }
         })
