@@ -11,60 +11,38 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.local.FastSettings
 import com.cevague.vindex.databinding.ActivityMainBinding
+import com.cevague.vindex.databinding.LayoutSyncProgressBinding
 import com.cevague.vindex.ui.welcome.WelcomeActivity
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private var syncBinding: LayoutSyncProgressBinding? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Vérifier si un dossier est configuré
-        checkSourceFolder()
-    }
+        // Lecture immédiate du miroir
+        val sourceFolder = FastSettings.sourceFolderUri
 
-    private fun checkSourceFolder() {
-        val app = application as VindexApplication
-
-        lifecycleScope.launch {
-            val sourceFolder = app.settingsRepository.getSourceFolderUriOnce()
-
-            if (sourceFolder == null) {
-                // Pas de dossier configuré → WelcomeActivity
-                startActivity(Intent(this@MainActivity, WelcomeActivity::class.java))
-                finish()
-            } else {
-                // Dossier configuré → Afficher l'UI normale
-                setupUI()
-            }
+        if (sourceFolder == null) {
+            startActivity(Intent(this, WelcomeActivity::class.java))
+            finish()
+            return
         }
-    }
 
-    private fun observeSyncProgress() {
-        WorkManager.getInstance(applicationContext)
-            .getWorkInfosByTagLiveData("SCAN_TAG")
-            .observe(this) { workInfos ->
-                val workInfo = workInfos?.firstOrNull { it.state == WorkInfo.State.RUNNING }
-
-                if (workInfo != null) {
-                    val progress = workInfo.progress.getInt("PROGRESS", 0)
-                    val work =
-                        workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
-                    binding.layoutProgressBar.visibility = View.VISIBLE
-                    binding.syncProgressBar.progress = progress
-                    binding.textProgressBar.text = "$work $progress%"
-                } else {
-                    binding.layoutProgressBar.visibility = View.GONE
-                }
-            }
+        // Sinon on charge l'UI normale
+        setupUI()
     }
 
     private fun setupUI() {
+        // On ne gonfle l'UI que si on est sûr de rester sur cette activité
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
 
         // Configurer la navigation
         val navHostFragment = supportFragmentManager
@@ -74,5 +52,28 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.setupWithNavController(navController)
 
         observeSyncProgress()
+    }
+
+    private fun observeSyncProgress() {
+        WorkManager.getInstance(applicationContext)
+            .getWorkInfosByTagLiveData("SCAN_TAG")
+            .observe(this) { workInfos ->
+                val workInfo = workInfos?.firstOrNull { it.state == WorkInfo.State.RUNNING }
+
+                if (workInfo != null) {
+                    if (syncBinding == null) {
+                        val view = binding.syncProgressStub.inflate()
+                        syncBinding = LayoutSyncProgressBinding.bind(view)
+                    }
+                    syncBinding?.root?.visibility = View.VISIBLE
+                    val progress = workInfo.progress.getInt("PROGRESS", 0)
+                    val work =
+                        workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
+                    syncBinding?.syncProgressBar?.progress = progress
+                    syncBinding?.textProgressBar?.text = "$work $progress%"
+                } else {
+                    syncBinding?.root?.visibility = View.GONE
+                }
+            }
     }
 }

@@ -24,6 +24,9 @@ data class Photo(
     @ColumnInfo(name = "file_name")
     val fileName: String,
 
+    @ColumnInfo(name = "file_last_modified")
+    val fileLastModified: Long,
+
     @ColumnInfo(name = "folder_path")
     val folderPath: String,
 

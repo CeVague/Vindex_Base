@@ -1,8 +1,11 @@
 package com.cevague.vindex.data.repository
 
+import android.content.Context
+import android.net.Uri
 import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoDao.FilePathAndSize
 import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,33 +64,46 @@ class PhotoRepository(
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo> =
         photoDao.getPhotosNeedingMetadataExtraction()
 
+    suspend fun getLastModifiedTimestampOnce(): Long? = photoDao.getLastSyncTimestamp()
+
+
     // Synchronize
-    suspend fun syncPhotos(scannedPhotos: List<Photo>) {
-        // Au lieu de .value qui peut être vide au démarrage du Worker,
-        // on s'assure d'avoir la donnée réelle du Flow (une seule émission).
+    suspend fun syncPhotos(context: Context, folderUri: Uri, onProgress: suspend (Int) -> Unit) {
+        val folderPathString = folderUri.toString()
+        val lastSync = photoDao.getLastSyncTimestamp() ?: 0L
+
+        // 1. Charger les chemins actuels de ce dossier en DB
         val dbPhotos = photoDao.getAllPathsAndSizes().first()
-        val dbPhotosMap = dbPhotos.associateBy { it.filePath }
+        val folderDbMap = dbPhotos.filter { it.filePath.startsWith(folderPathString) }.associateBy { it.filePath }
 
-        // 1. Suppressions (Inchangé mais utilise dbPhotosMap fiable)
-        val scannedPaths = scannedPhotos.map { it.filePath }.toSet()
-        val toDelete = dbPhotosMap.keys.filter { it !in scannedPaths }
+        val seenPaths = mutableSetOf<String>()
+        var totalNew = 0
 
-        // 2. Identification des ajouts/updates (Inchangé)
-        val toUpsert = scannedPhotos.filter { scanned ->
-            val inDb = dbPhotosMap[scanned.filePath]
-            inDb == null || inDb.fileSize != scanned.fileSize
-        }.map { scanned ->
-            val existingId = dbPhotosMap[scanned.filePath]?.id ?: 0L
-            scanned.copy(id = existingId)
+        val scanner = MediaScanner()
+
+        // 2. Lancer le scan
+        scanner.scanFolderFast(context, folderUri, lastSync) { path ->
+            seenPaths.add(path)
+        }.collect { batch ->
+            // Filtrage chirurgical : on n'insère QUE si c'est vraiment nouveau
+            // ou si la taille/date a changé (comparaison avec folderDbMap)
+            val toUpsert = batch.filter { newPhoto ->
+                val existing = folderDbMap[newPhoto.filePath]
+                existing == null || existing.fileSize != newPhoto.fileSize || existing.fileLastModified != newPhoto.fileLastModified
+            }
+
+            if (toUpsert.isNotEmpty()) {
+                photoDao.insertAll(toUpsert)
+            }
+
+            totalNew += batch.size
+            onProgress(totalNew)
         }
 
-        // 3. Exécution groupée (Plus efficace)
-        if (toDelete.isNotEmpty()) {
-            photoDao.deleteByPaths(toDelete) // Utilise le DELETE groupé
-        }
-
-        if (toUpsert.isNotEmpty()) {
-            photoDao.insertAll(toUpsert)
+        // 3. Supprimer les "Fantômes" (ceux qui sont en DB mais plus sur le disque)
+        val deletedPaths = folderDbMap.keys.filter { it !in seenPaths }
+        if (deletedPaths.isNotEmpty()) {
+            photoDao.deleteByPaths(deletedPaths)
         }
     }
 

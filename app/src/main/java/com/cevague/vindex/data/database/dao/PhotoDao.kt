@@ -13,10 +13,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PhotoDao {
 
+    // Dans PhotoDao.kt
     data class FilePathAndSize(
         @ColumnInfo(name = "id") val id: Long,
         @ColumnInfo(name = "file_path") val filePath: String,
-        @ColumnInfo(name = "file_size") val fileSize: Long
+        @ColumnInfo(name = "file_size") val fileSize: Long,
+        @ColumnInfo(name = "file_last_modified") val fileLastModified: Long // Ajoute ça !
     )
 
     // Queries - reactive (Flow updates automatically when data changes)
@@ -25,7 +27,7 @@ interface PhotoDao {
     fun getAllPhotos(): Flow<List<Photo>>
 
     // Dans PhotoDao.kt
-    @Query("SELECT id, file_path, file_size FROM photos")
+    @Query("SELECT id, file_path, file_size, file_last_modified FROM photos")
     fun getAllPathsAndSizes(): Flow<List<FilePathAndSize>>
 
     @Query("SELECT * FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
@@ -78,6 +80,10 @@ interface PhotoDao {
 
     @Query("SELECT * FROM photos WHERE is_metadata_extracted = 0")
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo>
+
+
+    @Query("SELECT MAX(file_last_modified) FROM photos")
+    suspend fun getLastSyncTimestamp(): Long?
 
     // Insert
 

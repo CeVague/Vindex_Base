@@ -31,12 +31,14 @@
             app:layout_constraintTop_toTopOf="parent">
 
             <!-- Poignée visuelle centrée -->
-            <View
+            <ImageView
                 android:id="@+id/dragHandle"
                 android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:background="@drawable/vector_drag_handle" />
+                android:contentDescription="@string/action_handle"
+                android:src="@drawable/vector_drag_handle"
+                app:tint="?attr/colorOnSurfaceVariant" />
         </FrameLayout>
 
         <!-- Conteneur scrollable pour les infos -->

@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
+import com.cevague.vindex.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -35,34 +36,36 @@ class AIAnalysisWorker(
             // Si c'est un appareil Low RAM, on divise le batch par 2
             val finalBatchSize = if (isLowRamDevice) (batchSize / 2).coerceAtLeast(5) else batchSize
 
-            delay(1000)
+            if (BuildConfig.DEBUG) {
+                delay(1000)
 
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_generic),
-                    "PROGRESS" to 42
+                setProgress(
+                    workDataOf(
+                        "WORK" to applicationContext.getString(R.string.progress_generic),
+                        "PROGRESS" to 36
+                    )
                 )
-            )
 
-            delay(1000)
+                delay(1000)
 
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_generic),
-                    "PROGRESS" to 68
+                setProgress(
+                    workDataOf(
+                        "WORK" to applicationContext.getString(R.string.progress_generic),
+                        "PROGRESS" to 58
+                    )
                 )
-            )
 
-            delay(1000)
+                delay(1000)
 
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_generic),
-                    "PROGRESS" to 89
+                setProgress(
+                    workDataOf(
+                        "WORK" to applicationContext.getString(R.string.progress_generic),
+                        "PROGRESS" to 89
+                    )
                 )
-            )
 
-            delay(1000)
+                delay(1000)
+            }
 
             Result.success()
         } catch (e: Exception) {

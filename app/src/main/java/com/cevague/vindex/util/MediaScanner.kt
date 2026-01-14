@@ -1,64 +1,92 @@
 package com.cevague.vindex.util
 
 import android.content.Context
+import android.database.Cursor
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
-import androidx.exifinterface.media.ExifInterface
 import com.cevague.vindex.data.database.entity.Photo
+import com.drew.imaging.ImageMetadataReader
+import com.drew.metadata.exif.ExifIFD0Directory
+import com.drew.metadata.exif.ExifSubIFDDirectory
+import com.drew.metadata.exif.GpsDirectory
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 class MediaScanner {
 
     companion object {
         val imageMimeTypes = listOf(
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/heic",
-            "image/heif",
-            "image/gif"
+            "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/gif"
         )
     }
 
-    suspend fun scanFolder(context: Context, folderUri: Uri): List<Photo> {
-        val rootFolder = DocumentFile.fromTreeUri(context, folderUri)
-        val photoList = mutableListOf<Photo>()
-
-        if (rootFolder != null && rootFolder.exists()) {
-            scanDirectory(context, rootFolder, photoList, true)
-        }
-
-        return photoList
-    }
-
-    suspend fun scanFolderShallow(context: Context, folderUri: Uri): List<Photo> {
-        val rootFolder = DocumentFile.fromTreeUri(context, folderUri)
-        val photoList = mutableListOf<Photo>()
-
-        if (rootFolder != null && rootFolder.exists()) {
-            scanDirectory(context, rootFolder, photoList, false)
-        }
-
-        return photoList
-    }
-
-    private fun scanDirectory(
+    /**
+     * Scan ultra rapide via DocumentsContract.
+     */
+    fun scanFolderFast(
         context: Context,
-        directory: DocumentFile,
-        photoList: MutableList<Photo>,
-        extractExif: Boolean
-    ) {
-        directory.listFiles().forEach { file ->
-            if (file.isDirectory) {
-                scanDirectory(context, file, photoList, extractExif)
-            } else if (file.isFile && isImage(file)) {
-                val photo = createPhotoFromFile(context, file, extractExif)
-                photoList.add(photo)
+        rootUri: Uri,
+        lastScanTimestamp: Long,
+        onPathSeen: (String) -> Unit
+    ): Flow<List<Photo>> = flow {
+        val rootDocId = DocumentsContract.getTreeDocumentId(rootUri)
+        val batch = mutableListOf<Photo>()
+        val stack = mutableListOf(rootDocId)
+
+        while (stack.isNotEmpty()) {
+            val docId = stack.removeAt(stack.size - 1)
+            val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(rootUri, docId)
+
+            context.contentResolver.query(childrenUri, null, null, null, null)?.use { cursor ->
+                val idIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                val mimeIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+                val dateIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+                val nameIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                val sizeIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+
+                while (cursor.moveToNext()) {
+                    val childId = cursor.getString(idIdx)
+                    val mime = cursor.getString(mimeIdx)
+                    val lastModified = cursor.getLong(dateIdx)
+                    val fileUri = DocumentsContract.buildDocumentUriUsingTree(rootUri, childId).toString()
+
+                    onPathSeen(fileUri)
+
+                    if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
+                        stack.add(childId)
+                    } else if (mime in imageMimeTypes && lastModified > lastScanTimestamp) {
+                        val parentUri = DocumentsContract.buildDocumentUriUsingTree(rootUri, docId).toString()
+                        batch.add(createPhotoFromCursor(cursor, fileUri, parentUri, nameIdx, sizeIdx, mimeIdx, dateIdx))
+                        if (batch.size >= 50) { emit(batch.toList()); batch.clear() }
+                    }
+                }
             }
         }
+        if (batch.isNotEmpty()) emit(batch)
     }
 
-    private fun isImage(file: DocumentFile): Boolean {
-        return file.type in imageMimeTypes
+    private fun createPhotoFromCursor(
+        cursor: Cursor,
+        fileUri: String,
+        parentUri: String,
+        nameIdx: Int,
+        sizeIdx: Int,
+        mimeIdx: Int,
+        dateIdx: Int
+    ): Photo {
+        return Photo(
+            filePath = fileUri,
+            fileName = cursor.getString(nameIdx),
+            folderPath = parentUri,
+            fileSize = cursor.getLong(sizeIdx),
+            mimeType = cursor.getString(mimeIdx),
+            dateAdded = System.currentTimeMillis(),
+            dateTaken = cursor.getLong(dateIdx).takeIf { it > 0 },
+            fileLastModified = cursor.getLong(dateIdx),
+            isMetadataExtracted = false
+        )
     }
 
     fun createPhotoFromFile(context: Context, file: DocumentFile, extractExif: Boolean): Photo {
@@ -66,23 +94,19 @@ class MediaScanner {
         val fileName = file.name ?: "unknown"
         val folderPath = file.parentFile?.uri?.toString() ?: ""
         val fileSize = file.length()
-        val mimeType = file.type
+        var mimeType = file.type
         val dateAdded = System.currentTimeMillis()
+        val fileLastModified = file.lastModified()
 
         if (!extractExif) {
             return Photo(
-                filePath = filePath,
-                fileName = fileName,
-                folderPath = folderPath,
-                fileSize = fileSize,
-                mimeType = mimeType,
-                dateAdded = dateAdded,
-                isMetadataExtracted = false
+                filePath = filePath, fileName = fileName, folderPath = folderPath,
+                fileSize = fileSize, mimeType = mimeType, dateAdded = dateAdded,
+                fileLastModified = fileLastModified, isMetadataExtracted = false
             )
         }
 
-        // Valeurs par défaut
-        var dateTaken: Long? = file.lastModified().takeIf { it > 0 }
+        var dateTaken: Long? = fileLastModified.takeIf { it > 0 }
         var width: Int? = null
         var height: Int? = null
         var orientation: Int? = null
@@ -91,68 +115,51 @@ class MediaScanner {
         var cameraMake: String? = null
         var cameraModel: String? = null
 
-        // Extraction EXIF
         try {
+            // 1. DIMENSIONS (La méthode la plus rapide pour TOUS les formats dont PNG)
             context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
-                val exif = ExifInterface(inputStream)
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeStream(inputStream, null, options)
+                width = options.outWidth
+                height = options.outHeight
+                mimeType = options.outMimeType ?: mimeType
+            }
 
-                // Dimensions
-                width = exif.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0).takeIf { it > 0 }
-                height = exif.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0).takeIf { it > 0 }
+            // 2. MÉTADONNÉES (metadata-extractor est plus complet pour PNG/WebP/HEIC)
+            context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
+                val metadata = ImageMetadataReader.readMetadata(inputStream)
 
-                // Orientation
-                orientation = exif.getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_NORMAL
-                )
-
-                // Date de prise de vue
-                exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL)?.let { dateStr ->
-                    dateTaken = parseExifDate(dateStr)
+                // Appareil & Orientation
+                metadata.getFirstDirectoryOfType(ExifIFD0Directory::class.java)?.let {
+                    cameraMake = it.getString(ExifIFD0Directory.TAG_MAKE)?.trim()
+                    cameraModel = it.getString(ExifIFD0Directory.TAG_MODEL)?.trim()
+                    orientation = it.getInteger(ExifIFD0Directory.TAG_ORIENTATION)
                 }
 
-                // Appareil
-                cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE)?.trim()
-                cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)?.trim()
+                // Date de prise de vue (souvent dans SubIFD)
+                metadata.getFirstDirectoryOfType(ExifSubIFDDirectory::class.java)?.let {
+                    dateTaken = it.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)?.time ?: dateTaken
+                }
 
                 // GPS
-                val latLong = exif.latLong
-                if (latLong != null) {
-                    latitude = latLong[0]
-                    longitude = latLong[1]
+                metadata.getFirstDirectoryOfType(GpsDirectory::class.java)?.let {
+                    it.geoLocation?.let { loc ->
+                        latitude = loc.latitude
+                        longitude = loc.longitude
+                    }
                 }
             }
         } catch (e: Exception) {
-            // Ignorer les erreurs EXIF (fichier corrompu, format non supporté, etc.)
+            // Log.e("MediaScanner", "Erreur extraction: ${file.name}", e)
         }
 
         return Photo(
-            filePath = filePath,
-            fileName = fileName,
-            folderPath = folderPath,
-            fileSize = fileSize,
-            mimeType = mimeType,
-            dateAdded = dateAdded,
-            dateTaken = dateTaken,
-            width = width,
-            height = height,
-            orientation = orientation,
-            latitude = latitude,
-            longitude = longitude,
-            cameraMake = cameraMake,
-            cameraModel = cameraModel,
-            isMetadataExtracted = true
+            filePath = filePath, fileName = fileName, folderPath = folderPath,
+            fileSize = fileSize, mimeType = mimeType, dateAdded = dateAdded,
+            dateTaken = dateTaken, width = width, height = height,
+            orientation = orientation, latitude = latitude, longitude = longitude,
+            cameraMake = cameraMake, cameraModel = cameraModel,
+            fileLastModified = fileLastModified, isMetadataExtracted = true
         )
-    }
-
-    // Fonction helper pour parser la date EXIF
-    private fun parseExifDate(dateStr: String): Long? {
-        return try {
-            // Format EXIF : "2024:08:15 14:32:00"
-            val sdf = java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US)
-            sdf.parse(dateStr)?.time
-        } catch (e: Exception) {
-            null
-        }
     }
 }

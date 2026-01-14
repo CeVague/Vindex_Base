@@ -1,6 +1,7 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import android.net.Uri
 import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -17,43 +18,19 @@ class DiscoveryWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
+    // Dans DiscoveryWorker.kt
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_scanning),
-                    "PROGRESS" to 0
-                )
-            )
-
-            val folderUriString =
-                inputData.getString("FOLDER_URI") ?: return@withContext Result.failure()
-
-            val scanner = MediaScanner()
+            val folderUriString = inputData.getString("FOLDER_URI") ?: return@withContext Result.failure()
+            val folderUri = folderUriString.toUri()
             val repository = (applicationContext as VindexApplication).photoRepository
 
-            // Scan rapide (shallow)
-            val photosFound = scanner.scanFolderShallow(applicationContext, folderUriString.toUri())
-
-            setProgress(
-                workDataOf(
+            repository.syncPhotos(applicationContext, folderUri) { count ->
+                setProgress(workDataOf(
                     "WORK" to applicationContext.getString(R.string.progress_scanning),
-                    "PROGRESS" to 50
-                )
-            )
-            delay(1000)
-
-            // Synchronisation DB (ajouts/suppressions)
-            repository.syncPhotos(photosFound)
-
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_scanning),
-                    "PROGRESS" to 100
-                )
-            )
-            delay(1000)
-
+                    "PROGRESS" to count
+                ))
+            }
             Result.success()
         } catch (e: Exception) {
             Result.retry()

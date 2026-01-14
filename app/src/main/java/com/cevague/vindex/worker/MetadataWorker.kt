@@ -39,22 +39,22 @@ class MetadataWorker(
             val total = photosNeedingMetadataExtraction.size
 
             // Récupère le nombre de cœurs (ex: 4, 8, etc.)
-            val cores = Runtime.getRuntime().availableProcessors()
+            // val cores = Runtime.getRuntime().availableProcessors()
             // On définit un multiplicateur et on met des limites (min 5, max 50 pour garder une UI fluide)
-            val batchSize = (cores * 5).coerceIn(5, 50)
+            // val batchSize = (cores * 5).coerceIn(5, 50)
+
+            val batchSize = (total / 33).coerceIn(5, 50)
 
             photosNeedingMetadataExtraction.chunked(batchSize).forEachIndexed { index, batch ->
                 val enrichedBatch = batch.mapNotNull { photo ->
-                    // On récupère le fichier physique pour lire l'EXIF
-                    val documentFile =
-                        DocumentFile.fromSingleUri(applicationContext, photo.filePath.toUri())
+                    val documentFile = DocumentFile.fromSingleUri(applicationContext, photo.filePath.toUri())
                     if (documentFile != null && documentFile.exists()) {
-                        // On extrait les métadonnées réelles et on injecte l'ID original pour le REPLACE
                         scanner.createPhotoFromFile(applicationContext, documentFile, true)
-                            .copy(id = photo.id)
-                    } else {
-                        null
-                    }
+                            .copy(
+                                id = photo.id,
+                                fileLastModified = photo.fileLastModified // ON CONSERVE LA DATE ICI
+                            )
+                    } else { null }
                 }
 
                 if (enrichedBatch.isNotEmpty()) {
@@ -70,8 +70,6 @@ class MetadataWorker(
                         "PROGRESS" to progress
                     )
                 )
-
-                delay(1000)
             }
 
             Result.success()

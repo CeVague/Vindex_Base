@@ -2,6 +2,7 @@ package com.cevague.vindex.data.repository
 
 import com.cevague.vindex.data.database.dao.SettingDao
 import com.cevague.vindex.data.database.entity.Setting
+import com.cevague.vindex.data.local.FastSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -25,7 +26,10 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun getSourceFolderUriOnce(): String? = getValueOnce(Setting.KEY_SOURCE_FOLDER_URI)
 
-    suspend fun setSourceFolderUri(uri: String) = setValue(Setting.KEY_SOURCE_FOLDER_URI, uri)
+    suspend fun setSourceFolderUri(uri: String) {
+        setValue(Setting.KEY_SOURCE_FOLDER_URI, uri) // BDD
+        FastSettings.sourceFolderUri = uri // Miroir
+    }
 
     // Grid columns
 

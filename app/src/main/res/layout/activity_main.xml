@@ -7,38 +7,13 @@
     android:background="?attr/colorSurface">
 
     <!-- Conteneur de progression : Placé tout en haut -->
-    <LinearLayout
-        android:id="@+id/layoutProgressBar"
+    <ViewStub
+        android:id="@+id/syncProgressStub"
+        android:inflatedId="@+id/syncProgressStub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurfaceContainerLow"
-        android:elevation="1dp"
-        android:orientation="vertical"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:visibility="visible">
-
-        <com.google.android.material.progressindicator.LinearProgressIndicator
-            android:id="@+id/syncProgressBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:indicatorColor="?attr/colorPrimary"
-            app:trackColor="?attr/colorSurfaceVariant"
-            app:trackThickness="4dp"
-            tools:progress="50" />
-
-        <TextView
-            android:id="@+id/textProgressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:paddingVertical="6dp"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="Synchronisation en cours..." />
-    </LinearLayout>
+        android:layout="@layout/layout_sync_progress"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Fragment de Navigation : Contraint SOUS la barre de progression -->
     <androidx.fragment.app.FragmentContainerView
@@ -50,7 +25,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layoutProgressBar"
+        app:layout_constraintTop_toBottomOf="@id/syncProgressStub"
         app:navGraph="@navigation/nav_graph" />
 
     <!-- Bottom Navigation : Toujours en bas -->
