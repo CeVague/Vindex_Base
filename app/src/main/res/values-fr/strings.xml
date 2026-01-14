@@ -38,6 +38,7 @@
     <string name="nav_albums">Albums</string>
     <string name="nav_search">Recherche</string>
     <string name="nav_people">Personnes</string>
+    <string name="nav_settings">Paramètres</string>
 
     <!-- First launch -->
     <string name="welcome_title">Bienvenue dans Vindex</string>

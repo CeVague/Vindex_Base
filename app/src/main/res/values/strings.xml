@@ -37,6 +37,7 @@
     <string name="nav_albums">Albums</string>
     <string name="nav_search">Search</string>
     <string name="nav_people">People</string>
+    <string name="nav_settings">Settings</string>
 
     <!-- First launch -->
     <string name="welcome_title">Welcome to Vindex</string>

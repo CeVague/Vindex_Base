@@ -20,4 +20,9 @@
         android:id="@+id/peopleFragment"
         android:icon="@drawable/vector_peoples"
         android:title="@string/nav_people" />
+
+    <item
+        android:id="@+id/settingsFragment"
+        android:icon="@drawable/vector_settings"
+        android:title="@string/nav_settings" />
 </menu>

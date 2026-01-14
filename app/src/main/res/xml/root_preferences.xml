@@ -1,0 +1,57 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory app:title="Affichage">
+        <ListPreference
+            app:key="theme"
+            app:title="Thème de l'application"
+            app:entries="@array/theme_entries"
+            app:entryValues="@array/theme_values"
+            app:defaultValue="system"
+            app:useSimpleSummaryProvider="true" />
+
+        <SeekBarPreference
+            app:key="grid_columns"
+            app:title="Nombre de colonnes"
+            app:defaultValue="3"
+            app:min="2"
+            android:max="6"
+            app:showSeekBarValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Source">
+        <Preference
+            app:key="source_folder_uri"
+            app:title="Dossier racine"
+            app:summary="Changer le dossier source des photos" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="IA &amp; Reconnaissance">
+        <EditTextPreference
+            app:key="face_threshold_high"
+            app:title="Seuil de confiance élevé"
+            app:defaultValue="0.40"
+            android:inputType="numberDecimal"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="face_threshold_medium"
+            app:title="Seuil de confiance moyen"
+            app:defaultValue="0.60"
+            android:inputType="numberDecimal"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="face_threshold_new"
+            app:title="Seuil nouveau visage"
+            app:defaultValue="0.75"
+            android:inputType="numberDecimal"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:key="show_scores"
+            app:title="Afficher les scores de confiance"
+            app:defaultValue="false" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

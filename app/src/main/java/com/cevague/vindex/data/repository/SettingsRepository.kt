@@ -52,7 +52,10 @@ class SettingsRepository(private val settingDao: SettingDao) {
     suspend fun getThemeOnce(): String =
         getValueOnce(Setting.KEY_THEME) ?: Setting.THEME_SYSTEM
 
-    suspend fun setTheme(theme: String) = setValue(Setting.KEY_THEME, theme)
+    suspend fun setTheme(theme: String) {
+        setValue(Setting.KEY_THEME, theme)
+        FastSettings.themeMode = theme
+    }
 
     // Language
 
@@ -63,8 +66,10 @@ class SettingsRepository(private val settingDao: SettingDao) {
     suspend fun getLanguageOnce(): String =
         getValueOnce(Setting.KEY_LANGUAGE) ?: Setting.LANGUAGE_SYSTEM
 
-    suspend fun setLanguage(language: String) = setValue(Setting.KEY_LANGUAGE, language)
-
+    suspend fun setLanguage(language: String){
+        setValue(Setting.KEY_LANGUAGE, language)
+        FastSettings.userLanguage = language
+    }
     // Show similarity scores (debug/advanced)
 
     fun getShowScores(): Flow<Boolean> = getValue(Setting.KEY_SHOW_SCORES).map {
