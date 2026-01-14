@@ -40,8 +40,11 @@ class GalleryFragment : Fragment() {
             PhotoViewerActivity.start(requireContext(), position)
         }
 
-        binding.recyclerGallery.layoutManager = GridLayoutManager(requireContext(), 3)
-        binding.recyclerGallery.adapter = photoAdapter
+        viewLifecycleOwner.lifecycleScope.launch {
+            val columns = app.settingsRepository.getGridColumnsOnce()
+            binding.recyclerGallery.layoutManager = GridLayoutManager(requireContext(), columns)
+            binding.recyclerGallery.adapter = photoAdapter
+        }
 
         viewModel.allPhotos.observe(viewLifecycleOwner) { photos ->
             if (photos.isEmpty()) {

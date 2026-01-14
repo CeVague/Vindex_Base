@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.repository.PhotoRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 
@@ -14,6 +15,7 @@ class SearchViewModel(private val repository: PhotoRepository) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val searchResults: StateFlow<List<Photo>> = _searchQuery
         .debounce(300)
         .flatMapLatest { query ->

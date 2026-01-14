@@ -1,6 +1,8 @@
 package com.cevague.vindex.ui.settings
 
+import android.content.Intent
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import com.cevague.vindex.VindexApplication
@@ -9,11 +11,36 @@ import com.cevague.vindex.data.local.FastSettings
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import com.cevague.vindex.R
+import android.net.Uri
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
+    private val folderPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        uri?.let {
+            // 1. Persister la permission (important pour que l'app y accède après un redémarrage)
+            requireContext().contentResolver.takePersistableUriPermission(
+                it, Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+
+            // 2. Sauvegarder dans ton repository
+            val repository = (requireActivity().application as VindexApplication).settingsRepository
+            lifecycleScope.launch {
+                repository.setSourceFolderUri(it.toString())
+                // Optionnel : Mettre à jour l'UI du fragment immédiatement
+                findPreference<Preference>(Setting.KEY_SOURCE_FOLDER_URI)?.summary = it.toString()
+            }
+        }
+    }
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         val repository = (requireActivity().application as VindexApplication).settingsRepository
+
+        findPreference<Preference>(Setting.KEY_SOURCE_FOLDER_URI)?.setOnPreferenceClickListener {
+            folderPickerLauncher.launch(null) // Ouvre le sélecteur
+            true
+        }
 
         preferenceManager.preferenceDataStore = object : PreferenceDataStore() {
 

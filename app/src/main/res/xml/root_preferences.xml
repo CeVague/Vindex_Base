@@ -3,6 +3,15 @@
 
     <PreferenceCategory app:title="Affichage">
         <ListPreference
+            app:key="language"
+            app:title="Langue de l'application"
+            app:entries="@array/language_entries"
+            app:entryValues="@array/language_values"
+            app:defaultValue="system"
+            app:useSimpleSummaryProvider="true" />
+
+
+        <ListPreference
             app:key="theme"
             app:title="Thème de l'application"
             app:entries="@array/theme_entries"

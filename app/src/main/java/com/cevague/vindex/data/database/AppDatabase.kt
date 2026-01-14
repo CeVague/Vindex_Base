@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.cevague.vindex.data.database.dao.AiModelDao
 import com.cevague.vindex.data.database.dao.AlbumDao
 import com.cevague.vindex.data.database.dao.AnalysisLogDao
@@ -61,7 +62,33 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "vindex_database"
+                )
+                    .addCallback(DatabaseCallback()) // <--- On ajoute le callback ici
+                    .build()
+                INSTANCE = instance
+                instance
+            }
+        }
+
+        private class DatabaseCallback : RoomDatabase.Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                val now = System.currentTimeMillis()
+
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FIRST_RUN}', 'true', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_SOURCE_FOLDER_URI}', '', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_GRID_COLUMNS}', '3', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_THEME}', '${Setting.THEME_SYSTEM}', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_LANGUAGE}', '${Setting.LANGUAGE_SYSTEM}', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_SHOW_SCORES}', 'false', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FACE_THRESHOLD_HIGH}', '0.40', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FACE_THRESHOLD_MEDIUM}', '0.60', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FACE_THRESHOLD_NEW}', '0.75', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_LAST_SCAN_TIMESTAMP}', '0', $now)")
             }
         }
 
@@ -71,6 +98,7 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 DATABASE_NAME
             )
+                .addCallback(DatabaseCallback())
                 .fallbackToDestructiveMigration()
                 .build()
         }

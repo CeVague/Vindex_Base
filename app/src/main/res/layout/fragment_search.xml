@@ -11,10 +11,10 @@
         android:id="@+id/inputSearch"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_margin="8dp"
         android:background="?attr/colorSurfaceContainerLow"
         app:iconifiedByDefault="false"
-        app:queryHint="Rechercher une photo..."
+        android:text="@string/search_hint"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -36,35 +36,11 @@
         android:id="@+id/textEmpty"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Aucun résultat trouvé"
+        android:text="@string/msg_no_results"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/recyclerSearch" />
-
-    <!-- Indicateur d'analyse IA (caché pour l'instant) -->
-    <LinearLayout
-        android:id="@+id/layoutOngoing"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/recyclerSearch">
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminate="true" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Analyse IA en cours..."
-            android:paddingTop="8dp"/>
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

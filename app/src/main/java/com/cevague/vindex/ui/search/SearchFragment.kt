@@ -75,9 +75,6 @@ class SearchFragment : Fragment() {
         } else {
             binding.textEmpty.visibility = if (photos.isEmpty()) View.VISIBLE else View.GONE
         }
-        
-        // État pour plus tard (IA)
-        binding.layoutOngoing.visibility = View.GONE
     }
 
     override fun onDestroyView() {

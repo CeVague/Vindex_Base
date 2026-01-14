@@ -8,6 +8,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -18,7 +19,6 @@ class DiscoveryWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
-    // Dans DiscoveryWorker.kt
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val folderUriString = inputData.getString("FOLDER_URI") ?: return@withContext Result.failure()
