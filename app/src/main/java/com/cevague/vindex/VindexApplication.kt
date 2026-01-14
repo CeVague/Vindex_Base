@@ -12,6 +12,7 @@ import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.SettingsRepository
 import com.cevague.vindex.worker.AIAnalysisWorker
 import com.cevague.vindex.worker.DiscoveryWorker
+import com.cevague.vindex.worker.FaceAnalysisWorker
 import com.cevague.vindex.worker.MetadataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -84,6 +85,11 @@ class VindexApplication : Application() {
             .addTag("SCAN_TAG")
             .build()
 
+        val faceReq = OneTimeWorkRequestBuilder<FaceAnalysisWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
+
         WorkManager.getInstance(this)
             .beginUniqueWork(
                 "VINDEX_SCAN_PROCESS",
@@ -92,6 +98,7 @@ class VindexApplication : Application() {
             )
             .then(metadataReq)
             .then(aiReq)
+            .then(faceReq)
             .enqueue()
     }
 

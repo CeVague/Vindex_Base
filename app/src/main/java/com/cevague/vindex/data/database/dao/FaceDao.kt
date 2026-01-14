@@ -3,6 +3,7 @@ package com.cevague.vindex.data.database.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.cevague.vindex.data.database.entity.Face
@@ -10,6 +11,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FaceDao {
+
+    data class FaceWithPhoto(
+        val filePath: String,
+        val boxLeft: Float,
+        val boxTop: Float,
+        val boxRight: Float,
+        val boxBottom: Float
+    )
 
     // Queries - reactive
 
@@ -51,15 +60,35 @@ interface FaceDao {
     @Query("SELECT * FROM faces WHERE is_primary = 1 AND person_id = :personId LIMIT 1")
     suspend fun getPrimaryFaceForPerson(personId: Long): Face?
 
+    @Query("""
+        SELECT ph.file_path FROM faces f
+        JOIN photos ph ON f.photo_id = ph.id
+        WHERE f.person_id = :personId
+        ORDER BY f.is_primary DESC, f.confidence DESC
+        LIMIT 1
+    """)
+    suspend fun getCoverPhotoPathForPerson(personId: Long): String?
+
+    @Query("""
+    SELECT ph.file_path as filePath, f.box_left as boxLeft, f.box_top as boxTop, 
+           f.box_right as boxRight, f.box_bottom as boxBottom
+    FROM faces f
+    JOIN photos ph ON f.photo_id = ph.id
+    WHERE f.person_id = :personId
+    ORDER BY f.is_primary DESC, f.confidence DESC
+    LIMIT 1
+""")
+    suspend fun getPrimaryFaceWithPhoto(personId: Long): FaceWithPhoto?
+
     @Query("SELECT COUNT(*) FROM faces WHERE photo_id = :photoId")
     suspend fun getFaceCountForPhoto(photoId: Long): Int
 
     // Insert
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(face: Face): Long
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(faces: List<Face>): List<Long>
 
     // Update

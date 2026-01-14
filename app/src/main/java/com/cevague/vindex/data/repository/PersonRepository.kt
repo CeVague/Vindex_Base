@@ -81,6 +81,14 @@ class PersonRepository(
     suspend fun getAllIdentifiedFacesWithEmbedding(): List<Face> =
         faceDao.getAllIdentifiedFacesWithEmbedding()
 
+    suspend fun getCoverPhotoPathForPerson(personId: Long): String? =
+        faceDao.getCoverPhotoPathForPerson(personId)
+
+    suspend fun getPrimaryFaceWithPhoto(personId: Long): FaceDao.FaceWithPhoto? =
+        faceDao.getPrimaryFaceWithPhoto(personId)
+
+
+
     // Face insert/update/delete
 
     suspend fun insertFace(face: Face): Long = faceDao.insert(face)
