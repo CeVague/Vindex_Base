@@ -4,30 +4,38 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.City
+import com.cevague.vindex.data.local.FastSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class GeoNamesImportWorker(
+class CityImportWorker(
     appContext: Context,
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val cityDao = (applicationContext as VindexApplication).database.cityDao()
-
-            // Vérifier si déjà importé
-            if (cityDao.getCount() > 0) {
+            // Vérifier si déjà importé via SharedPreferences pour plus de rapidité
+            if (FastSettings.isCitiesLoaded) {
                 return@withContext Result.success()
             }
 
-            setProgress(workDataOf("WORK" to "Import des villes...", "PROGRESS" to 0))
+            val cityDao = (applicationContext as VindexApplication).database.cityDao()
+
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_loading_cities),
+                    "PROGRESS" to 0
+                )
+            )
 
             val batch = mutableListOf<City>()
             var lineCount = 0
-            val totalLines = 26000 // Approximatif pour la progression
+            val totalLines = 33000 // Approximatif pour la progression
+            val batch_size = 1000
 
             applicationContext.assets.open("cities15000.txt").bufferedReader().useLines { lines ->
                 lines.forEach { line ->
@@ -44,16 +52,16 @@ class GeoNamesImportWorker(
                             )
                         )
 
-                        // Insert par batch de 1000
-                        if (batch.size >= 1000) {
+                        // Insert par batch
+                        if (batch.size >= batch_size) {
                             cityDao.insertAll(batch.toList())
                             batch.clear()
 
-                            lineCount += 1000
+                            lineCount += batch_size
                             val progress = (lineCount * 100 / totalLines).coerceAtMost(99)
                             setProgress(
                                 workDataOf(
-                                    "WORK" to "Import des villes...",
+                                    "WORK" to applicationContext.getString(R.string.progress_loading_cities),
                                     "PROGRESS" to progress
                                 )
                             )
@@ -67,7 +75,13 @@ class GeoNamesImportWorker(
                 }
             }
 
-            setProgress(workDataOf("WORK" to "Import des villes...", "PROGRESS" to 100))
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_loading_cities),
+                    "PROGRESS" to 100
+                )
+            )
+            
             Result.success()
 
         } catch (e: Exception) {

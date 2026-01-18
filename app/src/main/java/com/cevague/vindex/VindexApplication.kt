@@ -13,6 +13,7 @@ import com.cevague.vindex.data.repository.SettingsRepository
 import com.cevague.vindex.worker.AIAnalysisWorker
 import com.cevague.vindex.worker.DiscoveryWorker
 import com.cevague.vindex.worker.FaceAnalysisWorker
+import com.cevague.vindex.worker.CityImportWorker
 import com.cevague.vindex.worker.MetadataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +56,10 @@ class VindexApplication : Application() {
             .addTag("SCAN_TAG")
             .build()
 
+        val citiesReq = OneTimeWorkRequestBuilder<CityImportWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
         val metadataReq = OneTimeWorkRequestBuilder<MetadataWorker>()
             .addTag("SCAN_TAG")
             .build()
@@ -65,6 +70,7 @@ class VindexApplication : Application() {
                 ExistingWorkPolicy.KEEP,
                 discoveryReq
             )
+            .then(citiesReq)
             .then(metadataReq)
             .enqueue()
     }
@@ -74,6 +80,10 @@ class VindexApplication : Application() {
 
         val discoveryReq = OneTimeWorkRequestBuilder<DiscoveryWorker>()
             .setInputData(workDataOf("FOLDER_URI" to selectedUri))
+            .addTag("SCAN_TAG")
+            .build()
+
+        val citiesReq = OneTimeWorkRequestBuilder<CityImportWorker>()
             .addTag("SCAN_TAG")
             .build()
 
@@ -96,6 +106,7 @@ class VindexApplication : Application() {
                 ExistingWorkPolicy.KEEP,
                 discoveryReq
             )
+            .then(citiesReq)
             .then(metadataReq)
             .then(aiReq)
             .then(faceReq)
