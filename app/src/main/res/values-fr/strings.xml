@@ -72,6 +72,7 @@
     <string name="viewer_date">Date</string>
     <string name="viewer_location">Lieu</string>
     <string name="viewer_camera">Appareil</string>
+    <string name="viewer_image_type">Type d\'image</string>
     <string name="viewer_dimensions">Dimensions</string>
     <string name="viewer_file_size">Taille du fichier</string>
     <string name="viewer_file_path">Chemin</string>
@@ -113,6 +114,7 @@
     <string name="people_empty_hint">Les personnes apparaîtront ici après l\'analyse de reconnaissance faciale.</string>
     <string name="people_to_identify">À identifier</string>
     <string name="people_to_identify_count">%d visages à identifier</string>
+    <string name="people_to_identify_count_single">1 visage à identifier</string>
     <string name="people_unknown">Inconnu</string>
     <string name="people_photo_count">%d photos</string>
     <string name="people_photo_count_singular">1 photo</string>

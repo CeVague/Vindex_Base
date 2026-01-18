@@ -15,9 +15,9 @@
         android:layout_height="wrap_content"
         app:indicatorColor="?attr/colorPrimary"
         app:trackColor="?attr/colorSurfaceVariant"
-        app:trackThickness="4dp"
         app:trackCornerRadius="0dp"
-        app:trackStopIndicatorSize="0dp" />
+        app:trackStopIndicatorSize="0dp"
+        app:trackThickness="4dp" />
 
     <TextView
         android:id="@+id/textProgressBar"

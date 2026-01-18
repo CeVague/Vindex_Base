@@ -1,17 +1,20 @@
 package com.cevague.vindex.ui.settings
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.*
+import androidx.preference.Preference
+import androidx.preference.PreferenceDataStore
+import androidx.preference.PreferenceFragmentCompat
+import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.FastSettings
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import com.cevague.vindex.R
-import android.net.Uri
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -35,7 +38,24 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        val repository = (requireActivity().application as VindexApplication).settingsRepository
+        setPreferencesFromResource(R.xml.root_preferences, rootKey)
+
+        val app = requireActivity().application as VindexApplication
+        val repository = app.settingsRepository
+
+        findPreference<Preference>("reset_database")?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                lifecycleScope.launch {
+                    app.photoRepository.deleteAll()
+                    app.personRepository.deleteAllPerson()
+                    app.personRepository.deleteAllFaces()
+                    app.albumRepository.deleteAll()
+                    Toast.makeText(requireContext(), "Database reset", Toast.LENGTH_SHORT).show()
+                    repository.getSourceFolderUriOnce()
+                        ?.let { selectedUri -> app.startFullScan(selectedUri) }
+                }
+                true
+            }
 
         findPreference<Preference>(Setting.KEY_SOURCE_FOLDER_URI)?.setOnPreferenceClickListener {
             folderPickerLauncher.launch(null) // Ouvre le sélecteur
@@ -86,7 +106,5 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 return value?.toIntOrNull() ?: defaultValue
             }
         }
-
-        setPreferencesFromResource(R.xml.root_preferences, rootKey)
     }
 }

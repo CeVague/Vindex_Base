@@ -32,7 +32,8 @@ class FaceCenterCrop(private val face: FaceDao.FaceWithPhoto) : BitmapTransforma
         // Taille du carré de crop (on prend la plus grande dimension du visage avec une marge)
         val faceWidth = right - left
         val faceHeight = bottom - top
-        val size = (maxOf(faceWidth, faceHeight) * 1.5f).coerceAtMost(minOf(width, height).toFloat())
+        val size =
+            (maxOf(faceWidth, faceHeight) * 1.5f).coerceAtMost(minOf(width, height).toFloat())
 
         // Calculer le rectangle de crop centré sur le visage
         val cropRect = RectF(

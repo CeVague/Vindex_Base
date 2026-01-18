@@ -125,6 +125,9 @@ interface AlbumDao {
     @Delete
     suspend fun delete(album: Album)
 
+    @Query("DELETE FROM albums")
+    suspend fun deleteAll()
+
     @Query("DELETE FROM albums WHERE id = :id")
     suspend fun deleteById(id: Long)
 

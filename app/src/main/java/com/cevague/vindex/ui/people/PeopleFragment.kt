@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.databinding.FragmentPeopleBinding
 import kotlinx.coroutines.launch
@@ -32,7 +33,6 @@ class PeopleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Récupérer le repo pour l'adapter (pour charger les couvertures)
         val personRepo = (requireActivity().application as VindexApplication).personRepository
 
         val adapter = PeopleAdapter(personRepo) { person ->
@@ -52,11 +52,20 @@ class PeopleFragment : Fragment() {
             }
         }
 
-        // Bonus : Observer le nombre de visages à identifier
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.unnamedCount.collect { count ->
-                binding.textPeopleToIdentify.visibility = if (count > 0) View.VISIBLE else View.GONE
-                binding.textPeopleToIdentify.text = "Vous avez $count visages à identifier"
+            viewModel.unidentifiedFaceCount.collect { count ->
+                binding.fabIdentify.apply {
+                    visibility = if (count > 0) View.VISIBLE else View.GONE
+                    text = if (count <= 1) {
+                        binding.root.context.getString(R.string.people_to_identify_count_single)
+                    } else {
+                        binding.root.context.getString(R.string.people_to_identify_count, count)
+                    }
+                    setOnClickListener {
+                        // Ouvrir le BottomSheet d'identification
+                        IdentifyFaceBottomSheet().show(childFragmentManager, "identify")
+                    }
+                }
             }
         }
     }

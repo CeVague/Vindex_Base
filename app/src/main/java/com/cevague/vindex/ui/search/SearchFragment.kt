@@ -71,7 +71,7 @@ class SearchFragment : Fragment() {
 
     private fun updateUIState(photos: List<Photo>) {
         val query = binding.inputSearch.query.toString()
-        
+
         if (query.length < 2) {
             binding.textEmpty.visibility = View.GONE
         } else {

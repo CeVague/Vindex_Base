@@ -35,22 +35,46 @@ class PersonRepository(
 
     // Person insert/update/delete
 
-    suspend fun insert(person: Person): Long = personDao.insert(person)
+    suspend fun insert(person: Person): Long {
+        val formattedName = formatName(person.name)
+        return personDao.insert(person.copy(name = formattedName))
+    }
+
+    suspend fun getOrCreatePersonByName(name: String?): Long {
+        val formattedName = formatName(name)
+        if (formattedName == null) return createPerson(null)
+
+        val existing = personDao.getPersonByName(formattedName)
+        return existing?.id ?: personDao.insert(
+            Person(
+                name = formattedName,
+                createdAt = System.currentTimeMillis()
+            )
+        )
+    }
 
     suspend fun createPerson(name: String? = null): Long {
+        val formattedName = formatName(name)
         val person = Person(
-            name = name,
+            name = formattedName,
             createdAt = System.currentTimeMillis()
         )
         return personDao.insert(person)
     }
 
-    suspend fun updateName(id: Long, name: String?) = personDao.updateName(id, name)
+    suspend fun updateName(id: Long, name: String?) {
+        val formattedName = formatName(name)
+        personDao.updateName(id, formattedName)
+    }
 
     suspend fun updateCentroid(id: Long, embedding: ByteArray?) =
         personDao.updateCentroid(id, embedding, System.currentTimeMillis())
 
     suspend fun delete(person: Person) = personDao.delete(person)
+
+    suspend fun deleteAllPerson() = personDao.deleteAll()
+
+    suspend fun deleteAllFaces() = faceDao.deleteAll()
 
     suspend fun deleteById(id: Long) = personDao.deleteById(id)
 
@@ -87,6 +111,11 @@ class PersonRepository(
     suspend fun getPrimaryFaceWithPhoto(personId: Long): FaceDao.FaceWithPhoto? =
         faceDao.getPrimaryFaceWithPhoto(personId)
 
+    suspend fun getPendingFaceWithPhoto(): List<FaceDao.FaceWithPhoto> =
+        faceDao.getPendingFaceWithPhoto()
+
+    suspend fun getNextPendingFaceWithPhoto(): FaceDao.FaceWithPhoto? =
+        faceDao.getNextPendingFaceWithPhoto()
 
 
     // Face insert/update/delete
@@ -119,6 +148,8 @@ class PersonRepository(
 
     suspend fun deleteFace(face: Face) = faceDao.delete(face)
 
+    suspend fun deleteFaceById(id: Long) = faceDao.deleteById(id)
+
     suspend fun deleteFacesByPhoto(photoId: Long) = faceDao.deleteByPhoto(photoId)
 
     // Merge two persons into one
@@ -126,5 +157,12 @@ class PersonRepository(
         faceDao.reassignAllFaces(oldPersonId = mergeId, newPersonId = keepId)
         personDao.recalculatePhotoCount(keepId)
         personDao.deleteById(mergeId)
+    }
+
+    private fun formatName(name: String?): String? {
+        val formatted = name?.trim()?.split(" ")
+            ?.filter { it.isNotEmpty() }
+            ?.joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+        return if (formatted.isNullOrEmpty()) null else formatted
     }
 }

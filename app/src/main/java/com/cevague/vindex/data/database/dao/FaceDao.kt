@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 interface FaceDao {
 
     data class FaceWithPhoto(
+        val id: Long,
         val filePath: String,
         val boxLeft: Float,
         val boxTop: Float,
@@ -60,28 +61,56 @@ interface FaceDao {
     @Query("SELECT * FROM faces WHERE is_primary = 1 AND person_id = :personId LIMIT 1")
     suspend fun getPrimaryFaceForPerson(personId: Long): Face?
 
-    @Query("""
+    @Query(
+        """
         SELECT ph.file_path FROM faces f
         JOIN photos ph ON f.photo_id = ph.id
         WHERE f.person_id = :personId
         ORDER BY f.is_primary DESC, f.confidence DESC
         LIMIT 1
-    """)
+    """
+    )
     suspend fun getCoverPhotoPathForPerson(personId: Long): String?
 
-    @Query("""
-    SELECT ph.file_path as filePath, f.box_left as boxLeft, f.box_top as boxTop, 
+    @Query(
+        """
+    SELECT f.id as id, ph.file_path as filePath, f.box_left as boxLeft, f.box_top as boxTop, 
            f.box_right as boxRight, f.box_bottom as boxBottom
     FROM faces f
     JOIN photos ph ON f.photo_id = ph.id
     WHERE f.person_id = :personId
     ORDER BY f.is_primary DESC, f.confidence DESC
     LIMIT 1
-""")
+"""
+    )
     suspend fun getPrimaryFaceWithPhoto(personId: Long): FaceWithPhoto?
 
     @Query("SELECT COUNT(*) FROM faces WHERE photo_id = :photoId")
     suspend fun getFaceCountForPhoto(photoId: Long): Int
+
+    @Query(
+        """
+    SELECT f.id as id, ph.file_path as filePath, f.box_left as boxLeft, 
+           f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom
+    FROM faces f
+    JOIN photos ph ON f.photo_id = ph.id
+    WHERE f.assignment_type = 'pending'
+"""
+    )
+    suspend fun getPendingFaceWithPhoto(): List<FaceWithPhoto>
+
+    @Query(
+        """
+    SELECT f.id as id, ph.file_path as filePath, f.box_left as boxLeft, 
+           f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom
+    FROM faces f
+    JOIN photos ph ON f.photo_id = ph.id
+    WHERE f.assignment_type = 'pending'
+    LIMIT 1
+"""
+    )
+    suspend fun getNextPendingFaceWithPhoto(): FaceWithPhoto?
+
 
     // Insert
 
@@ -132,6 +161,9 @@ interface FaceDao {
 
     @Delete
     suspend fun delete(face: Face)
+
+    @Query("DELETE FROM faces")
+    suspend fun deleteAll()
 
     @Query("DELETE FROM faces WHERE id = :id")
     suspend fun deleteById(id: Long)

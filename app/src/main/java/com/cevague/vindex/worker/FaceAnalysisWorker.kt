@@ -43,10 +43,6 @@ class FaceAnalysisWorker(
                 delay(1000)
 
 
-
-
-
-
                 // Dans FaceAnalysisWorker.kt
 
                 val personRepo = (applicationContext as VindexApplication).personRepository
@@ -54,30 +50,41 @@ class FaceAnalysisWorker(
 
                 // 1. Récupérer toutes les photos existantes
                 val photos = photoRepo.getAllPhotos().first()
+                val existingPeople = personRepo.getAllPersonsOnce()
 
                 if (photos.isNotEmpty()) {
-                    photos.forEach { photo ->
+                    photos.take(20).forEach { photo ->
                         // Simulation : 30% de chances d'avoir des visages
                         if (Math.random() < 0.3) {
                             val faceCount = (1..3).random()
                             repeat(faceCount) {
-                                // Créer une Face fictive
                                 val face = Face(
                                     photoId = photo.id,
-                                    boxLeft = 0.1f, boxTop = 0.1f, boxRight = 0.4f, boxBottom = 0.4f,
+                                    boxLeft = 0.1f,
+                                    boxTop = 0.1f,
+                                    boxRight = 0.4f,
+                                    boxBottom = 0.4f,
                                     confidence = 0.95f,
-                                    isPrimary = it == 0
+                                    isPrimary = it == 0,
+                                    assignmentType = "pending"
                                 )
                                 val faceId = personRepo.insertFace(face)
 
                                 // 50% de chances de lier à une Personne
                                 if (Math.random() < 0.5) {
-                                    val people = personRepo.getAllPersonsOnce()
-                                    val personId = if (people.isNotEmpty() && Math.random() < 0.7) {
-                                        people.random().id
-                                    } else {
-                                        personRepo.createPerson(listOf("Alice", "Bob", "Charlie", "David").random())
-                                    }
+                                    val personId =
+                                        if (existingPeople.isNotEmpty() && Math.random() < 0.7) {
+                                            existingPeople.random().id
+                                        } else {
+                                            personRepo.getOrCreatePersonByName(
+                                                listOf(
+                                                    "Alice",
+                                                    "Bob",
+                                                    "Charlie",
+                                                    "David"
+                                                ).random()
+                                            )
+                                        }
 
                                     personRepo.assignFaceToPerson(
                                         faceId = faceId,

@@ -84,6 +84,8 @@ class AlbumRepository(private val albumDao: AlbumDao) {
 
     suspend fun delete(album: Album) = albumDao.delete(album)
 
+    suspend fun deleteAll() = albumDao.deleteAll()
+
     suspend fun deleteById(id: Long) = albumDao.deleteById(id)
 
     suspend fun deleteByType(type: String) = albumDao.deleteByType(type)

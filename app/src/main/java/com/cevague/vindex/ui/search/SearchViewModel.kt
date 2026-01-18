@@ -1,13 +1,17 @@
 // C:/Users/Administrateur/AndroidStudioProjects/Vindex/app/src/main/java/com/cevague/vindex/ui/search/SearchViewModel.ktpackage com.cevague.vindex.ui.search
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.repository.PhotoRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 
 @OptIn(FlowPreview::class)
 class SearchViewModel(private val repository: PhotoRepository) : ViewModel() {

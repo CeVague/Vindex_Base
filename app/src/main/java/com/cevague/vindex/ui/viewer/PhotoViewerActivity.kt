@@ -155,9 +155,19 @@ class PhotoViewerActivity : AppCompatActivity() {
             binding.textCamera.text = cameraInfo
         }
 
-        // Localisation (afficher seulement si disponible)
-        binding.textLocation.text = photo.locationName ?: getString(R.string.viewer_no_info_short)
+        // Type d'image (photo, selfie, screenshot, etc.)
+        binding.textImageType.text = photo.mediaType
 
+        // Localisation (afficher seulement si disponible, sinon afficher GPS, sinon vide)
+        if (photo.locationName == null) {
+            if (photo.latitude != null && photo.longitude != null) {
+                binding.textLocation.text = "${photo.latitude}, ${photo.longitude}"
+            } else {
+                binding.textLocation.text = getString(R.string.viewer_no_info_short)
+            }
+        } else {
+            binding.textLocation.text = photo.locationName
+        }
 
         // Chemin du fichier
         binding.textPath.text = photo.fileName

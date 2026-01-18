@@ -1,41 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context=".ui.people.PeopleFragment">
 
-    <!-- Bandeau "X visages à identifier" -->
     <TextView
-        android:id="@+id/textPeopleToIdentify"
+        android:id="@+id/textEmpty"
         android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/people_empty" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPeople"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="3" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabIdentify"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSecondaryContainer"
-        android:padding="12dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
         android:text="@string/people_to_identify_count"
-        android:textColor="?attr/colorOnSecondaryContainer" />
+        android:visibility="gone"
+        app:icon="@drawable/vector_peoples" />
 
-    <!-- Zone de contenu (superposition des états) -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <TextView
-            android:id="@+id/textEmpty"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="@string/people_empty" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerPeople"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-            app:spanCount="3" />
-
-    </FrameLayout>
-
-</LinearLayout>
+</FrameLayout>

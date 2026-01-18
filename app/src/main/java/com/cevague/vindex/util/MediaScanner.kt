@@ -5,6 +5,7 @@ import android.database.Cursor
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.cevague.vindex.data.database.entity.Photo
 import com.drew.imaging.ImageMetadataReader
@@ -40,26 +41,44 @@ class MediaScanner {
             val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(rootUri, docId)
 
             context.contentResolver.query(childrenUri, null, null, null, null)?.use { cursor ->
-                val idIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-                val mimeIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                val dateIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
-                val nameIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                val idIdx =
+                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                val mimeIdx =
+                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+                val dateIdx =
+                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+                val nameIdx =
+                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 val sizeIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
 
                 while (cursor.moveToNext()) {
                     val childId = cursor.getString(idIdx)
                     val mime = cursor.getString(mimeIdx)
                     val lastModified = cursor.getLong(dateIdx)
-                    val fileUri = DocumentsContract.buildDocumentUriUsingTree(rootUri, childId).toString()
+                    val fileUri =
+                        DocumentsContract.buildDocumentUriUsingTree(rootUri, childId).toString()
 
                     onPathSeen(fileUri)
 
                     if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
                         stack.add(childId)
                     } else if (mime in imageMimeTypes && lastModified > lastScanTimestamp) {
-                        val parentUri = DocumentsContract.buildDocumentUriUsingTree(rootUri, docId).toString()
-                        batch.add(createPhotoFromCursor(cursor, fileUri, parentUri, nameIdx, sizeIdx, mimeIdx, dateIdx))
-                        if (batch.size >= 50) { emit(batch.toList()); batch.clear() }
+                        val parentUri =
+                            DocumentsContract.buildDocumentUriUsingTree(rootUri, docId).toString()
+                        batch.add(
+                            createPhotoFromCursor(
+                                cursor,
+                                fileUri,
+                                parentUri,
+                                nameIdx,
+                                sizeIdx,
+                                mimeIdx,
+                                dateIdx
+                            )
+                        )
+                        if (batch.size >= 50) {
+                            emit(batch.toList()); batch.clear()
+                        }
                     }
                 }
             }
@@ -114,6 +133,9 @@ class MediaScanner {
         var longitude: Double? = null
         var cameraMake: String? = null
         var cameraModel: String? = null
+        var mediaType = "photo"
+
+
 
         try {
             // 1. DIMENSIONS (La méthode la plus rapide pour TOUS les formats dont PNG)
@@ -134,11 +156,44 @@ class MediaScanner {
                     cameraMake = it.getString(ExifIFD0Directory.TAG_MAKE)?.trim()
                     cameraModel = it.getString(ExifIFD0Directory.TAG_MODEL)?.trim()
                     orientation = it.getInteger(ExifIFD0Directory.TAG_ORIENTATION)
+
+                    // Détection Screenshot et autre via le champ "Software" (Logiciel)
+                    // Les captures d'écran système marquent souvent leur origine ici
+                    it.getString(ExifIFD0Directory.TAG_SOFTWARE)?.let { software ->
+                        when {
+                            software.contains("Screenshot", ignoreCase = true) -> {
+                                mediaType = "screenshot"
+                            }
+
+                            software.contains("Snapseed", ignoreCase = true) ||
+                                    software.contains("Photoshop", ignoreCase = true) -> {
+                                mediaType = "edited"
+                            }
+
+                            software.contains("Instagram", ignoreCase = true) -> {
+                                mediaType = "social"
+                            }
+                        }
+                    }
+
                 }
 
                 // Date de prise de vue (souvent dans SubIFD)
                 metadata.getFirstDirectoryOfType(ExifSubIFDDirectory::class.java)?.let {
-                    dateTaken = it.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)?.time ?: dateTaken
+                    dateTaken =
+                        it.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)?.time ?: dateTaken
+
+                    // DÉTECTION SELFIE : On cherche "front" dans le modèle de l'objectif
+                    // metadata-extractor extrait souvent le nom de la caméra utilisée comme "Lens Model"
+                    it.getString(ExifSubIFDDirectory.TAG_LENS_MODEL)?.let { lens ->
+                        if (lens.contains("front", ignoreCase = true) || lens.contains(
+                                "avant",
+                                ignoreCase = true
+                            )
+                        ) {
+                            mediaType = "selfie"
+                        }
+                    }
                 }
 
                 // GPS
@@ -149,8 +204,39 @@ class MediaScanner {
                     }
                 }
             }
+
+            // 3. Détection Capture d'écran de rattrapage (via le nom ou le chemin)
+            // Détection Screenshot par nom/chemin
+            if (mediaType == "photo") {
+                if (fileName.contains("Screenshot", ignoreCase = true) ||
+                    folderPath.contains("Screenshots", ignoreCase = true)
+                ) {
+                    mediaType = "screenshot"
+                }
+            }
+
+            // 4. Détection autre
+            if (mediaType == "photo" && cameraMake == null && cameraModel == null) {
+                mediaType = "other"
+            }
+
+            // 5. FALLBACK : Utiliser ExifInterface UNIQUEMENT si infos vitales manquantes
+            // Récupération GPS (plus robuste sur Android)
+            if (latitude == null) {
+                try {
+                    context.contentResolver.openInputStream(file.uri)?.use { fallbackStream ->
+                        val exif = androidx.exifinterface.media.ExifInterface(fallbackStream)
+
+                        exif.latLong?.let {
+                            latitude = it[0]
+                            longitude = it[1]
+                        }
+                    }
+                } catch (e: Exception) { /* Ignorer */ }
+            }
+
         } catch (e: Exception) {
-            // Log.e("MediaScanner", "Erreur extraction: ${file.name}", e)
+            Log.e("MediaScanner", "Erreur extraction: ${file.name}", e)
         }
 
         return Photo(
@@ -159,7 +245,8 @@ class MediaScanner {
             dateTaken = dateTaken, width = width, height = height,
             orientation = orientation, latitude = latitude, longitude = longitude,
             cameraMake = cameraMake, cameraModel = cameraModel,
-            fileLastModified = fileLastModified, isMetadataExtracted = true
+            fileLastModified = fileLastModified, isMetadataExtracted = true,
+            mediaType = mediaType
         )
     }
 }

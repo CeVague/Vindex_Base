@@ -30,13 +30,20 @@ class PeopleAdapter(
         holder.bind(getItem(position))
     }
 
-    inner class ViewHolder(private val binding: ItemPersonBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemPersonBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         private var loadJob: Job? = null
 
         fun bind(person: Person) {
             loadJob?.cancel()
-            binding.textName.text = person.name ?: "Inconnu"
-            binding.textCount.text = "${person.photoCount} photos"
+            binding.textName.text =
+                person.name ?: binding.root.context.getString(R.string.people_unknown)
+            val countText = if (person.photoCount <= 1) {
+                binding.root.context.getString(R.string.gallery_photo_count_singular)
+            } else {
+                binding.root.context.getString(R.string.gallery_photo_count, person.photoCount)
+            }
+            binding.textCount.text = countText
             binding.imagePerson.setImageResource(R.drawable.vector_peoples)
 
             binding.root.post {
@@ -48,7 +55,6 @@ class PeopleAdapter(
                     if (faceData != null) {
                         Glide.with(binding.imagePerson)
                             .load(faceData.filePath)
-                            // On combine la transformation personnalisée ET le cercle
                             .transform(FaceCenterCrop(faceData), CircleCrop())
                             .override(240, 240) // Taille fixe pour la RAM
                             .into(binding.imagePerson)

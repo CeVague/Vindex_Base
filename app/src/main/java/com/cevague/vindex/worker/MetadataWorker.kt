@@ -47,14 +47,34 @@ class MetadataWorker(
 
             photosNeedingMetadataExtraction.chunked(batchSize).forEachIndexed { index, batch ->
                 val enrichedBatch = batch.mapNotNull { photo ->
-                    val documentFile = DocumentFile.fromSingleUri(applicationContext, photo.filePath.toUri())
+                    val documentFile =
+                        DocumentFile.fromSingleUri(applicationContext, photo.filePath.toUri())
                     if (documentFile != null && documentFile.exists()) {
-                        scanner.createPhotoFromFile(applicationContext, documentFile, true)
-                            .copy(
-                                id = photo.id,
-                                fileLastModified = photo.fileLastModified // ON CONSERVE LA DATE ICI
+                        // 1. Extraction EXIF classique
+                        var photoData =
+                            scanner.createPhotoFromFile(applicationContext, documentFile, true)
+                                .copy(
+                                    id = photo.id,
+                                    fileLastModified = photo.fileLastModified
+                                )
+
+                        // 2. Ajout du Reverse Geocoding (Lourd -> fait ici dans le Worker)
+                        if (photoData.latitude != null && photoData.longitude != null) {
+                            val app = applicationContext as VindexApplication
+                            val cityDao = app.database.cityDao()
+
+                            val candidates = cityDao.findNearestCity(
+                                photoData.latitude,
+                                photoData.longitude
                             )
-                    } else { null }
+                            val placeName = candidates?.let { "${it.name}, ${it.countryCode}" }
+                            photoData = photoData.copy(locationName = placeName)
+                        }
+
+                        photoData
+                    } else {
+                        null
+                    }
                 }
 
                 if (enrichedBatch.isNotEmpty()) {

@@ -24,24 +24,44 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            // Rapidité de build maximale : pas d'obfuscation ni de minification
+            isMinifyEnabled = false
+
+            // Permet d'installer la version de test à côté de la version officielle
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+
+            // Optionnel : utile pour certains outils de debug réseau
+            isDebuggable = true
+        }
+
         getByName("release") {
+            // 1. Optimisation et Obfuscation (R8)
+            // Indispensable pour la performance et réduire la taille de l'APK
             isMinifyEnabled = true
+
+            // 2. Nettoyage des ressources
+            // Supprime les ressources XML/Images inutilisées (nécessite isMinifyEnabled)
             isShrinkResources = true
 
+            // Utilise les règles d'optimisation par défaut d'Android + les tiennes
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
 
-            applicationIdSuffix = ".release"
-            versionNameSuffix = "-release"
-        }
+            // 3. Configuration pour F-Droid / Publication
+            // Pour la version finale, on retire généralement les suffixes
+            // pour que l'ID corresponde exactement au store
+            applicationIdSuffix = ".release" // À retirer pour la prod
+            versionNameSuffix = "-release"   // À retirer pour la prod
 
-        getByName("debug") {
-            isMinifyEnabled = false
+            // Recommandé pour F-Droid : assure la reproductibilité du build
+            vcsInfo.include = false
 
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            // Signature (à configurer quand tu auras ton keystore)
+            // signingConfig = signingConfigs.getByName("release")
         }
     }
 

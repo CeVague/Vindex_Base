@@ -27,7 +27,7 @@ interface CityDao {
     suspend fun findNearestCity(lat: Double, lon: Double): City?
 
     @Query("SELECT COUNT(*) FROM cities")
-    suspend fun getCityCount(): Int
+    suspend fun getCount(): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(city: City)

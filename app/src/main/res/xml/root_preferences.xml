@@ -1,66 +1,73 @@
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <PreferenceCategory app:title="Expert">
+        <Preference
+            app:key="reset_database"
+            app:title="Réinitialiser la base de données" />
+    </PreferenceCategory>
 
     <PreferenceCategory app:title="Affichage">
         <ListPreference
-            app:key="language"
-            app:title="Langue de l'application"
+            app:defaultValue="system"
             app:entries="@array/language_entries"
             app:entryValues="@array/language_values"
-            app:defaultValue="system"
+            app:key="language"
+            app:title="Langue de l'application"
             app:useSimpleSummaryProvider="true" />
 
 
         <ListPreference
-            app:key="theme"
-            app:title="Thème de l'application"
+            app:defaultValue="system"
             app:entries="@array/theme_entries"
             app:entryValues="@array/theme_values"
-            app:defaultValue="system"
+            app:key="theme"
+            app:title="Thème de l'application"
             app:useSimpleSummaryProvider="true" />
 
         <SeekBarPreference
-            app:key="grid_columns"
-            app:title="Nombre de colonnes"
-            app:defaultValue="3"
-            app:min="2"
             android:max="6"
-            app:showSeekBarValue="true" />
+            app:defaultValue="3"
+            app:key="grid_columns"
+            app:min="2"
+            app:showSeekBarValue="true"
+            app:title="Nombre de colonnes" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Source">
         <Preference
             app:key="source_folder_uri"
-            app:title="Dossier racine"
-            app:summary="Changer le dossier source des photos" />
+            app:summary="Changer le dossier source des photos"
+            app:title="Dossier racine" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="IA &amp; Reconnaissance">
         <EditTextPreference
+            android:inputType="numberDecimal"
+            app:defaultValue="0.40"
             app:key="face_threshold_high"
             app:title="Seuil de confiance élevé"
-            app:defaultValue="0.40"
-            android:inputType="numberDecimal"
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
+            android:inputType="numberDecimal"
+            app:defaultValue="0.60"
             app:key="face_threshold_medium"
             app:title="Seuil de confiance moyen"
-            app:defaultValue="0.60"
-            android:inputType="numberDecimal"
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
+            android:inputType="numberDecimal"
+            app:defaultValue="0.75"
             app:key="face_threshold_new"
             app:title="Seuil nouveau visage"
-            app:defaultValue="0.75"
-            android:inputType="numberDecimal"
             app:useSimpleSummaryProvider="true" />
 
         <SwitchPreferenceCompat
+            app:defaultValue="false"
             app:key="show_scores"
-            app:title="Afficher les scores de confiance"
-            app:defaultValue="false" />
+            app:title="Afficher les scores de confiance" />
     </PreferenceCategory>
 
 </PreferenceScreen>

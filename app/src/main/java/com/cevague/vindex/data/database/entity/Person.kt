@@ -2,17 +2,20 @@ package com.cevague.vindex.data.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Represents a person identified through face recognition.
- * Contains the centroid embedding for face clustering.
- */
-@Entity(tableName = "persons")
+
+@Entity(
+    tableName = "persons",
+    indices = [Index(value = ["name"], unique = true)]
+)
+
 data class Person(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
+    @ColumnInfo(name = "name", collate = ColumnInfo.NOCASE)
     val name: String? = null,
 
     @ColumnInfo(name = "created_at")

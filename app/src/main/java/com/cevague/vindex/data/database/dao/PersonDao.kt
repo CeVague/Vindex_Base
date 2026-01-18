@@ -3,6 +3,7 @@ package com.cevague.vindex.data.database.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.cevague.vindex.data.database.entity.Person
@@ -44,12 +45,12 @@ interface PersonDao {
 
     // Insert
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(person: Person): Long
 
     // Update
 
-    @Update
+    @Update(onConflict = OnConflictStrategy.ABORT)
     suspend fun update(person: Person)
 
     @Query("UPDATE persons SET name = :name WHERE id = :id")
@@ -83,6 +84,9 @@ interface PersonDao {
 
     @Delete
     suspend fun delete(person: Person)
+
+    @Query("DELETE FROM persons")
+    suspend fun deleteAll()
 
     @Query("DELETE FROM persons WHERE id = :id")
     suspend fun deleteById(id: Long)

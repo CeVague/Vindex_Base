@@ -66,7 +66,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
     suspend fun getLanguageOnce(): String =
         getValueOnce(Setting.KEY_LANGUAGE) ?: Setting.LANGUAGE_SYSTEM
 
-    suspend fun setLanguage(language: String){
+    suspend fun setLanguage(language: String) {
         setValue(Setting.KEY_LANGUAGE, language)
         FastSettings.userLanguage = language
     }

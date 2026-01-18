@@ -58,6 +58,9 @@ data class Photo(
     @ColumnInfo(name = "mime_type")
     val mimeType: String? = null,
 
+    @ColumnInfo(name = "media_type", defaultValue = "'photo'")
+    val mediaType: String = "photo",
+
     @ColumnInfo(name = "is_favorite", defaultValue = "0")
     val isFavorite: Boolean = false,
 
@@ -66,9 +69,6 @@ data class Photo(
 
     @ColumnInfo(name = "is_metadata_extracted", defaultValue = "0")
     val isMetadataExtracted: Boolean = false,
-
-    @ColumnInfo(name = "media_type", defaultValue = "'photo'")
-    val mediaType: String = "photo",
 
     @ColumnInfo(name = "quality_score")
     val qualityScore: Float? = null,

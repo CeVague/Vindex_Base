@@ -52,8 +52,18 @@ class MainActivity : AppCompatActivity() {
 
     fun applyAppLanguage(language: String) {
         when (language) {
-            Setting.LANGUAGE_FRENCH -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
-            Setting.LANGUAGE_ENGLISH -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+            Setting.LANGUAGE_FRENCH -> AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags(
+                    "fr"
+                )
+            )
+
+            Setting.LANGUAGE_ENGLISH -> AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags(
+                    "en"
+                )
+            )
+
             else -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
     }

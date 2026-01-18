@@ -74,7 +74,8 @@ class PhotoRepository(
 
         // 1. Charger les chemins actuels de ce dossier en DB
         val dbPhotos = photoDao.getAllPathsAndSizes().first()
-        val folderDbMap = dbPhotos.filter { it.filePath.startsWith(folderPathString) }.associateBy { it.filePath }
+        val folderDbMap =
+            dbPhotos.filter { it.filePath.startsWith(folderPathString) }.associateBy { it.filePath }
 
         val seenPaths = mutableSetOf<String>()
         var totalNew = 0
