@@ -1,0 +1,44 @@
+# Third-Party Licenses
+
+This project uses third-party data and libraries subject to their own licenses.
+
+---
+
+## Geographic Data
+
+### GeoNames (cities15000.txt)
+
+- **Source:** https://download.geonames.org/export/dump/cities15000.zip
+- **License:** Creative Commons Attribution 4.0 (CC BY 4.0)
+- **License URL:** https://creativecommons.org/licenses/by/4.0/
+- **Attribution:** GeoNames (https://www.geonames.org/)
+- **Usage:** Offline reverse geocoding (GPS coordinates → city name conversion)
+
+---
+
+## Android Libraries
+
+| Library | License | URL |
+|---------|---------|-----|
+| AndroidX | Apache 2.0 | https://developer.android.com/jetpack/androidx |
+| Room | Apache 2.0 | https://developer.android.com/training/data-storage/room |
+| Glide | BSD, MIT, Apache 2.0 | https://github.com/bumptech/glide |
+| PhotoView | Apache 2.0 | https://github.com/Baseflow/PhotoView |
+| Material Components | Apache 2.0 | https://github.com/material-components/material-components-android |
+| metadata-extractor | Apache 2.0 | https://github.com/drewnoakes/metadata-extractor |
+
+---
+
+## AI Models (Future)
+
+*This section will be updated when AI models are integrated.*
+
+| Model | License | Intended Use |
+|-------|---------|--------------|
+| MobileFaceNet | MIT | Face embeddings |
+| BLIP | BSD-3 | Image captioning |
+| all-MiniLM-L6-v2 | Apache 2.0 | Text embeddings |
+| RAM/RAM++ | Apache 2.0 | Image tagging |
+| ML Kit | Google Proprietary | OCR, face detection |
+
+*Note: AI models are imported manually by the user and are not included in the APK.*
