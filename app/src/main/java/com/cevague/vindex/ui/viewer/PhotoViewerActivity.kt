@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.widget.ViewPager2
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -37,8 +38,16 @@ class PhotoViewerActivity : AppCompatActivity() {
         binding = ActivityPhotoViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val list = PhotoViewerNavData.currentList
+
+        if (list.isEmpty()) {
+            finish()
+            return
+        }
+
         // Récupérer les extras de l'Intent
         val startPosition = intent.getIntExtra(EXTRA_POSITION, 0)
+
 
         val app = application as VindexApplication
         val photoRepository = app.photoRepository
@@ -46,6 +55,8 @@ class PhotoViewerActivity : AppCompatActivity() {
         // Initialiser ViewModel avec Factory
         val factory = PhotoViewerViewModelFactory(photoRepository)
         viewModel = ViewModelProvider(this, factory)[PhotoViewerViewModel::class.java]
+
+        viewModel.setPhotos(list, startPosition)
 
         pagerAdapter = PhotoPagerAdapter()
         binding.viewPagerPhotos.adapter = pagerAdapter
@@ -87,13 +98,12 @@ class PhotoViewerActivity : AppCompatActivity() {
             }
         })
 
-        viewModel.allPhotos.observe(this) { photos ->
+        viewModel.photos.observe(this) { photos ->
             pagerAdapter.submitList(photos)
 
             // Positionner sur la photo cliquée seulement au premier chargement
             if (isFirstLoad && photos.isNotEmpty()) {
                 binding.viewPagerPhotos.setCurrentItem(startPosition, false)
-                viewModel.setPosition(startPosition)
                 isFirstLoad = false
             }
         }
@@ -192,7 +202,9 @@ class PhotoViewerActivity : AppCompatActivity() {
         const val EXTRA_POSITION = "extra_position"
 
         // Helper pour lancer l'activité proprement
-        fun start(context: Context, position: Int) {
+        fun start(context: Context, list: List<PhotoSummary>, position: Int) {
+            PhotoViewerNavData.currentList = list
+
             val intent = Intent(context, PhotoViewerActivity::class.java).apply {
                 putExtra(EXTRA_POSITION, position)
             }

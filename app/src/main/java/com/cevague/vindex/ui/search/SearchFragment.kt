@@ -11,9 +11,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.databinding.FragmentSearchBinding
 import com.cevague.vindex.ui.gallery.PhotoAdapter
+import com.cevague.vindex.ui.viewer.PhotoViewerActivity
 import kotlinx.coroutines.launch
 
 class SearchFragment : Fragment() {
@@ -37,8 +38,11 @@ class SearchFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val adapter = PhotoAdapter { photo ->
-            // Action au clic sur une photo (ex: ouvrir le visualiseur)
+        val adapter = PhotoAdapter { position ->
+            val currentList = viewModel.searchResults.value
+            if (currentList.isNotEmpty()) {
+                PhotoViewerActivity.start(requireContext(), currentList, position)
+            }
         }
 
         binding.recyclerSearch.apply {
@@ -55,7 +59,8 @@ class SearchFragment : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                // On ne fait rien ici pour économiser les ressources
+                // On peut aussi chercher en temps réel si désiré :
+                // viewModel.performSearch(newText ?: "")
                 return true
             }
         })
@@ -69,7 +74,7 @@ class SearchFragment : Fragment() {
         }
     }
 
-    private fun updateUIState(photos: List<Photo>) {
+    private fun updateUIState(photos: List<PhotoSummary>) {
         val query = binding.inputSearch.query.toString()
 
         if (query.length < 2) {

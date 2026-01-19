@@ -10,24 +10,24 @@ import androidx.room.Update
 import com.cevague.vindex.data.database.entity.Photo
 import kotlinx.coroutines.flow.Flow
 
+data class FilePathAndSize(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "file_path") val filePath: String,
+    @ColumnInfo(name = "file_size") val fileSize: Long,
+    @ColumnInfo(name = "file_last_modified") val fileLastModified: Long
+)
+
+data class PhotoSummary(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "file_path") val filePath: String,
+    @ColumnInfo(name = "file_name") val fileName: String,
+    @ColumnInfo(name = "date_added") val dateAdded: Long,
+    @ColumnInfo(name = "date_taken") val dateTaken: Long?,
+    @ColumnInfo(name = "is_favorite") val isFavorite: Boolean
+)
+
 @Dao
 interface PhotoDao {
-
-    data class FilePathAndSize(
-        @ColumnInfo(name = "id") val id: Long,
-        @ColumnInfo(name = "file_path") val filePath: String,
-        @ColumnInfo(name = "file_size") val fileSize: Long,
-        @ColumnInfo(name = "file_last_modified") val fileLastModified: Long
-    )
-
-    data class PhotoSummary(
-        @ColumnInfo(name = "id") val id: Long,
-        @ColumnInfo(name = "file_path") val filePath: String,
-        @ColumnInfo(name = "file_name") val fileName: String,
-        @ColumnInfo(name = "date_added") val dateAdded: Long,
-        @ColumnInfo(name = "date_taken") val dateTaken: Long?,
-        @ColumnInfo(name = "is_favorite") val isFavorite: Boolean
-    )
 
     // Queries - reactive (Flow updates automatically when data changes)
 

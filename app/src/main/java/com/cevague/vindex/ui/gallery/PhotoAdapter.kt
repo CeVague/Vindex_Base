@@ -7,11 +7,11 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.databinding.ItemPhotoBinding
 
 class PhotoAdapter(private val onPhotoClick: (position: Int) -> Unit) :
-    ListAdapter<Photo, PhotoAdapter.PhotoViewHolder>(DIFF_CALLBACK) {
+    ListAdapter<PhotoSummary, PhotoAdapter.PhotoViewHolder>(DIFF_CALLBACK) {
 
     class PhotoViewHolder(binding: ItemPhotoBinding) : RecyclerView.ViewHolder(binding.root) {
         val imageView = binding.imageItem
@@ -36,12 +36,12 @@ class PhotoAdapter(private val onPhotoClick: (position: Int) -> Unit) :
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Photo>() {
-            override fun areItemsTheSame(oldItem: Photo, newItem: Photo): Boolean {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<PhotoSummary>() {
+            override fun areItemsTheSame(oldItem: PhotoSummary, newItem: PhotoSummary): Boolean {
                 return oldItem.id == newItem.id
             }
 
-            override fun areContentsTheSame(oldItem: Photo, newItem: Photo): Boolean {
+            override fun areContentsTheSame(oldItem: PhotoSummary, newItem: PhotoSummary): Boolean {
                 return oldItem == newItem
             }
         }

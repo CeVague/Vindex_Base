@@ -37,7 +37,10 @@ class GalleryFragment : Fragment() {
         val viewModel = ViewModelProvider(this, factory)[GalleryViewModel::class.java]
 
         val photoAdapter = PhotoAdapter { position ->
-            PhotoViewerActivity.start(requireContext(), position)
+            val currentList = viewModel.allPhotos.value
+            if (currentList != null) {
+                PhotoViewerActivity.start(requireContext(), currentList, position)
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {

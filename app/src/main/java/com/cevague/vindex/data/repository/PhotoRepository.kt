@@ -2,8 +2,9 @@ package com.cevague.vindex.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.cevague.vindex.data.database.dao.FilePathAndSize
 import com.cevague.vindex.data.database.dao.PhotoDao
-import com.cevague.vindex.data.database.dao.PhotoDao.FilePathAndSize
+import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.CoroutineScope
@@ -33,16 +34,16 @@ class PhotoRepository(
 
     fun getAllPhotos(): Flow<List<Photo>> = photoDao.getAllPhotos()
 
-    fun getAllPhotosSummary(): Flow<List<PhotoDao.PhotoSummary>> = photoDao.getAllPhotosSummary()
+    fun getAllPhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getAllPhotosSummary()
 
     fun getVisiblePhotos(): Flow<List<Photo>> = photoDao.getVisiblePhotos()
 
-    fun getVisiblePhotosSummary(): Flow<List<PhotoDao.PhotoSummary>> = photoDao.getVisiblePhotosSummary()
+    fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getVisiblePhotosSummary()
 
     fun getPhotosByFolder(folderPath: String): Flow<List<Photo>> =
         photoDao.getPhotosByFolder(folderPath)
 
-    fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoDao.PhotoSummary>> =
+    fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoSummary>> =
         photoDao.getPhotosSummaryByFolder(folderPath)
 
     fun getPhotoById(id: Long): Flow<Photo?> = photoDao.getPhotoById(id)
@@ -54,7 +55,7 @@ class PhotoRepository(
     fun searchByFileName(query: String): Flow<List<Photo>> =
         photoDao.searchByFileName(query)
 
-    fun searchByFileNameSummary(query: String): Flow<List<PhotoDao.PhotoSummary>> =
+    fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>> =
         photoDao.searchByFileNameSummary(query)
 
     fun getPhotosNeedingAnalysis(): Flow<List<Photo>> =

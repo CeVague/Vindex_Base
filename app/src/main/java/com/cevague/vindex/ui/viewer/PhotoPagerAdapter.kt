@@ -7,10 +7,10 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.github.chrisbanes.photoview.PhotoView
 
-class PhotoPagerAdapter : ListAdapter<Photo, PhotoPagerAdapter.PhotoPageViewHolder>(DIFF_CALLBACK) {
+class PhotoPagerAdapter : ListAdapter<PhotoSummary, PhotoPagerAdapter.PhotoPageViewHolder>(DIFF_CALLBACK) {
 
     // Callback pour le tap simple (afficher/masquer UI)
     var onPhotoTap: (() -> Unit)? = null
@@ -36,12 +36,12 @@ class PhotoPagerAdapter : ListAdapter<Photo, PhotoPagerAdapter.PhotoPageViewHold
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Photo>() {
-            override fun areItemsTheSame(oldItem: Photo, newItem: Photo): Boolean {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<PhotoSummary>() {
+            override fun areItemsTheSame(oldItem: PhotoSummary, newItem: PhotoSummary): Boolean {
                 return oldItem.id == newItem.id
             }
 
-            override fun areContentsTheSame(oldItem: Photo, newItem: Photo): Boolean {
+            override fun areContentsTheSame(oldItem: PhotoSummary, newItem: PhotoSummary): Boolean {
                 return oldItem == newItem
             }
         }
