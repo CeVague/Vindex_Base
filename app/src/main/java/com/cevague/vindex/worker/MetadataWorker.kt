@@ -45,6 +45,8 @@ class MetadataWorker(
 
             val batchSize = (total / 33).coerceIn(5, 50)
 
+            val cityRepository = (applicationContext as VindexApplication).cityRepository
+
             photosNeedingMetadataExtraction.chunked(batchSize).forEachIndexed { index, batch ->
                 val enrichedBatch = batch.mapNotNull { photo ->
                     val documentFile =
@@ -60,10 +62,7 @@ class MetadataWorker(
 
                         // 2. Ajout du Reverse Geocoding (Lourd -> fait ici dans le Worker)
                         if (photoData.latitude != null && photoData.longitude != null) {
-                            val app = applicationContext as VindexApplication
-                            val cityDao = app.database.cityDao()
-
-                            val candidates = cityDao.findNearestCity(
+                            val candidates = cityRepository.findNearestCity(
                                 photoData.latitude,
                                 photoData.longitude
                             )

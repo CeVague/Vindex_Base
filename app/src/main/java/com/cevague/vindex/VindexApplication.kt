@@ -7,6 +7,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.cevague.vindex.data.database.AppDatabase
 import com.cevague.vindex.data.repository.AlbumRepository
+import com.cevague.vindex.data.repository.CityRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.SettingsRepository
@@ -42,6 +43,11 @@ class VindexApplication : Application() {
     val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(database.settingDao())
     }
+
+    val cityRepository: CityRepository by lazy {
+        CityRepository(database.cityDao())
+    }
+
 
     override fun onCreate() {
         super.onCreate()

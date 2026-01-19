@@ -23,7 +23,10 @@ class CityImportWorker(
                 return@withContext Result.success()
             }
 
-            val cityDao = (applicationContext as VindexApplication).database.cityDao()
+            val repository = (applicationContext as VindexApplication).cityRepository
+
+            // Supprimer les anciennes données
+            repository.deleteAll()
 
             setProgress(
                 workDataOf(
@@ -54,7 +57,7 @@ class CityImportWorker(
 
                         // Insert par batch
                         if (batch.size >= batch_size) {
-                            cityDao.insertAll(batch.toList())
+                            repository.insertAll(batch.toList())
                             batch.clear()
 
                             lineCount += batch_size
@@ -71,7 +74,7 @@ class CityImportWorker(
 
                 // Dernier batch
                 if (batch.isNotEmpty()) {
-                    cityDao.insertAll(batch)
+                    repository.insertAll(batch)
                 }
             }
 
