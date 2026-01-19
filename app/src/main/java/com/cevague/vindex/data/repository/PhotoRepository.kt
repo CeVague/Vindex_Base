@@ -33,10 +33,17 @@ class PhotoRepository(
 
     fun getAllPhotos(): Flow<List<Photo>> = photoDao.getAllPhotos()
 
+    fun getAllPhotosSummary(): Flow<List<PhotoDao.PhotoSummary>> = photoDao.getAllPhotosSummary()
+
     fun getVisiblePhotos(): Flow<List<Photo>> = photoDao.getVisiblePhotos()
+
+    fun getVisiblePhotosSummary(): Flow<List<PhotoDao.PhotoSummary>> = photoDao.getVisiblePhotosSummary()
 
     fun getPhotosByFolder(folderPath: String): Flow<List<Photo>> =
         photoDao.getPhotosByFolder(folderPath)
+
+    fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoDao.PhotoSummary>> =
+        photoDao.getPhotosSummaryByFolder(folderPath)
 
     fun getPhotoById(id: Long): Flow<Photo?> = photoDao.getPhotoById(id)
 
@@ -46,6 +53,9 @@ class PhotoRepository(
 
     fun searchByFileName(query: String): Flow<List<Photo>> =
         photoDao.searchByFileName(query)
+
+    fun searchByFileNameSummary(query: String): Flow<List<PhotoDao.PhotoSummary>> =
+        photoDao.searchByFileNameSummary(query)
 
     fun getPhotosNeedingAnalysis(): Flow<List<Photo>> =
         photoDao.getPhotosNeedingAnalysis()

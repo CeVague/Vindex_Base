@@ -1,6 +1,7 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -8,19 +9,18 @@ import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Face
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
+import java.io.IOException
 
 class FaceAnalysisWorker(
     appContext: Context,
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result {
 
-        try {
+        return try {
             setProgress(
                 workDataOf(
                     "WORK" to applicationContext.getString(R.string.progress_faces),
@@ -49,8 +49,8 @@ class FaceAnalysisWorker(
                 val photoRepo = (applicationContext as VindexApplication).photoRepository
 
                 // 1. Récupérer toutes les photos existantes
-                val photos = photoRepo.getAllPhotos().first()
-                val existingPeople = personRepo.getAllPersonsOnce()
+                val photos = photoRepo.getAllPhotosSummary().first()
+                val existingPeople = personRepo.getAllPersonSummaryOnce()
 
                 if (photos.isNotEmpty()) {
                     photos.take(20).forEach { photo ->
@@ -134,8 +134,12 @@ class FaceAnalysisWorker(
             }
 
             Result.success()
+        } catch (e: IOException) {
+            if (runAttemptCount < 3) Result.retry() else Result.failure()
+        } catch (e: SQLiteException) {
+            Result.failure()
         } catch (e: Exception) {
-            Result.retry()
+            Result.failure()
         }
     }
 }

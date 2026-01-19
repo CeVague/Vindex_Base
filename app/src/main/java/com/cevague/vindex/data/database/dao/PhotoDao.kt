@@ -13,12 +13,20 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PhotoDao {
 
-    // Dans PhotoDao.kt
     data class FilePathAndSize(
         @ColumnInfo(name = "id") val id: Long,
         @ColumnInfo(name = "file_path") val filePath: String,
         @ColumnInfo(name = "file_size") val fileSize: Long,
-        @ColumnInfo(name = "file_last_modified") val fileLastModified: Long // Ajoute ça !
+        @ColumnInfo(name = "file_last_modified") val fileLastModified: Long
+    )
+
+    data class PhotoSummary(
+        @ColumnInfo(name = "id") val id: Long,
+        @ColumnInfo(name = "file_path") val filePath: String,
+        @ColumnInfo(name = "file_name") val fileName: String,
+        @ColumnInfo(name = "date_added") val dateAdded: Long,
+        @ColumnInfo(name = "date_taken") val dateTaken: Long?,
+        @ColumnInfo(name = "is_favorite") val isFavorite: Boolean
     )
 
     // Queries - reactive (Flow updates automatically when data changes)
@@ -26,15 +34,24 @@ interface PhotoDao {
     @Query("SELECT * FROM photos ORDER BY date_taken DESC")
     fun getAllPhotos(): Flow<List<Photo>>
 
-    // Dans PhotoDao.kt
+
+    @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos ORDER BY date_taken DESC")
+    fun getAllPhotosSummary(): Flow<List<PhotoSummary>>
+
     @Query("SELECT id, file_path, file_size, file_last_modified FROM photos")
     fun getAllPathsAndSizes(): Flow<List<FilePathAndSize>>
 
     @Query("SELECT * FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
     fun getVisiblePhotos(): Flow<List<Photo>>
 
+    @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
+    fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>>
+
     @Query("SELECT * FROM photos WHERE folder_path = :folderPath ORDER BY date_taken DESC")
     fun getPhotosByFolder(folderPath: String): Flow<List<Photo>>
+
+    @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE folder_path = :folderPath ORDER BY date_taken DESC")
+    fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoSummary>>
 
     @Query("SELECT * FROM photos WHERE id = :id")
     fun getPhotoById(id: Long): Flow<Photo?>
@@ -60,6 +77,16 @@ interface PhotoDao {
     """
     )
     fun searchByFileName(query: String): Flow<List<Photo>>
+
+    @Query(
+        """
+        SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos 
+        WHERE file_name LIKE '%' || :query || '%' 
+           OR file_path LIKE '%' || :query || '%'
+        ORDER BY date_taken DESC
+    """
+    )
+    fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>>
 
     @Query("SELECT * FROM photos WHERE needs_reanalysis = 1")
     fun getPhotosNeedingAnalysis(): Flow<List<Photo>>

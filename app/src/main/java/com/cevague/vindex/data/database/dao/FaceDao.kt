@@ -1,5 +1,6 @@
 package com.cevague.vindex.data.database.dao
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -21,13 +22,30 @@ interface FaceDao {
         val boxBottom: Float
     )
 
+    // Face sans ByteArray (trop lourd)
+    data class FaceSummary(
+        @ColumnInfo(name = "id") val id: Long,
+        @ColumnInfo(name = "photo_id") val photoId: Long,
+        @ColumnInfo(name = "box_left") val boxLeft: Float,
+        @ColumnInfo(name = "box_top") val boxTop: Float,
+        @ColumnInfo(name = "box_right") val boxRight: Float,
+        @ColumnInfo(name = "box_bottom") val boxBottom: Float,
+        @ColumnInfo(name = "person_id") val personId: Long?
+    )
+
     // Queries - reactive
 
     @Query("SELECT * FROM faces WHERE photo_id = :photoId")
     fun getFacesByPhoto(photoId: Long): Flow<List<Face>>
 
+    @Query("SELECT id, photo_id, box_left, box_top, box_right, box_bottom, person_id FROM faces WHERE photo_id = :photoId")
+    fun getFaceSummariesByPhoto(photoId: Long): Flow<List<FaceSummary>>
+
     @Query("SELECT * FROM faces WHERE person_id = :personId")
     fun getFacesByPerson(personId: Long): Flow<List<Face>>
+
+    @Query("SELECT id, photo_id, box_left, box_top, box_right, box_bottom, person_id FROM faces WHERE person_id = :personId")
+    fun getFacesSummaryByPerson(personId: Long): Flow<List<FaceSummary>>
 
     @Query("SELECT * FROM faces WHERE person_id IS NULL")
     fun getUnidentifiedFaces(): Flow<List<Face>>

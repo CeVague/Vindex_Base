@@ -1,6 +1,7 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.work.CoroutineWorker
@@ -12,15 +13,16 @@ import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 class MetadataWorker(
     appContext: Context,
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result {
 
-        try {
+        return try {
             setProgress(
                 workDataOf(
                     "WORK" to applicationContext.getString(R.string.progress_exif),
@@ -92,8 +94,12 @@ class MetadataWorker(
             }
 
             Result.success()
+        } catch (e: IOException) {
+            if (runAttemptCount < 3) Result.retry() else Result.failure()
+        } catch (e: SQLiteException) {
+            Result.failure()
         } catch (e: Exception) {
-            Result.retry()
+            Result.failure()
         }
     }
 }

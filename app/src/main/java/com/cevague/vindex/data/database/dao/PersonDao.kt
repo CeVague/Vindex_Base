@@ -1,5 +1,6 @@
 package com.cevague.vindex.data.database.dao
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -12,16 +13,31 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PersonDao {
 
+    data class PersonSummary(
+        @ColumnInfo(name = "id") val id: Long,
+        @ColumnInfo(name = "name") val name: String?,
+        @ColumnInfo(name = "photo_count") val photoCount: Int
+    )
+
     // Queries - reactive
 
     @Query("SELECT * FROM persons ORDER BY name ASC")
     fun getAllPersons(): Flow<List<Person>>
 
+    @Query("SELECT id, name, photo_count FROM persons ORDER BY name ASC")
+    fun getAllPersonsSummary(): Flow<List<PersonSummary>>
+
     @Query("SELECT * FROM persons WHERE name IS NOT NULL ORDER BY name ASC")
     fun getNamedPersons(): Flow<List<Person>>
 
+    @Query("SELECT id, name, photo_count FROM persons WHERE name IS NOT NULL ORDER BY name ASC")
+    fun getNamedPersonsSummary(): Flow<List<PersonSummary>>
+
     @Query("SELECT * FROM persons WHERE name IS NULL")
     fun getUnnamedPersons(): Flow<List<Person>>
+
+    @Query("SELECT id, name, photo_count FROM persons WHERE name IS NULL")
+    fun getUnnamedPersonsSummary(): Flow<List<PersonSummary>>
 
     @Query("SELECT * FROM persons WHERE id = :id")
     fun getPersonById(id: Long): Flow<Person?>
@@ -42,6 +58,9 @@ interface PersonDao {
 
     @Query("SELECT * FROM persons")
     suspend fun getAllPersonsOnce(): List<Person>
+
+    @Query("SELECT id, name, photo_count FROM persons")
+    suspend fun getAllPersonSummaryOnce(): List<PersonSummary>
 
     // Insert
 

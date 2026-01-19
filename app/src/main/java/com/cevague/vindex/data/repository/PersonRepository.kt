@@ -1,5 +1,6 @@
 package com.cevague.vindex.data.repository
 
+import androidx.room.Transaction
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Face
@@ -15,9 +16,14 @@ class PersonRepository(
 
     fun getAllPersons(): Flow<List<Person>> = personDao.getAllPersons()
 
+    fun getAllPersonSummary(): Flow<List<PersonDao.PersonSummary>> = personDao.getAllPersonsSummary()
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
+    fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> = personDao.getNamedPersonsSummary()
+
     fun getUnnamedPersons(): Flow<List<Person>> = personDao.getUnnamedPersons()
+
+    fun getUnnamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> = personDao.getUnnamedPersonsSummary()
 
     fun getPersonById(id: Long): Flow<Person?> = personDao.getPersonById(id)
 
@@ -33,6 +39,8 @@ class PersonRepository(
 
     suspend fun getAllPersonsOnce(): List<Person> = personDao.getAllPersonsOnce()
 
+    suspend fun getAllPersonSummaryOnce(): List<PersonDao.PersonSummary> = personDao.getAllPersonSummaryOnce()
+
     // Person insert/update/delete
 
     suspend fun insert(person: Person): Long {
@@ -40,9 +48,9 @@ class PersonRepository(
         return personDao.insert(person.copy(name = formattedName))
     }
 
+    @Transaction
     suspend fun getOrCreatePersonByName(name: String?): Long {
-        val formattedName = formatName(name)
-        if (formattedName == null) return createPerson(null)
+        val formattedName = formatName(name) ?: return createPerson(null)
 
         val existing = personDao.getPersonByName(formattedName)
         return existing?.id ?: personDao.insert(
@@ -84,7 +92,14 @@ class PersonRepository(
 
     fun getFacesByPhoto(photoId: Long): Flow<List<Face>> = faceDao.getFacesByPhoto(photoId)
 
+    fun getFaceSummariesByPhoto(photoId: Long): Flow<List<FaceDao.FaceSummary>> =
+        faceDao.getFaceSummariesByPhoto(photoId)
+
+
     fun getFacesByPerson(personId: Long): Flow<List<Face>> = faceDao.getFacesByPerson(personId)
+
+    fun getFacesSummaryByPerson(personId: Long): Flow<List<FaceDao.FaceSummary>> =
+        faceDao.getFacesSummaryByPerson(personId)
 
     fun getUnidentifiedFaces(): Flow<List<Face>> = faceDao.getUnidentifiedFaces()
 
@@ -124,6 +139,7 @@ class PersonRepository(
 
     suspend fun insertFaces(faces: List<Face>): List<Long> = faceDao.insertAll(faces)
 
+    @Transaction
     suspend fun assignFaceToPerson(
         faceId: Long,
         personId: Long?,
@@ -153,6 +169,7 @@ class PersonRepository(
     suspend fun deleteFacesByPhoto(photoId: Long) = faceDao.deleteByPhoto(photoId)
 
     // Merge two persons into one
+    @Transaction
     suspend fun mergePersons(keepId: Long, mergeId: Long) {
         faceDao.reassignAllFaces(oldPersonId = mergeId, newPersonId = keepId)
         personDao.recalculatePhotoCount(keepId)
