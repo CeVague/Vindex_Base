@@ -21,11 +21,11 @@
     <!-- Progress message -->
     <string name="progress_generic">Do some work…</string>
     <string name="progress_loading_cities">Loading cities…</string>
-    <string name="progress_scanning">Scan in progress…</string>
-    <string name="progress_exif">Extracting EXIF data…</string>
-    <string name="progress_summary">Generating summary…</string>
-    <string name="progress_vector">Generating vectors…</string>
-    <string name="progress_faces">Extracting faces…</string>
+    <string name="progress_scanning">Scan in progress… %d files</string>
+    <string name="progress_exif">Extracting EXIF data… %d%</string>
+    <string name="progress_summary">Generating summary… %d%</string>
+    <string name="progress_vector">Generating vectors… %d%</string>
+    <string name="progress_faces">Extracting faces… %d%</string>
 
     <!-- Generics messages -->
     <string name="msg_loading">Loading…</string>

@@ -21,11 +21,11 @@
     <!-- Progress message -->
     <string name="progress_generic">Travail en cours…</string>
     <string name="progress_loading_cities">Chargement des villes…</string>
-    <string name="progress_scanning">Analyse en cours…</string>
-    <string name="progress_exif">Extraction des métadonnées…</string>
-    <string name="progress_summary">Création des description…</string>
-    <string name="progress_vector">Génération des vecteurs…</string>
-    <string name="progress_faces">Analyse des visages…</string>
+    <string name="progress_scanning">Analyse en cours… %d photos</string>
+    <string name="progress_exif">Extraction des métadonnées… %d%</string>
+    <string name="progress_summary">Création des description… %d%</string>
+    <string name="progress_vector">Génération des vecteurs… %d%</string>
+    <string name="progress_faces">Analyse des visages… %d%</string>
 
 
     <!-- Generics messages -->
