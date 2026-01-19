@@ -17,7 +17,13 @@
     <fragment
         android:id="@+id/searchFragment"
         android:name="com.cevague.vindex.ui.search.SearchFragment"
-        android:label="@string/nav_search" />
+        android:label="@string/nav_search">
+
+        <argument
+            android:name="prefilled_query"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/peopleFragment"

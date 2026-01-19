@@ -72,6 +72,11 @@ class SearchFragment : Fragment() {
                 updateUIState(photos)
             }
         }
+
+        arguments?.getString("prefilled_query")?.let { query ->
+            binding.inputSearch.setQuery(query, true)
+            arguments?.remove("prefilled_query")  // Éviter de re-exécuter si on revient
+        }
     }
 
     private fun updateUIState(photos: List<PhotoSummary>) {

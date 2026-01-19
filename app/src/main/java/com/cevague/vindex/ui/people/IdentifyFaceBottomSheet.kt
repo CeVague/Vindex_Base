@@ -1,17 +1,23 @@
 package com.cevague.vindex.ui.people
 
+import android.R
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.widget.ArrayAdapter
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.FaceDao
+import com.cevague.vindex.data.database.entity.Person
+import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.DialogIdentifyFaceBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.chip.Chip
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
@@ -19,8 +25,18 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     private var _binding: DialogIdentifyFaceBinding? = null
     private val binding get() = _binding!!
 
-    private var pendingFaces: List<FaceDao.FaceWithPhoto> = emptyList()
     private var currentIndex = 0
+
+    // IDs des visages skippés PENDANT cette session
+    private val skippedIds = mutableSetOf<Long>()
+
+    // Visage actuellement affiché
+    private var currentFace: FaceDao.FaceWithPhoto? = null
+
+    // Liste des personnes pour l'auto-complétion
+    private var allPersons: List<Person> = emptyList()
+
+    private lateinit var repositoryPerson: PersonRepository
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,74 +49,162 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        loadFaces()
+
+        repositoryPerson = (requireActivity().application as VindexApplication).personRepository
+
+        setupAutoComplete()
+        setupSuggestionChips()
+        setupButtons()
+        loadNextFace()
     }
 
-    private fun loadFaces() {
-        val repository = (requireActivity().application as VindexApplication).personRepository
-        lifecycleScope.launch {// On charge la liste une seule fois
-            pendingFaces = repository.getPendingFaceWithPhoto()
-            currentIndex = 0
-            showCurrentFace()
-        }
-    }
-
-
-    private fun showCurrentFace() {
-        val repository = (requireActivity().application as VindexApplication).personRepository
-
-        if (currentIndex >= pendingFaces.size) {
-            dismiss() // Plus rien à afficher
-            return
+    private fun setupAutoComplete() {
+        // 1. Observer les personnes existantes
+        lifecycleScope.launch {
+            repositoryPerson.getAllPersons().collect { persons ->
+                allPersons = persons
+                // 2. Créer l'adapter pour l'AutoCompleteTextView
+                val names = persons.mapNotNull { it.name }
+                val adapter = ArrayAdapter(
+                    requireContext(),
+                    R.layout.simple_dropdown_item_1line,
+                    names
+                )
+                binding.editName.setAdapter(adapter)
+            }
         }
 
-        val faceData = pendingFaces[currentIndex]
-
-        // GLIDE : Utilisation directe de l'objet métier
-        Glide.with(this@IdentifyFaceBottomSheet)
-            .load(faceData.filePath)
-            .transform(FaceCenterCrop(faceData), CircleCrop())
-            .override(480, 480)
-            .into(binding.imageFace)
-
-        // Gérer la validation du nom
+        // 3. Validation quand on appuie sur "Done" ou sélectionne une suggestion
         binding.editName.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 val name = binding.editName.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    identifyAs(name, faceData.id) // Utilise faceData.id
-                    true
-                } else false
+                    identifyCurrentFaceAs(name)
+                }
+                true
             } else false
         }
 
-        binding.buttonSkip.setOnClickListener {
-            currentIndex++ // On passe à l'index suivant
-            showCurrentFace() // On rafraîchit l'UI
+        binding.editName.setOnItemClickListener { _, _, position, _ ->
+            val name = binding.editName.adapter.getItem(position) as String
+            identifyCurrentFaceAs(name)
         }
+    }
 
-        binding.buttonNotPerson.setOnClickListener {
-            lifecycleScope.launch {
-                repository.deleteFaceById(faceData.id)
-                loadFaces()
+    private fun setupSuggestionChips() {
+        // Afficher les 5 personnes avec le plus de photos
+        lifecycleScope.launch {
+            val topPersons = allPersons
+                .filter { it.name != null }
+                .sortedByDescending { it.photoCount }
+                .take(5)
+
+            binding.chipGroupSuggestions.removeAllViews()
+
+            if (topPersons.isEmpty()) {
+                binding.textSuggestionsLabel.visibility = View.GONE
+                binding.chipGroupSuggestions.visibility = View.GONE
+            } else {
+                binding.textSuggestionsLabel.visibility = View.VISIBLE
+                binding.chipGroupSuggestions.visibility = View.VISIBLE
+
+                topPersons.forEach { person ->
+                    val chip = Chip(requireContext()).apply {
+                        text = person.name
+                        isCheckable = true
+                        setOnClickListener {
+                            identifyCurrentFaceAs(person.name!!)
+                        }
+                    }
+                    binding.chipGroupSuggestions.addView(chip)
+                }
             }
         }
     }
 
-    private fun identifyAs(name: String, faceId: Long) {
-        val repository = (requireActivity().application as VindexApplication).personRepository
+    private fun setupButtons() {
+        binding.buttonSkip.setOnClickListener {
+            currentFace?.let { face ->
+                skippedIds.add(face.id)  // Mémorise localement, reste "pending" en DB
+            }
+            loadNextFace()
+        }
+
+        binding.buttonNotPerson.setOnClickListener {
+            currentFace?.let { face ->
+                lifecycleScope.launch {
+                    repositoryPerson.markAsIgnored(face.id)  // Marque comme "ignored" en DB
+                    loadNextFace()
+                }
+            }
+        }
+    }
+
+    private fun loadNextFace() {
         lifecycleScope.launch {
-            // 1. Chercher ou créer la personne
-            val personId =
-                repository.getPersonByName(name)?.id ?: repository.getOrCreatePersonByName(name)
+            // Récupère le prochain visage pending en excluant les skippés
+            currentFace = repositoryPerson.getNextPendingFaceExcluding(skippedIds)
+
+            if (currentFace == null) {
+                dismiss()  // Plus rien à traiter
+                return@launch
+            }
+
+            // Afficher le visage
+            displayFace(currentFace!!)
+
+            // Mettre à jour le compteur
+            updateCounter()
+        }
+    }
+
+
+    private fun displayFace(face: FaceDao.FaceWithPhoto) {
+        Glide.with(this)
+            .load(face.filePath)
+            .transform(FaceCenterCrop(face), CircleCrop())
+            .override(480, 480)
+            .into(binding.imageFace)
+
+        // Reset du champ texte
+        binding.editName.text?.clear()
+        binding.chipGroupSuggestions.clearCheck()
+    }
+
+    private fun updateCounter() {
+        lifecycleScope.launch {
+            val totalPending = repositoryPerson.getPendingFaceCount().first()
+            val remaining = totalPending - skippedIds.size
+
+            binding.textCounter.text = if (remaining <= 1) {
+                "$remaining restant"
+            } else {
+                "$remaining restants"
+            }
+        }
+    }
+
+    private fun identifyCurrentFaceAs(name: String) {
+        val face = currentFace ?: return
+
+        lifecycleScope.launch {
+            // 1. Créer ou récupérer la personne
+            val personId = repositoryPerson.getOrCreatePersonByName(name)
 
             // 2. Assigner le visage
-            repository.assignFaceToPerson(faceId, personId, "manual", 1.0f, 1.0f)
+            repositoryPerson.assignFaceToPerson(
+                faceId = face.id,
+                personId = personId,
+                assignmentType = "manual",
+                confidence = 1.0f,
+                weight = 1.0f
+            )
 
-            // 3. Passer au suivant
-            binding.editName.text?.clear()
-            currentIndex++
-            showCurrentFace()
+            // 3. Retirer des skippés si jamais il y était (ne devrait pas arriver)
+            skippedIds.remove(face.id)
+
+            // 4. Passer au suivant
+            loadNextFace()
         }
     }
 

@@ -133,6 +133,12 @@ class PersonRepository(
         faceDao.getNextPendingFaceWithPhoto()
 
 
+    suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceDao.FaceWithPhoto? =
+        faceDao.getNextPendingFaceExcluding(excludeIds)
+
+    suspend fun markAsIgnored(id: Long) = faceDao.markAsIgnored(id)
+
+
     // Face insert/update/delete
 
     suspend fun insertFace(face: Face): Long = faceDao.insert(face)

@@ -1,6 +1,7 @@
 package com.cevague.vindex.ui.people
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class PeopleAdapter(
     private val repository: PersonRepository,
-    private val onPersonClick: (Person) -> Unit
+    private val onPersonClick: (Person) -> Unit,
+    private val onPersonLongClick: (Person, View) -> Unit
 ) : ListAdapter<Person, PeopleAdapter.ViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -63,6 +65,11 @@ class PeopleAdapter(
             }
 
             binding.root.setOnClickListener { onPersonClick(person) }
+
+            binding.root.setOnLongClickListener {
+                onPersonLongClick(person, binding.root)
+                true
+            }
         }
     }
 
