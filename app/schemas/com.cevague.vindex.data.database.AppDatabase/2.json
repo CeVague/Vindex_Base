@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 1,
+    "version": 2,
     "identityHash": "e11b3278c52cfb22e47fa4b31e9b30e7",
     "entities": [
       {
@@ -239,15 +239,6 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_folder_path` ON `${TABLE_NAME}` (`folder_path`)"
           },
           {
-            "name": "index_photos_relative_path",
-            "unique": false,
-            "columnNames": [
-              "relative_path"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_relative_path` ON `${TABLE_NAME}` (`relative_path`)"
-          },
-          {
             "name": "index_photos_file_path",
             "unique": true,
             "columnNames": [
@@ -264,6 +255,15 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_is_metadata_extracted` ON `${TABLE_NAME}` (`is_metadata_extracted`)"
+          },
+          {
+            "name": "index_photos_relative_path",
+            "unique": false,
+            "columnNames": [
+              "relative_path"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_relative_path` ON `${TABLE_NAME}` (`relative_path`)"
           }
         ],
         "foreignKeys": []

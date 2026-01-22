@@ -139,7 +139,12 @@ class PhotoViewerActivity : AppCompatActivity() {
 
     private fun updateInfoPanel(photo: Photo) {
         // Date
-        binding.textDate.text = photo.dateTaken?.let { timestamp ->
+        binding.textDateAdded.text = photo.dateAdded.let { timestamp ->
+            java.text.SimpleDateFormat("d MMMM yyyy, HH:mm", java.util.Locale.getDefault())
+                .format(java.util.Date(timestamp))
+        } ?: getString(R.string.viewer_no_info_short)
+
+        binding.textDateTake.text = photo.dateTaken?.let { timestamp ->
             java.text.SimpleDateFormat("d MMMM yyyy, HH:mm", java.util.Locale.getDefault())
                 .format(java.util.Date(timestamp))
         } ?: getString(R.string.viewer_no_info_short)
@@ -169,14 +174,13 @@ class PhotoViewerActivity : AppCompatActivity() {
         binding.textImageType.text = photo.mediaType
 
         // Localisation (afficher seulement si disponible, sinon afficher GPS, sinon vide)
-        if (photo.locationName == null) {
-            if (photo.latitude != null && photo.longitude != null) {
-                binding.textLocation.text = "${photo.latitude}, ${photo.longitude}"
-            } else {
-                binding.textLocation.text = getString(R.string.viewer_no_info_short)
-            }
-        } else {
-            binding.textLocation.text = photo.locationName
+        binding.textLocationText.text = photo.locationName ?: getString(R.string.viewer_no_info_short)
+
+
+        if (photo.latitude != null && photo.longitude != null) {
+            binding.textLocationCoordinates.text = "${photo.latitude}, ${photo.longitude}"
+        }else {
+            binding.textLocationCoordinates.text = getString(R.string.viewer_no_info_short)
         }
 
         // Chemin du fichier

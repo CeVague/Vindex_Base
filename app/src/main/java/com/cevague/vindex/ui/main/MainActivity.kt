@@ -27,16 +27,12 @@ class MainActivity : AppCompatActivity() {
         applyAppLanguage(FastSettings.userLanguage)
         super.onCreate(savedInstanceState)
 
-        // Lecture immédiate du miroir
-        val sourceFolder = FastSettings.sourceFolderUri
-
-        if (sourceFolder == null) {
+        if (!FastSettings.isConfigured) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
             return
         }
 
-        // Sinon on charge l'UI normale
         setupUI()
     }
 

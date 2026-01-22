@@ -18,9 +18,13 @@ object FastSettings {
         get() = prefs.getBoolean(Setting.KEY_CITIES_LOADED, false)
         set(value) = prefs.edit { putBoolean(Setting.KEY_CITIES_LOADED, value) }
 
-    var sourceFolderUri: String?
-        get() = prefs.getString(Setting.KEY_SOURCE_FOLDER_URI, null)
-        set(value) = prefs.edit { putString(Setting.KEY_SOURCE_FOLDER_URI, value) }
+    var includedFolders: Set<String>
+        get() = prefs.getStringSet(Setting.KEY_INCLUDED_FOLDERS, emptySet()) ?: emptySet()
+        set(value) = prefs.edit { putStringSet(Setting.KEY_INCLUDED_FOLDERS, value) }
+
+    var isConfigured: Boolean
+        get() = prefs.getBoolean(Setting.KEY_IS_CONFIGURED, false)
+        set(value) = prefs.edit { putBoolean(Setting.KEY_IS_CONFIGURED, value) }
 
     var themeMode: String
         get() = prefs.getString(Setting.KEY_THEME, Setting.THEME_SYSTEM) ?: Setting.THEME_SYSTEM

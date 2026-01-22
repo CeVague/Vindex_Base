@@ -62,10 +62,7 @@ class GalleryFragment : Fragment() {
 
         binding.swipeRefreshGallery.setOnRefreshListener {
             lifecycleScope.launch {
-                val uri = app.settingsRepository.getSourceFolderUriOnce()
-                if (uri != null) {
-                    app.startGalleryScan(uri)
-                }
+                app.startGalleryScan()
                 binding.swipeRefreshGallery.isRefreshing = false
             }
         }

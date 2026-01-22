@@ -55,14 +55,8 @@ class VindexApplication : Application() {
     }
 
 
-    fun startGalleryScan(selectedUri: String) {
-
+    fun startGalleryScan() {
         val discoveryReq = OneTimeWorkRequestBuilder<DiscoveryWorker>()
-            .setInputData(workDataOf("FOLDER_URI" to selectedUri))
-            .addTag("SCAN_TAG")
-            .build()
-
-        val citiesReq = OneTimeWorkRequestBuilder<CityImportWorker>()
             .addTag("SCAN_TAG")
             .build()
 
@@ -71,21 +65,14 @@ class VindexApplication : Application() {
             .build()
 
         WorkManager.getInstance(this)
-            .beginUniqueWork(
-                "VINDEX_SCAN_PROCESS",
-                ExistingWorkPolicy.KEEP,
-                discoveryReq
-            )
-            .then(citiesReq)
+            .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(metadataReq)
             .enqueue()
     }
 
 
-    fun startFullScan(selectedUri: String) {
-
+    fun startFullScan() {
         val discoveryReq = OneTimeWorkRequestBuilder<DiscoveryWorker>()
-            .setInputData(workDataOf("FOLDER_URI" to selectedUri))
             .addTag("SCAN_TAG")
             .build()
 
@@ -107,11 +94,7 @@ class VindexApplication : Application() {
 
 
         WorkManager.getInstance(this)
-            .beginUniqueWork(
-                "VINDEX_SCAN_PROCESS",
-                ExistingWorkPolicy.KEEP,
-                discoveryReq
-            )
+            .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(citiesReq)
             .then(metadataReq)
             .then(aiReq)

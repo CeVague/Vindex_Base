@@ -11,7 +11,8 @@ import androidx.room.PrimaryKey
         Index(value = ["date_taken"]),
         Index(value = ["folder_path"]),
         Index(value = ["file_path"], unique = true),
-        Index(value = ["is_metadata_extracted"])
+        Index(value = ["is_metadata_extracted"]),
+        Index(value = ["relative_path"])
     ]
 )
 data class Photo(
@@ -29,6 +30,9 @@ data class Photo(
 
     @ColumnInfo(name = "folder_path")
     val folderPath: String,
+
+    @ColumnInfo(name = "relative_path")
+    val relativePath: String? = null,
 
     @ColumnInfo(name = "date_taken")
     val dateTaken: Long? = null,

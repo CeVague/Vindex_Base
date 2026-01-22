@@ -20,7 +20,6 @@ data class Setting(
     companion object {
         const val KEY_FIRST_RUN = "is_first_run"
         const val KEY_CITIES_LOADED = "is_cities_loaded"
-        const val KEY_SOURCE_FOLDER_URI = "source_folder_uri"
         const val KEY_GRID_COLUMNS = "grid_columns"
         const val KEY_THEME = "theme"
         const val KEY_LANGUAGE = "language"
@@ -36,5 +35,9 @@ data class Setting(
         const val LANGUAGE_SYSTEM = "system"
         const val LANGUAGE_FRENCH = "fr"
         const val LANGUAGE_ENGLISH = "en"
+
+
+        const val KEY_INCLUDED_FOLDERS = "included_folders"
+        const val KEY_IS_CONFIGURED = "is_configured"
     }
 }

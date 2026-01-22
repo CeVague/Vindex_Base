@@ -1,25 +1,27 @@
 package com.cevague.vindex.ui.welcome
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.local.FastSettings
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
 import com.cevague.vindex.ui.main.MainActivity
+import com.cevague.vindex.util.MediaScanner
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class WelcomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWelcomeBinding
-
-    private val folderPickerLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let { handleFolderSelected(it) }
-    }
+    private var availableFolders: List<MediaScanner.FolderInfo> = emptyList()
+    private val selectedFolders = mutableSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,25 +29,97 @@ class WelcomeActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnSelectFolder.setOnClickListener {
-            folderPickerLauncher.launch(null)
+            checkAndRequestPermissions()
         }
     }
 
-    private fun handleFolderSelected(uri: Uri) {
-        contentResolver.takePersistableUriPermission(
-            uri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION
-        )
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        if (allGranted) {
+            loadFoldersAndShowPicker()
+        } else {
+            // Afficher un message
+        }
+    }
 
-        val app = application as VindexApplication
+    private fun checkAndRequestPermissions() {
+        val permissions = mutableListOf<String>()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            permissions.add(Manifest.permission.ACCESS_MEDIA_LOCATION)
+        }
+
+        requestPermissionLauncher.launch(permissions.toTypedArray())
+    }
+
+    private fun loadFoldersAndShowPicker() {
         lifecycleScope.launch {
-            app.settingsRepository.setSourceFolderUri(uri.toString())
+            // Afficher un loading
+            //binding.progressBar.visibility = View.VISIBLE
 
-            (application as VindexApplication).startFullScan(uri.toString())
+            availableFolders = MediaScanner().listImageFolders(this@WelcomeActivity)
+
+            //binding.progressBar.visibility = View.GONE
+
+            showFolderPickerDialog()
+        }
+    }
+
+    private fun showFolderPickerDialog() {
+        val folderNames = availableFolders.map { "${it.relativePath} (${it.photoCount})" }.toTypedArray()
+        val checkedItems = BooleanArray(availableFolders.size) {
+            // Pré-sélectionner DCIM et Pictures
+            availableFolders[it].relativePath.startsWith("DCIM") ||
+                    availableFolders[it].relativePath.startsWith("Pictures")
+        }
+
+        // Initialiser selectedFolders avec les pré-sélectionnés
+        availableFolders.forEachIndexed { index, folder ->
+            if (checkedItems[index]) selectedFolders.add(folder.relativePath)
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Sélectionner les dossiers à scanner")
+            .setMultiChoiceItems(folderNames, checkedItems) { _, which, isChecked ->
+                val folder = availableFolders[which].relativePath
+                if (isChecked) {
+                    selectedFolders.add(folder)
+                } else {
+                    selectedFolders.remove(folder)
+                }
+            }
+            .setPositiveButton("Valider") { _, _ ->
+                if (selectedFolders.isNotEmpty()) {
+                    saveAndContinue()
+                } else {
+                    Toast.makeText(this, "Sélectionnez au moins un dossier", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    private fun saveAndContinue() {
+        val app = application as VindexApplication
+
+        lifecycleScope.launch {
+            // Sauvegarder les dossiers sélectionnés
+            FastSettings.includedFolders = selectedFolders
+            FastSettings.isConfigured = true
+
+            // Lancer le scan
+            app.startFullScan()
 
             startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
             finish()
         }
     }
-
 }

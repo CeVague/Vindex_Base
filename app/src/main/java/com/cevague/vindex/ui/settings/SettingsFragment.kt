@@ -18,25 +18,6 @@ import kotlinx.coroutines.runBlocking
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
-    private val folderPickerLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let {
-            // 1. Persister la permission (important pour que l'app y accède après un redémarrage)
-            requireContext().contentResolver.takePersistableUriPermission(
-                it, Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-
-            // 2. Sauvegarder dans ton repository
-            val repository = (requireActivity().application as VindexApplication).settingsRepository
-            lifecycleScope.launch {
-                repository.setSourceFolderUri(it.toString())
-                // Optionnel : Mettre à jour l'UI du fragment immédiatement
-                findPreference<Preference>(Setting.KEY_SOURCE_FOLDER_URI)?.summary = it.toString()
-            }
-        }
-    }
-
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
@@ -51,32 +32,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     app.personRepository.deleteAllFaces()
                     app.albumRepository.deleteAll()
                     Toast.makeText(requireContext(), "Database reset", Toast.LENGTH_SHORT).show()
-                    repository.getSourceFolderUriOnce()
-                        ?.let { selectedUri -> app.startFullScan(selectedUri) }
                 }
                 true
             }
 
-        findPreference<Preference>(Setting.KEY_SOURCE_FOLDER_URI)?.setOnPreferenceClickListener {
-            folderPickerLauncher.launch(null) // Ouvre le sélecteur
-            true
-        }
-
         preferenceManager.preferenceDataStore = object : PreferenceDataStore() {
-
-            override fun putString(key: String, value: String?) {
-                lifecycleScope.launch {
-                    value?.let {
-                        repository.setValue(key, it)
-                        // MISE À JOUR DES MIROIRS CRITIQUES
-                        when (key) {
-                            Setting.KEY_SOURCE_FOLDER_URI -> FastSettings.sourceFolderUri = it
-                            Setting.KEY_THEME -> FastSettings.themeMode = it
-                            Setting.KEY_LANGUAGE -> FastSettings.userLanguage = it
-                        }
-                    }
-                }
-            }
 
             override fun putBoolean(key: String, value: Boolean) {
                 lifecycleScope.launch { repository.setValue(key, value.toString()) }
@@ -84,16 +44,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             override fun putInt(key: String, value: Int) {
                 lifecycleScope.launch { repository.setValue(key, value.toString()) }
-            }
-
-            // LECTURE (On tente le miroir d'abord pour la fluidité)
-            override fun getString(key: String, defaultValue: String?): String? {
-                return when (key) {
-                    Setting.KEY_SOURCE_FOLDER_URI -> FastSettings.sourceFolderUri
-                    Setting.KEY_THEME -> FastSettings.themeMode
-                    Setting.KEY_LANGUAGE -> FastSettings.userLanguage
-                    else -> runBlocking { repository.getValueOnce(key) } ?: defaultValue
-                }
             }
 
             override fun getBoolean(key: String, defaultValue: Boolean): Boolean {

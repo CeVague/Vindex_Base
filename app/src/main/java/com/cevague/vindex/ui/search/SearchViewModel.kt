@@ -19,7 +19,7 @@ class SearchViewModel(private val repository: PhotoRepository) : ViewModel() {
     @OptIn(ExperimentalCoroutinesApi::class)
     val searchResults: StateFlow<List<PhotoSummary>> = _searchTrigger
         .flatMapLatest { query ->
-            if (query.trim().length < 2) flowOf(emptyList())
+            if (query.trim().length < 2) flowOf(emptyList<PhotoSummary>())
             else {
                 repository.searchByFileNameSummary(query)
             }

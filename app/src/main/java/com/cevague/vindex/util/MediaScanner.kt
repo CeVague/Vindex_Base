@@ -1,252 +1,276 @@
 package com.cevague.vindex.util
 
+import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.provider.DocumentsContract
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
-import androidx.documentfile.provider.DocumentFile
+import androidx.exifinterface.media.ExifInterface
 import com.cevague.vindex.data.database.entity.Photo
-import com.drew.imaging.ImageMetadataReader
-import com.drew.metadata.exif.ExifIFD0Directory
-import com.drew.metadata.exif.ExifSubIFDDirectory
-import com.drew.metadata.exif.GpsDirectory
+import com.cevague.vindex.data.local.FastSettings
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 
 class MediaScanner {
 
     companion object {
-        val imageMimeTypes = listOf(
-            "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/gif"
+        private val PROJECTION = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DISPLAY_NAME,
+            MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.DATE_MODIFIED,
+            MediaStore.Images.Media.SIZE,
+            MediaStore.Images.Media.MIME_TYPE,
+            MediaStore.Images.Media.WIDTH,
+            MediaStore.Images.Media.HEIGHT,
+            MediaStore.Images.Media.RELATIVE_PATH,
+            MediaStore.Images.Media.DATA,
+        )
+
+        private val PROJECTION_WITH_GPS = PROJECTION + arrayOf(
+            MediaStore.Images.Media.LATITUDE,
+            MediaStore.Images.Media.LONGITUDE
         )
     }
 
-    /**
-     * Scan ultra rapide via DocumentsContract.
-     */
-    fun scanFolderFast(
+    fun scanMediaStore(
         context: Context,
-        rootUri: Uri,
+        includedFolders: Set<String>,
         lastScanTimestamp: Long,
         onPathSeen: (String) -> Unit
     ): Flow<List<Photo>> = flow {
-        val rootDocId = DocumentsContract.getTreeDocumentId(rootUri)
         val batch = mutableListOf<Photo>()
-        val stack = mutableListOf(rootDocId)
+        val selection = buildSelection(includedFolders, lastScanTimestamp)
+        val selectionArgs = buildSelectionArgs(includedFolders, lastScanTimestamp)
+        val sortOrder = "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
 
-        while (stack.isNotEmpty()) {
-            val docId = stack.removeAt(stack.size - 1)
-            val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(rootUri, docId)
+        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
 
-            context.contentResolver.query(childrenUri, null, null, null, null)?.use { cursor ->
-                val idIdx =
-                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-                val mimeIdx =
-                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-                val dateIdx =
-                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
-                val nameIdx =
-                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-                val sizeIdx = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+        context.contentResolver.query(
+            collection,
+            PROJECTION_WITH_GPS,
+            selection,
+            selectionArgs,
+            sortOrder
+        )?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+            val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+            val dateTakenColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATE_TAKEN)
+            val dateModifiedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_MODIFIED)
+            val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
+            val mimeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
+            val widthColumn = cursor.getColumnIndex(MediaStore.Images.Media.WIDTH)
+            val heightColumn = cursor.getColumnIndex(MediaStore.Images.Media.HEIGHT)
+            val relativePathColumn = cursor.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)
+            val dataColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+            val latColumn = cursor.getColumnIndex(MediaStore.Images.Media.LATITUDE)
+            val lonColumn = cursor.getColumnIndex(MediaStore.Images.Media.LONGITUDE)
 
-                while (cursor.moveToNext()) {
-                    val childId = cursor.getString(idIdx)
-                    val mime = cursor.getString(mimeIdx)
-                    val lastModified = cursor.getLong(dateIdx)
-                    val fileUri =
-                        DocumentsContract.buildDocumentUriUsingTree(rootUri, childId).toString()
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val contentUri = ContentUris.withAppendedId(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                )
+                onPathSeen(contentUri.toString())
 
-                    onPathSeen(fileUri)
-
-                    if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
-                        stack.add(childId)
-                    } else if (mime in imageMimeTypes && lastModified > lastScanTimestamp) {
-                        val parentUri =
-                            DocumentsContract.buildDocumentUriUsingTree(rootUri, docId).toString()
-                        batch.add(
-                            createPhotoFromCursor(
-                                cursor,
-                                fileUri,
-                                parentUri,
-                                nameIdx,
-                                sizeIdx,
-                                mimeIdx,
-                                dateIdx
-                            )
-                        )
-                        if (batch.size >= 50) {
-                            emit(batch.toList()); batch.clear()
-                        }
-                    }
+                val photo = createPhotoFromCursor(
+                    cursor = cursor,
+                    contentUri = contentUri,
+                    idColumn = idColumn,
+                    nameColumn = nameColumn,
+                    dateTakenColumn = dateTakenColumn,
+                    dateModifiedColumn = dateModifiedColumn,
+                    sizeColumn = sizeColumn,
+                    mimeColumn = mimeColumn,
+                    widthColumn = widthColumn,
+                    heightColumn = heightColumn,
+                    relativePathColumn = relativePathColumn,
+                    dataColumn = dataColumn,
+                    latColumn = latColumn,
+                    lonColumn = lonColumn
+                )
+                batch.add(photo)
+                if (batch.size >= 50) {
+                    emit(batch.toList())
+                    batch.clear()
                 }
             }
         }
         if (batch.isNotEmpty()) emit(batch)
     }
 
+    private fun buildSelection(includedFolders: Set<String>, lastScanTimestamp: Long): String {
+        val conditions = mutableListOf<String>()
+        if (lastScanTimestamp > 0) {
+            conditions.add("${MediaStore.Images.Media.DATE_MODIFIED} > ?")
+        }
+        if (includedFolders.isNotEmpty()) {
+            val folderConditions = includedFolders.map {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
+                } else {
+                    "${MediaStore.Images.Media.DATA} LIKE ?"
+                }
+            }
+            conditions.add("(${folderConditions.joinToString(" OR ")})")
+        }
+        return if (conditions.isEmpty()) "" else conditions.joinToString(" AND ")
+    }
+
+    private fun buildSelectionArgs(includedFolders: Set<String>, lastScanTimestamp: Long): Array<String>? {
+        val args = mutableListOf<String>()
+        if (lastScanTimestamp > 0) {
+            args.add((lastScanTimestamp / 1000).toString())
+        }
+        includedFolders.forEach { folder ->
+            args.add("%$folder%")
+        }
+        return if (args.isEmpty()) null else args.toTypedArray()
+    }
+
     private fun createPhotoFromCursor(
         cursor: Cursor,
-        fileUri: String,
-        parentUri: String,
-        nameIdx: Int,
-        sizeIdx: Int,
-        mimeIdx: Int,
-        dateIdx: Int
+        contentUri: Uri,
+        idColumn: Int,
+        nameColumn: Int,
+        dateTakenColumn: Int,
+        dateModifiedColumn: Int,
+        sizeColumn: Int,
+        mimeColumn: Int,
+        widthColumn: Int,
+        heightColumn: Int,
+        relativePathColumn: Int,
+        dataColumn: Int,
+        latColumn: Int,
+        lonColumn: Int
     ): Photo {
+        val fileName = cursor.getString(nameColumn)
+        val dateModified = cursor.getLong(dateModifiedColumn) * 1000
+        val dateTaken = if (dateTakenColumn >= 0) cursor.getLongOrNull(dateTakenColumn) else null
+        val fileSize = cursor.getLong(sizeColumn)
+        val mimeType = cursor.getString(mimeColumn)
+        val width = if (widthColumn >= 0) cursor.getIntOrNull(widthColumn) else null
+        val height = if (heightColumn >= 0) cursor.getIntOrNull(heightColumn) else null
+        val relativePath = if (relativePathColumn >= 0) {
+            cursor.getStringOrNull(relativePathColumn)?.trimEnd('/')
+        } else if (dataColumn >= 0) {
+            extractRelativePath(cursor.getStringOrNull(dataColumn))
+        } else null
+
+        val folderPath = relativePath ?: ""
+        val latitude = if (latColumn >= 0) cursor.getDoubleOrNull(latColumn) else null
+        val longitude = if (lonColumn >= 0) cursor.getDoubleOrNull(lonColumn) else null
+        val mediaType = detectMediaType(fileName, folderPath, null, null)
+
         return Photo(
-            filePath = fileUri,
-            fileName = cursor.getString(nameIdx),
-            folderPath = parentUri,
-            fileSize = cursor.getLong(sizeIdx),
-            mimeType = cursor.getString(mimeIdx),
+            filePath = contentUri.toString(),
+            fileName = fileName,
+            folderPath = folderPath,
+            relativePath = relativePath,
+            fileSize = fileSize,
+            mimeType = mimeType,
             dateAdded = System.currentTimeMillis(),
-            dateTaken = cursor.getLong(dateIdx).takeIf { it > 0 },
-            fileLastModified = cursor.getLong(dateIdx),
+            dateTaken = dateTaken ?: dateModified,
+            fileLastModified = dateModified,
+            width = width,
+            height = height,
+            latitude = latitude,
+            longitude = longitude,
+            mediaType = mediaType,
             isMetadataExtracted = false
         )
     }
 
-    fun createPhotoFromFile(context: Context, file: DocumentFile, extractExif: Boolean): Photo {
-        val filePath = file.uri.toString()
-        val fileName = file.name ?: "unknown"
-        val folderPath = file.parentFile?.uri?.toString() ?: ""
-        val fileSize = file.length()
-        var mimeType = file.type
-        val dateAdded = System.currentTimeMillis()
-        val fileLastModified = file.lastModified()
-
-        if (!extractExif) {
-            return Photo(
-                filePath = filePath, fileName = fileName, folderPath = folderPath,
-                fileSize = fileSize, mimeType = mimeType, dateAdded = dateAdded,
-                fileLastModified = fileLastModified, isMetadataExtracted = false
-            )
-        }
-
-        var dateTaken: Long? = fileLastModified.takeIf { it > 0 }
-        var width: Int? = null
-        var height: Int? = null
-        var orientation: Int? = null
-        var latitude: Double? = null
-        var longitude: Double? = null
+    /**
+     * Extraction approfondie via ExifInterface (GPS original garanti sur Android 10+).
+     */
+    fun extractMetadata(context: Context, photo: Photo): Photo {
+        val uri = Uri.parse(photo.filePath)
+        var latitude = photo.latitude
+        var longitude = photo.longitude
         var cameraMake: String? = null
         var cameraModel: String? = null
-        var mediaType = "photo"
-
-
+        var orientation: Int? = null
 
         try {
-            // 1. DIMENSIONS (La méthode la plus rapide pour TOUS les formats dont PNG)
-            context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeStream(inputStream, null, options)
-                width = options.outWidth
-                height = options.outHeight
-                mimeType = options.outMimeType ?: mimeType
-            }
+            val uriToRead = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try { MediaStore.setRequireOriginal(uri) } catch (e: Exception) { uri }
+            } else uri
 
-            // 2. MÉTADONNÉES (metadata-extractor est plus complet pour PNG/WebP/HEIC)
-            context.contentResolver.openInputStream(file.uri)?.use { inputStream ->
-                val metadata = ImageMetadataReader.readMetadata(inputStream)
-
-                // Appareil & Orientation
-                metadata.getFirstDirectoryOfType(ExifIFD0Directory::class.java)?.let {
-                    cameraMake = it.getString(ExifIFD0Directory.TAG_MAKE)?.trim()
-                    cameraModel = it.getString(ExifIFD0Directory.TAG_MODEL)?.trim()
-                    orientation = it.getInteger(ExifIFD0Directory.TAG_ORIENTATION)
-
-                    // Détection Screenshot et autre via le champ "Software" (Logiciel)
-                    // Les captures d'écran système marquent souvent leur origine ici
-                    it.getString(ExifIFD0Directory.TAG_SOFTWARE)?.let { software ->
-                        when {
-                            software.contains("Screenshot", ignoreCase = true) -> {
-                                mediaType = "screenshot"
-                            }
-
-                            software.contains("Snapseed", ignoreCase = true) ||
-                                    software.contains("Photoshop", ignoreCase = true) -> {
-                                mediaType = "edited"
-                            }
-
-                            software.contains("Instagram", ignoreCase = true) -> {
-                                mediaType = "social"
-                            }
-                        }
-                    }
-
+            context.contentResolver.openInputStream(uriToRead)?.use { stream ->
+                val exif = ExifInterface(stream)
+                val latLong = exif.latLong
+                if (latLong != null && (latLong[0] != 0.0 || latLong[1] != 0.0)) {
+                    latitude = latLong[0]
+                    longitude = latLong[1]
                 }
-
-                // Date de prise de vue (souvent dans SubIFD)
-                metadata.getFirstDirectoryOfType(ExifSubIFDDirectory::class.java)?.let {
-                    dateTaken =
-                        it.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)?.time ?: dateTaken
-
-                    // DÉTECTION SELFIE : On cherche "front" dans le modèle de l'objectif
-                    // metadata-extractor extrait souvent le nom de la caméra utilisée comme "Lens Model"
-                    it.getString(ExifSubIFDDirectory.TAG_LENS_MODEL)?.let { lens ->
-                        if (lens.contains("front", ignoreCase = true) || lens.contains(
-                                "avant",
-                                ignoreCase = true
-                            )
-                        ) {
-                            mediaType = "selfie"
-                        }
-                    }
-                }
-
-                // GPS
-                metadata.getFirstDirectoryOfType(GpsDirectory::class.java)?.let {
-                    it.geoLocation?.let { loc ->
-                        latitude = loc.latitude
-                        longitude = loc.longitude
-                    }
-                }
+                cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE)?.trim()
+                cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)?.trim()
+                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
             }
-
-            // 3. Détection Capture d'écran de rattrapage (via le nom ou le chemin)
-            // Détection Screenshot par nom/chemin
-            if (mediaType == "photo") {
-                if (fileName.contains("Screenshot", ignoreCase = true) ||
-                    folderPath.contains("Screenshots", ignoreCase = true)
-                ) {
-                    mediaType = "screenshot"
-                }
-            }
-
-            // 4. Détection autre
-            if (mediaType == "photo" && cameraMake == null && cameraModel == null) {
-                mediaType = "other"
-            }
-
-            // 5. FALLBACK : Utiliser ExifInterface UNIQUEMENT si infos vitales manquantes
-            // Récupération GPS (plus robuste sur Android)
-            if (latitude == null) {
-                try {
-                    context.contentResolver.openInputStream(file.uri)?.use { fallbackStream ->
-                        val exif = androidx.exifinterface.media.ExifInterface(fallbackStream)
-
-                        exif.latLong?.let {
-                            latitude = it[0]
-                            longitude = it[1]
-                        }
-                    }
-                } catch (e: Exception) { /* Ignorer */ }
-            }
-
         } catch (e: Exception) {
-            Log.e("MediaScanner", "Erreur extraction: ${file.name}", e)
+            Log.e("MediaScanner", "Erreur EXIF pour ${photo.fileName}", e)
         }
 
-        return Photo(
-            filePath = filePath, fileName = fileName, folderPath = folderPath,
-            fileSize = fileSize, mimeType = mimeType, dateAdded = dateAdded,
-            dateTaken = dateTaken, width = width, height = height,
-            orientation = orientation, latitude = latitude, longitude = longitude,
-            cameraMake = cameraMake, cameraModel = cameraModel,
-            fileLastModified = fileLastModified, isMetadataExtracted = true,
-            mediaType = mediaType
+        return photo.copy(
+            latitude = latitude,
+            longitude = longitude,
+            cameraMake = cameraMake,
+            cameraModel = cameraModel,
+            orientation = orientation,
+            isMetadataExtracted = true
         )
     }
+
+    private fun detectMediaType(fileName: String, folderPath: String, cameraMake: String?, cameraModel: String?): String {
+        return when {
+            fileName.contains("Screenshot", ignoreCase = true) ||
+                    folderPath.contains("Screenshots", ignoreCase = true) -> "screenshot"
+            cameraMake == null && cameraModel == null -> "other"
+            else -> "photo"
+        }
+    }
+
+    private fun extractRelativePath(absolutePath: String?): String? {
+        if (absolutePath == null) return null
+        val markers = listOf("/DCIM/", "/Pictures/", "/Download/", "/Documents/")
+        for (marker in markers) {
+            val idx = absolutePath.indexOf(marker)
+            if (idx >= 0) {
+                val relativePart = absolutePath.substring(idx + 1)
+                return relativePart.substringBeforeLast('/')
+            }
+        }
+        return null
+    }
+
+    suspend fun listImageFolders(context: Context): List<FolderInfo> = withContext(Dispatchers.IO) {
+        val folders = mutableMapOf<String, Int>()
+        val projection = arrayOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.RELATIVE_PATH else MediaStore.Images.Media.DATA)
+        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL) else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+        context.contentResolver.query(collection, projection, null, null, null)?.use { cursor ->
+            val pathColumn = cursor.getColumnIndexOrThrow(projection[0])
+            while (cursor.moveToNext()) {
+                val path = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) cursor.getStringOrNull(pathColumn)?.trimEnd('/') else extractRelativePath(cursor.getStringOrNull(pathColumn))
+                if (path != null) folders[path] = (folders[path] ?: 0) + 1
+            }
+        }
+        folders.map { FolderInfo(it.key, it.value) }.sortedByDescending { it.photoCount }
+    }
+
+    data class FolderInfo(val relativePath: String, val photoCount: Int)
+
+    private fun Cursor.getStringOrNull(columnIndex: Int): String? = if (columnIndex >= 0 && !isNull(columnIndex)) getString(columnIndex) else null
+    private fun Cursor.getLongOrNull(columnIndex: Int): Long? = if (columnIndex >= 0 && !isNull(columnIndex)) getLong(columnIndex) else null
+    private fun Cursor.getIntOrNull(columnIndex: Int): Int? = if (columnIndex >= 0 && !isNull(columnIndex)) getInt(columnIndex) else null
+    private fun Cursor.getDoubleOrNull(columnIndex: Int): Double? = if (columnIndex >= 0 && !isNull(columnIndex)) getDouble(columnIndex).takeIf { it != 0.0 } else null
 }

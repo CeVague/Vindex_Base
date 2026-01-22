@@ -2,18 +2,13 @@ package com.cevague.vindex.worker
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
-import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.util.MediaScanner
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import java.io.IOException
 
 class MetadataWorker(
     appContext: Context,
@@ -21,7 +16,6 @@ class MetadataWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-
         return try {
             setProgress(
                 workDataOf(
@@ -33,56 +27,37 @@ class MetadataWorker(
             delay(500)
 
             val scanner = MediaScanner()
-
             val repository = (applicationContext as VindexApplication).photoRepository
+            val cityRepository = (applicationContext as VindexApplication).cityRepository
 
             val photosNeedingMetadataExtraction = repository.getPhotosNeedingMetadataExtraction()
-
             val total = photosNeedingMetadataExtraction.size
 
-            // Récupère le nombre de cœurs (ex: 4, 8, etc.)
-            // val cores = Runtime.getRuntime().availableProcessors()
-            // On définit un multiplicateur et on met des limites (min 5, max 50 pour garder une UI fluide)
-            // val batchSize = (cores * 5).coerceIn(5, 50)
+            if (total == 0) return Result.success()
 
             val batchSize = (total / 33).coerceIn(5, 50)
 
-            val cityRepository = (applicationContext as VindexApplication).cityRepository
-
             photosNeedingMetadataExtraction.chunked(batchSize).forEachIndexed { index, batch ->
-                val enrichedBatch = batch.mapNotNull { photo ->
-                    val documentFile =
-                        DocumentFile.fromSingleUri(applicationContext, photo.filePath.toUri())
-                    if (documentFile != null && documentFile.exists()) {
-                        // 1. Extraction EXIF classique
-                        var photoData =
-                            scanner.createPhotoFromFile(applicationContext, documentFile, true)
-                                .copy(
-                                    id = photo.id,
-                                    fileLastModified = photo.fileLastModified
-                                )
+                val enrichedBatch = batch.map { photo ->
+                    // Extraction EXIF + GPS via MediaStore (RequireOriginal)
+                    var photoData = scanner.extractMetadata(applicationContext, photo)
 
-                        // 2. Ajout du Reverse Geocoding (Lourd -> fait ici dans le Worker)
-                        if (photoData.latitude != null && photoData.longitude != null) {
-                            val candidates = cityRepository.findNearestCity(
-                                photoData.latitude,
-                                photoData.longitude
-                            )
-                            val placeName = candidates?.let { "${it.name}, ${it.countryCode}" }
-                            photoData = photoData.copy(locationName = placeName)
-                        }
-
-                        photoData
-                    } else {
-                        null
+                    // Reverse Geocoding
+                    if (photoData.latitude != null && photoData.longitude != null) {
+                        val candidates = cityRepository.findNearestCity(
+                            photoData.latitude!!,
+                            photoData.longitude!!
+                        )
+                        val placeName = candidates?.let { "${it.name}, ${it.countryCode}" }
+                        photoData = photoData.copy(locationName = placeName)
                     }
+                    photoData
                 }
 
                 if (enrichedBatch.isNotEmpty()) {
                     repository.insertAll(enrichedBatch)
                 }
 
-                // Mise à jour de la progression (0 à 100)
                 val processedCount = (index + 1) * batchSize
                 val progress = if (processedCount >= total) 100 else (processedCount * 100 / total)
                 setProgress(
@@ -94,12 +69,10 @@ class MetadataWorker(
             }
 
             Result.success()
-        } catch (e: IOException) {
-            if (runAttemptCount < 3) Result.retry() else Result.failure()
         } catch (e: SQLiteException) {
             Result.failure()
         } catch (e: Exception) {
-            Result.failure()
+            if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
     }
 }

@@ -20,17 +20,6 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun deleteAll() = settingDao.deleteAll()
 
-    // Source folder
-
-    fun getSourceFolderUri(): Flow<String?> = getValue(Setting.KEY_SOURCE_FOLDER_URI)
-
-    suspend fun getSourceFolderUriOnce(): String? = getValueOnce(Setting.KEY_SOURCE_FOLDER_URI)
-
-    suspend fun setSourceFolderUri(uri: String) {
-        setValue(Setting.KEY_SOURCE_FOLDER_URI, uri) // BDD
-        FastSettings.sourceFolderUri = uri // Miroir
-    }
-
     // Grid columns
 
     fun getGridColumns(): Flow<Int> = getValue(Setting.KEY_GRID_COLUMNS).map {

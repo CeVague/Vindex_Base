@@ -72,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val now = System.currentTimeMillis()
 
                 db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FIRST_RUN}', 'true', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_SOURCE_FOLDER_URI}', '', $now)")
+                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_INCLUDED_FOLDERS}', '', $now)")
                 db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_GRID_COLUMNS}', '3', $now)")
                 db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_THEME}', '${Setting.THEME_SYSTEM}', $now)")
                 db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_LANGUAGE}', '${Setting.LANGUAGE_SYSTEM}', $now)")
@@ -92,6 +92,7 @@ abstract class AppDatabase : RoomDatabase() {
             )
                 .addCallback(DatabaseCallback())
                 .fallbackToDestructiveMigration()
+                .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
         }
     }
