@@ -55,22 +55,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun analysisLogDao(): AnalysisLogDao
 
     companion object {
-        private const val DATABASE_NAME = "vindex.db"
+        private const val DATABASE_NAME = "vindex_database"
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "vindex_database"
-                )
-                    .addCallback(DatabaseCallback()) // <--- On ajoute le callback ici
-                    .build()
-                INSTANCE = instance
-                instance
+                INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
             }
         }
 

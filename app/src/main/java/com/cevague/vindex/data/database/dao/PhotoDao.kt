@@ -6,6 +6,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.cevague.vindex.data.database.entity.Photo
 import kotlinx.coroutines.flow.Flow
@@ -117,6 +118,7 @@ interface PhotoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(photo: Photo): Long
 
+    @Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(photos: List<Photo>): List<Long>
 
