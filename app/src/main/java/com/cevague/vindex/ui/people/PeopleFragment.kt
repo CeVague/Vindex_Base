@@ -25,7 +25,7 @@ class PeopleFragment : Fragment() {
     private var _binding: FragmentPeopleBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var personRepo : PersonRepository
+    private lateinit var personRepo: PersonRepository
 
 
     private val viewModel: PeopleViewModel by viewModels {
@@ -110,10 +110,12 @@ class PeopleFragment : Fragment() {
                     showRenameDialog(person)
                     true
                 }
+
                 R.id.action_delete -> {
                     showDeleteConfirmation(person)
                     true
                 }
+
                 else -> false
             }
         }

@@ -66,235 +66,133 @@
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textColor="?attr/colorOnSurface" />
 
-                <!-- Date -->
-                <LinearLayout
+                <!-- Date d'ajout -->
+                <TextView
+                    android:id="@+id/textDateAdded"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_calendar"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="Date Ajout"
-                        android:src="@drawable/vector_calendar"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textDateAdded"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
-
-                <!-- Date -->
-                <LinearLayout
+                <!-- Date de prise -->
+                <TextView
+                    android:id="@+id/textDateTake"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="Date Prise"
-                        android:src="@drawable/vector_calendar"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textDateTake"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_calendar"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
                 <!-- Dimensions -->
-                <LinearLayout
+                <TextView
+                    android:id="@+id/textDimensions"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_dimensions"
-                        android:src="@drawable/vector_dimensions"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textDimensions"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_dimensions"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
                 <!-- Taille fichier -->
-                <LinearLayout
+                <TextView
+                    android:id="@+id/textFileSize"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_file_size"
-                        android:src="@drawable/vector_file_size"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textFileSize"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_file_size"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
                 <!-- Appareil photo -->
-                <LinearLayout
-                    android:id="@+id/layoutCamera"
+                <TextView
+                    android:id="@+id/textCamera"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_camera"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_camera"
-                        android:src="@drawable/vector_camera"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textCamera"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
-
-                <!-- Type d'image (photo, selfie, screenshot, etc.) -->
-                <LinearLayout
-                    android:id="@+id/layoutImageType"
+                <!-- Type d'image -->
+                <TextView
+                    android:id="@+id/textImageType"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_camera_type"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_image_type"
-                        android:src="@drawable/vector_camera_type"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textImageType"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
-
-                <!-- Localisation -->
-                <LinearLayout
+                <!-- Localisation (Texte) -->
+                <TextView
+                    android:id="@+id/textLocationText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_location"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_location"
-                        android:src="@drawable/vector_location"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textLocationText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
-
-                <!-- Localisation -->
-                <LinearLayout
+                <!-- Localisation (Coordonnées) -->
+                <TextView
+                    android:id="@+id/textLocationCoordinates"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_location"
-                        android:src="@drawable/vector_location"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textLocationCoordinates"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    app:drawableStartCompat="@drawable/vector_location"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
                 <!-- Chemin du fichier -->
-                <LinearLayout
+                <TextView
+                    android:id="@+id/textPath"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:drawablePadding="12dp"
+                    android:ellipsize="middle"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@string/viewer_file_path"
-                        android:src="@drawable/vector_folder"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/textPath"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:ellipsize="middle"
-                        android:maxLines="2"
-                        android:text="@string/viewer_no_info_short"
-                        android:textAppearance="?attr/textAppearanceBodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-                </LinearLayout>
+                    android:maxLines="2"
+                    android:text="@string/viewer_no_info_short"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:drawableStartCompat="@drawable/vector_folder"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
 
                 <!-- Divider -->
                 <View
@@ -304,7 +202,7 @@
                     android:layout_marginTop="16dp"
                     android:background="?attr/colorOutlineVariant" />
 
-                <!-- Section : IA (préparée pour le futur) -->
+                <!-- Section : IA -->
                 <TextView
                     android:id="@+id/textSectionAi"
                     android:layout_width="wrap_content"

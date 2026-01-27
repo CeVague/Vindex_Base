@@ -7,9 +7,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.exifinterface.media.ExifInterface
 import com.cevague.vindex.data.database.entity.Photo
-import com.cevague.vindex.data.local.FastSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -64,7 +64,8 @@ class MediaScanner {
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
             val dateTakenColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATE_TAKEN)
-            val dateModifiedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_MODIFIED)
+            val dateModifiedColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_MODIFIED)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
             val mimeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
             val widthColumn = cursor.getColumnIndex(MediaStore.Images.Media.WIDTH)
@@ -125,7 +126,10 @@ class MediaScanner {
         return if (conditions.isEmpty()) "" else conditions.joinToString(" AND ")
     }
 
-    private fun buildSelectionArgs(includedFolders: Set<String>, lastScanTimestamp: Long): Array<String>? {
+    private fun buildSelectionArgs(
+        includedFolders: Set<String>,
+        lastScanTimestamp: Long
+    ): Array<String>? {
         val args = mutableListOf<String>()
         if (lastScanTimestamp > 0) {
             args.add((lastScanTimestamp / 1000).toString())
@@ -138,8 +142,8 @@ class MediaScanner {
 
     private fun createPhotoFromCursor(
         cursor: Cursor,
-        contentUri: Uri,
         idColumn: Int,
+        contentUri: Uri,
         nameColumn: Int,
         dateTakenColumn: Int,
         dateModifiedColumn: Int,
@@ -193,7 +197,7 @@ class MediaScanner {
      * Extraction approfondie via ExifInterface (GPS original garanti sur Android 10+).
      */
     fun extractMetadata(context: Context, photo: Photo): Photo {
-        val uri = Uri.parse(photo.filePath)
+        val uri = photo.filePath.toUri()
         var latitude = photo.latitude
         var longitude = photo.longitude
         var cameraMake: String? = null
@@ -202,7 +206,11 @@ class MediaScanner {
 
         try {
             val uriToRead = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try { MediaStore.setRequireOriginal(uri) } catch (e: Exception) { uri }
+                try {
+                    MediaStore.setRequireOriginal(uri)
+                } catch (e: Exception) {
+                    uri
+                }
             } else uri
 
             context.contentResolver.openInputStream(uriToRead)?.use { stream ->
@@ -214,7 +222,10 @@ class MediaScanner {
                 }
                 cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE)?.trim()
                 cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)?.trim()
-                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+                orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
             }
         } catch (e: Exception) {
             Log.e("MediaScanner", "Erreur EXIF pour ${photo.fileName}", e)
@@ -230,10 +241,16 @@ class MediaScanner {
         )
     }
 
-    private fun detectMediaType(fileName: String, folderPath: String, cameraMake: String?, cameraModel: String?): String {
+    private fun detectMediaType(
+        fileName: String,
+        folderPath: String,
+        cameraMake: String?,
+        cameraModel: String?
+    ): String {
         return when {
             fileName.contains("Screenshot", ignoreCase = true) ||
                     folderPath.contains("Screenshots", ignoreCase = true) -> "screenshot"
+
             cameraMake == null && cameraModel == null -> "other"
             else -> "photo"
         }
@@ -254,13 +271,20 @@ class MediaScanner {
 
     suspend fun listImageFolders(context: Context): List<FolderInfo> = withContext(Dispatchers.IO) {
         val folders = mutableMapOf<String, Int>()
-        val projection = arrayOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.RELATIVE_PATH else MediaStore.Images.Media.DATA)
-        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL) else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val projection =
+            arrayOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.RELATIVE_PATH else MediaStore.Images.Media.DATA)
+        val collection =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.getContentUri(
+                MediaStore.VOLUME_EXTERNAL
+            ) else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
         context.contentResolver.query(collection, projection, null, null, null)?.use { cursor ->
             val pathColumn = cursor.getColumnIndexOrThrow(projection[0])
             while (cursor.moveToNext()) {
-                val path = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) cursor.getStringOrNull(pathColumn)?.trimEnd('/') else extractRelativePath(cursor.getStringOrNull(pathColumn))
+                val path =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) cursor.getStringOrNull(
+                        pathColumn
+                    )?.trimEnd('/') else extractRelativePath(cursor.getStringOrNull(pathColumn))
                 if (path != null) folders[path] = (folders[path] ?: 0) + 1
             }
         }
@@ -269,8 +293,15 @@ class MediaScanner {
 
     data class FolderInfo(val relativePath: String, val photoCount: Int)
 
-    private fun Cursor.getStringOrNull(columnIndex: Int): String? = if (columnIndex >= 0 && !isNull(columnIndex)) getString(columnIndex) else null
-    private fun Cursor.getLongOrNull(columnIndex: Int): Long? = if (columnIndex >= 0 && !isNull(columnIndex)) getLong(columnIndex) else null
-    private fun Cursor.getIntOrNull(columnIndex: Int): Int? = if (columnIndex >= 0 && !isNull(columnIndex)) getInt(columnIndex) else null
-    private fun Cursor.getDoubleOrNull(columnIndex: Int): Double? = if (columnIndex >= 0 && !isNull(columnIndex)) getDouble(columnIndex).takeIf { it != 0.0 } else null
+    private fun Cursor.getStringOrNull(columnIndex: Int): String? =
+        if (columnIndex >= 0 && !isNull(columnIndex)) getString(columnIndex) else null
+
+    private fun Cursor.getLongOrNull(columnIndex: Int): Long? =
+        if (columnIndex >= 0 && !isNull(columnIndex)) getLong(columnIndex) else null
+
+    private fun Cursor.getIntOrNull(columnIndex: Int): Int? =
+        if (columnIndex >= 0 && !isNull(columnIndex)) getInt(columnIndex) else null
+
+    private fun Cursor.getDoubleOrNull(columnIndex: Int): Double? =
+        if (columnIndex >= 0 && !isNull(columnIndex)) getDouble(columnIndex).takeIf { it != 0.0 } else null
 }

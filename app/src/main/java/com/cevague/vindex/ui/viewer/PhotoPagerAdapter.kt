@@ -10,7 +10,8 @@ import com.bumptech.glide.Glide
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.github.chrisbanes.photoview.PhotoView
 
-class PhotoPagerAdapter : ListAdapter<PhotoSummary, PhotoPagerAdapter.PhotoPageViewHolder>(DIFF_CALLBACK) {
+class PhotoPagerAdapter :
+    ListAdapter<PhotoSummary, PhotoPagerAdapter.PhotoPageViewHolder>(DIFF_CALLBACK) {
 
     // Callback pour le tap simple (afficher/masquer UI)
     var onPhotoTap: (() -> Unit)? = null

@@ -174,12 +174,13 @@ class PhotoViewerActivity : AppCompatActivity() {
         binding.textImageType.text = photo.mediaType
 
         // Localisation (afficher seulement si disponible, sinon afficher GPS, sinon vide)
-        binding.textLocationText.text = photo.locationName ?: getString(R.string.viewer_no_info_short)
+        binding.textLocationText.text =
+            photo.locationName ?: getString(R.string.viewer_no_info_short)
 
 
         if (photo.latitude != null && photo.longitude != null) {
             binding.textLocationCoordinates.text = "${photo.latitude}, ${photo.longitude}"
-        }else {
+        } else {
             binding.textLocationCoordinates.text = getString(R.string.viewer_no_info_short)
         }
 

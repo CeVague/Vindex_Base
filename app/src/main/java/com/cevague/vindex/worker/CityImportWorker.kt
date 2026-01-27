@@ -1,18 +1,14 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteException
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.database.entity.City
 import com.cevague.vindex.data.local.FastSettings
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 
 class CityImportWorker(
     appContext: Context,
@@ -55,8 +51,10 @@ class CityImportWorker(
 
             try {
                 // On copie tout d'un coup (C'est ici que le "streaming" se passe)
-                db.execSQL("INSERT INTO cities (id, name, country_code, latitude, longitude, population) " +
-                        "SELECT id, name, country_code, latitude, longitude, population FROM ext_db.cities15000")
+                db.execSQL(
+                    "INSERT INTO cities (id, name, country_code, latitude, longitude, population) " +
+                            "SELECT id, name, country_code, latitude, longitude, population FROM ext_db.cities15000"
+                )
             } finally {
                 // On libère le fichier quoi qu'il arrive
                 db.execSQL("DETACH DATABASE ext_db")

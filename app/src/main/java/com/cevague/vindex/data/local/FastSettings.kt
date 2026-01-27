@@ -13,7 +13,7 @@ object FastSettings {
     var isFirstRun: Boolean
         get() = prefs.getBoolean(Setting.KEY_FIRST_RUN, true)
         set(value) = prefs.edit { putBoolean(Setting.KEY_FIRST_RUN, value) }
-    
+
     var isCitiesLoaded: Boolean
         get() = prefs.getBoolean(Setting.KEY_CITIES_LOADED, false)
         set(value) = prefs.edit { putBoolean(Setting.KEY_CITIES_LOADED, value) }

@@ -28,8 +28,8 @@
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceBodySmall"
         android:textColor="?attr/colorOnSurfaceVariant"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="@id/textTitle"
+        app:layout_constraintEnd_toEndOf="parent"
         tools:text="3 restants" />
 
     <!-- Le visage à identifier -->
@@ -53,7 +53,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Suggestions"
+        android:text="@string/people_identify_suggestions"
         android:textAppearance="?attr/textAppearanceLabelMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintStart_toStartOf="parent"
@@ -64,8 +64,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        app:singleSelection="true"
-        app:layout_constraintTop_toBottomOf="@id/textSuggestionsLabel">
+        app:layout_constraintTop_toBottomOf="@id/textSuggestionsLabel"
+        app:singleSelection="true">
         <!-- Chips ajoutés dynamiquement -->
     </com.google.android.material.chip.ChipGroup>
 
@@ -76,16 +76,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Ou saisir un nom..."
+        android:hint="@string/people_identify_new_name"
         app:layout_constraintTop_toBottomOf="@id/chipGroupSuggestions">
 
         <AutoCompleteTextView
             android:id="@+id/editName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:completionThreshold="1"
             android:imeOptions="actionDone"
-            android:inputType="textPersonName|textCapWords"
-            android:completionThreshold="1" />
+            android:inputType="textPersonName|textCapWords" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Actions -->
@@ -95,7 +95,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Pas une personne"
+        android:text="@string/people_identify_not_a_person"
         android:textColor="?attr/colorError"
         app:icon="@drawable/vector_account_off"
         app:iconTint="?attr/colorError"
@@ -110,7 +110,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Passer"
+        android:text="@string/people_identify_skip"
         app:icon="@drawable/vector_skip_next"
         app:iconGravity="end"
         app:layout_constraintEnd_toEndOf="parent"

@@ -131,14 +131,16 @@ interface FaceDao {
     suspend fun getNextPendingFaceWithPhoto(): FaceWithPhoto?
 
 
-    @Query("""
+    @Query(
+        """
     SELECT f.id, p.file_path AS filePath, f.box_left AS boxLeft, 
            f.box_top AS boxTop, f.box_right AS boxRight, f.box_bottom AS boxBottom
     FROM faces f 
     INNER JOIN photos p ON f.photo_id = p.id 
     WHERE f.assignment_type = 'pending' AND f.id NOT IN (:excludeIds)
     LIMIT 1
-""")
+"""
+    )
     suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceWithPhoto?
 
     // Pour marquer comme "ignored"

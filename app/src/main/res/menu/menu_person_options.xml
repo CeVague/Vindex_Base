@@ -4,11 +4,11 @@
     <item
         android:id="@+id/action_rename"
         android:icon="@drawable/vector_edit"
-        android:title="Renommer" />
+        android:title="@string/people_rename" />
 
     <item
         android:id="@+id/action_delete"
         android:icon="@drawable/vector_delete"
-        android:title="Supprimer" />
+        android:title="@string/people_delete" />
 
 </menu>

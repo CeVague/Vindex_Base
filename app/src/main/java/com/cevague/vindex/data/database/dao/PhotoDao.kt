@@ -2,7 +2,6 @@ package com.cevague.vindex.data.database.dao
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -66,13 +65,15 @@ interface PhotoDao {
     @Query("SELECT MAX(file_last_modified) FROM photos")
     suspend fun getLastSyncTimestamp(): Long?
 
-    @Query("""
+    @Query(
+        """
     SELECT id, file_path, file_name, date_added, date_taken, is_favorite 
     FROM photos 
     WHERE file_name LIKE '%' || :query || '%' 
        OR relative_path LIKE '%' || :query || '%'
     ORDER BY date_taken DESC
-""")
+"""
+    )
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>>
 
     @Transaction

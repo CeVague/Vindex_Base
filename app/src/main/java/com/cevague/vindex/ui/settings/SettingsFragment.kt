@@ -1,18 +1,13 @@
 package com.cevague.vindex.ui.settings
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.database.entity.Setting
-import com.cevague.vindex.data.local.FastSettings
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 

@@ -1,6 +1,5 @@
 package com.cevague.vindex.ui.people
 
-import android.R
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -67,7 +66,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
                 val names = persons.mapNotNull { it.name }
                 val adapter = ArrayAdapter(
                     requireContext(),
-                    R.layout.simple_dropdown_item_1line,
+                    android.R.layout.simple_dropdown_item_1line,
                     names
                 )
                 binding.editName.setAdapter(adapter)

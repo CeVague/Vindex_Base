@@ -21,7 +21,9 @@
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:layout_marginBottom="32dp"
+            android:contentDescription="@string/app_name"
             android:src="@drawable/ic_launcher_foreground"
+
             app:tint="?attr/colorPrimary" />
 
         <!-- Titre -->

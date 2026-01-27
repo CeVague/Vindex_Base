@@ -1,6 +1,5 @@
 package com.cevague.vindex.ui.search
 
-import SearchViewModel
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View

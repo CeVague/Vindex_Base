@@ -2,7 +2,6 @@ package com.cevague.vindex.ui.welcome
 
 import android.Manifest
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -74,7 +73,8 @@ class WelcomeActivity : AppCompatActivity() {
     }
 
     private fun showFolderPickerDialog() {
-        val folderNames = availableFolders.map { "${it.relativePath} (${it.photoCount})" }.toTypedArray()
+        val folderNames =
+            availableFolders.map { "${it.relativePath} (${it.photoCount})" }.toTypedArray()
         val checkedItems = BooleanArray(availableFolders.size) {
             // Pré-sélectionner DCIM et Pictures
             availableFolders[it].relativePath.startsWith("DCIM") ||
@@ -100,7 +100,8 @@ class WelcomeActivity : AppCompatActivity() {
                 if (selectedFolders.isNotEmpty()) {
                     saveAndContinue()
                 } else {
-                    Toast.makeText(this, "Sélectionnez au moins un dossier", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Sélectionnez au moins un dossier", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
             .setNegativeButton("Annuler", null)

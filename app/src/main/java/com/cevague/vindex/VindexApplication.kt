@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.cevague.vindex.data.database.AppDatabase
 import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.CityRepository
@@ -12,9 +11,9 @@ import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.SettingsRepository
 import com.cevague.vindex.worker.AIAnalysisWorker
+import com.cevague.vindex.worker.CityImportWorker
 import com.cevague.vindex.worker.DiscoveryWorker
 import com.cevague.vindex.worker.FaceAnalysisWorker
-import com.cevague.vindex.worker.CityImportWorker
 import com.cevague.vindex.worker.MetadataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob

@@ -43,7 +43,7 @@ class PhotoRepository(
     suspend fun syncPhotos(context: Context, onProgress: suspend (Int) -> Unit) {
         val lastSync = photoDao.getLastSyncTimestamp() ?: 0L
         val includedFolders = FastSettings.includedFolders
-        
+
         // 1. Charger les métadonnées actuelles pour le diffing
         val dbPhotosMap = photoDao.getAllPathsAndSizes().first().associateBy { it.filePath }
         val seenPaths = mutableSetOf<String>()

@@ -125,9 +125,11 @@
     <string name="people_identify_suggestions">Suggestions</string>
     <string name="people_identify_skip">Skip</string>
     <string name="people_identify_not_a_person">Not a person</string>
+    <string name="people_pass">Pass</string>
 
     <!-- Actions on people -->
     <string name="people_rename">Rename</string>
+    <string name="people_delete">Delete</string>
     <string name="people_merge">Merge with…</string>
     <string name="people_split">Separate faces</string>
 
@@ -210,6 +212,5 @@
     <string name="format_percentage">%d%%</string>
     <string name="format_confidence">%d%% match</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

@@ -16,14 +16,18 @@ class PersonRepository(
 
     fun getAllPersons(): Flow<List<Person>> = personDao.getAllPersons()
 
-    fun getAllPersonSummary(): Flow<List<PersonDao.PersonSummary>> = personDao.getAllPersonsSummary()
+    fun getAllPersonSummary(): Flow<List<PersonDao.PersonSummary>> =
+        personDao.getAllPersonsSummary()
+
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
-    fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> = personDao.getNamedPersonsSummary()
+    fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
+        personDao.getNamedPersonsSummary()
 
     fun getUnnamedPersons(): Flow<List<Person>> = personDao.getUnnamedPersons()
 
-    fun getUnnamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> = personDao.getUnnamedPersonsSummary()
+    fun getUnnamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
+        personDao.getUnnamedPersonsSummary()
 
     fun getPersonById(id: Long): Flow<Person?> = personDao.getPersonById(id)
 
@@ -39,7 +43,8 @@ class PersonRepository(
 
     suspend fun getAllPersonsOnce(): List<Person> = personDao.getAllPersonsOnce()
 
-    suspend fun getAllPersonSummaryOnce(): List<PersonDao.PersonSummary> = personDao.getAllPersonSummaryOnce()
+    suspend fun getAllPersonSummaryOnce(): List<PersonDao.PersonSummary> =
+        personDao.getAllPersonSummaryOnce()
 
     // Person insert/update/delete
 

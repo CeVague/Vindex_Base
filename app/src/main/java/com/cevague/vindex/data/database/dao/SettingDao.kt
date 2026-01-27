@@ -13,16 +13,16 @@ interface SettingDao {
     @Query("SELECT * FROM settings")
     fun getAllSettings(): Flow<List<Setting>>
 
-    @Query("SELECT * FROM settings WHERE key = :key")
+    @Query("SELECT * FROM settings WHERE `key` = :key")
     fun getSetting(key: String): Flow<Setting?>
 
-    @Query("SELECT value FROM settings WHERE key = :key")
+    @Query("SELECT value FROM settings WHERE `key` = :key")
     fun getValue(key: String): Flow<String?>
 
-    @Query("SELECT * FROM settings WHERE key = :key")
+    @Query("SELECT * FROM settings WHERE `key` = :key")
     suspend fun getSettingOnce(key: String): Setting?
 
-    @Query("SELECT value FROM settings WHERE key = :key")
+    @Query("SELECT value FROM settings WHERE `key` = :key")
     suspend fun getValueOnce(key: String): String?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -32,7 +32,7 @@ interface SettingDao {
         set(Setting(key = key, value = value, updatedAt = System.currentTimeMillis()))
     }
 
-    @Query("DELETE FROM settings WHERE key = :key")
+    @Query("DELETE FROM settings WHERE `key` = :key")
     suspend fun delete(key: String)
 
     @Query("DELETE FROM settings")

@@ -94,7 +94,8 @@ class MainActivity : AppCompatActivity() {
                     syncBinding?.root?.visibility = View.VISIBLE
 
                     val progress = workInfo.progress.getInt("PROGRESS", 0)
-                    val workText = workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
+                    val workText =
+                        workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
 
                     // 1. Détecter si le marqueur %d est présent
                     val hasPlaceholder = workText.contains("%d")
@@ -107,7 +108,8 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     // 3. Gérer la visibilité de la roue
-                    syncBinding?.circularProgressBar?.visibility = if (hasPlaceholder) View.GONE else View.VISIBLE
+                    syncBinding?.circularProgressBar?.visibility =
+                        if (hasPlaceholder) View.GONE else View.VISIBLE
 
                     syncBinding?.textProgressBar?.text = workTextFinal
                     syncBinding?.syncProgressBar?.progress = progress

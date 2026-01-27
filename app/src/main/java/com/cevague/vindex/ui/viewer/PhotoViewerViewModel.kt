@@ -16,7 +16,7 @@ class PhotoViewerViewModel(
     private val _photos = MutableLiveData<List<PhotoSummary>>()
     val photos: LiveData<List<PhotoSummary>> = _photos
 
-    private val _currentPosition = MutableLiveData<Int>(0)
+    private val _currentPosition = MutableLiveData(0)
     val currentPosition: LiveData<Int> = _currentPosition
 
     val currentPhoto: LiveData<Photo?> = _currentPosition.switchMap { pos ->

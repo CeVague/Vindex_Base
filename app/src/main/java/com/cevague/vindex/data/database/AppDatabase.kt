@@ -66,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        private class DatabaseCallback : RoomDatabase.Callback() {
+        private class DatabaseCallback : Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
                 val now = System.currentTimeMillis()

@@ -7,9 +7,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import java.io.IOException
 
 class AIAnalysisWorker(

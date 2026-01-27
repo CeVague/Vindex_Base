@@ -126,9 +126,11 @@
     <string name="people_identify_suggestions">Suggestions</string>
     <string name="people_identify_skip">Ignorer</string>
     <string name="people_identify_not_a_person">Ce n\'est pas une personne</string>
+    <string name="people_pass">Passer</string>
 
     <!-- Actions on people -->
     <string name="people_rename">Renommer</string>
+    <string name="people_delete">Supprimer</string>
     <string name="people_merge">Fusionner avec…</string>
     <string name="people_split">Séparer les visages</string>
 
@@ -211,4 +213,5 @@
     <string name="format_percentage">%d %%</string>
     <string name="format_confidence">%d %% de correspondance</string>
 
+    <string name="hello_blank_fragment">Fragment vide</string>
 </resources>

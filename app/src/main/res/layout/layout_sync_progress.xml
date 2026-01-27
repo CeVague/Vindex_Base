@@ -41,9 +41,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:indeterminate="true"
+            android:visibility="visible"
             app:indicatorSize="14sp"
-            app:trackThickness="2sp"
-            android:visibility="visible"/>
+            app:trackThickness="2sp" />
 
     </LinearLayout>
 
