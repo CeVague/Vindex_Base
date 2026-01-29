@@ -8,7 +8,7 @@ import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.util.MediaScanner
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 class MetadataWorker(
     appContext: Context,
@@ -17,60 +17,52 @@ class MetadataWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_exif),
-                    "PROGRESS" to 0
-                )
-            )
-
-            delay(500)
+            setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to 0))
 
             val scanner = MediaScanner()
             val repository = (applicationContext as VindexApplication).photoRepository
             val cityRepository = (applicationContext as VindexApplication).cityRepository
 
-            val photosNeedingMetadataExtraction = repository.getPhotosNeedingMetadataExtraction()
-            val total = photosNeedingMetadataExtraction.size
-
+            val photosToProcess = repository.getPhotosNeedingMetadataExtraction()
+            val total = photosToProcess.size
             if (total == 0) return Result.success()
 
-            val batchSize = (total / 33).coerceIn(5, 50)
+            // On parallélise par petits batchs pour ne pas saturer la RAM
+            val batchSize = 20 
+            
+            photosToProcess.chunked(batchSize).forEachIndexed { index, batch ->
+                // Utilisation de Dispatchers.IO pour les accès fichiers + async pour le parallélisme
+                val enrichedBatch = withContext(Dispatchers.IO) {
+                    batch.map { photo ->
+                        async {
+                            try {
+                                // 1. EXIF + GPS
+                                var data = scanner.extractMetadata(applicationContext, photo)
 
-            photosNeedingMetadataExtraction.chunked(batchSize).forEachIndexed { index, batch ->
-                val enrichedBatch = batch.map { photo ->
-                    // Extraction EXIF + GPS via MediaStore (RequireOriginal)
-                    var photoData = scanner.extractMetadata(applicationContext, photo)
+                                // 2. Geocoding
+                                if (data.latitude != null && data.longitude != null) {
+                                    val city = cityRepository.findNearestCity(data.latitude!!, data.longitude!!)
+                                    city?.let { data = data.copy(locationName = "${it.name}, ${it.countryCode}") }
+                                }
 
-                    // Reverse Geocoding
-                    if (photoData.latitude != null && photoData.longitude != null) {
-                        val candidates = cityRepository.findNearestCity(
-                            photoData.latitude!!,
-                            photoData.longitude!!
-                        )
-                        val placeName = candidates?.let { "${it.name}, ${it.countryCode}" }
-                        photoData = photoData.copy(locationName = placeName)
-                    }
-                    photoData
+                                // 3. Media Type Refinement
+                                val type = scanner.detectMediaType(data.fileName, data.folderPath, data.width, data.height, data.cameraMake, data.cameraModel)
+                                data.copy(mediaType = type)
+                            } catch (e: Exception) {
+                                photo // En cas d'erreur sur une photo, on la garde telle quelle
+                            }
+                        }
+                    }.awaitAll()
                 }
 
-                if (enrichedBatch.isNotEmpty()) {
-                    repository.insertAll(enrichedBatch)
-                }
+                repository.insertAll(enrichedBatch)
 
-                val processedCount = (index + 1) * batchSize
-                val progress = if (processedCount >= total) 100 else (processedCount * 100 / total)
-                setProgress(
-                    workDataOf(
-                        "WORK" to applicationContext.getString(R.string.progress_exif),
-                        "PROGRESS" to progress
-                    )
-                )
+                // Update Progress
+                val progress = ((index + 1) * batchSize * 100 / total).coerceAtMost(100)
+                setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to progress))
             }
 
             Result.success()
-        } catch (e: SQLiteException) {
-            Result.failure()
         } catch (e: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }

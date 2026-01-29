@@ -27,8 +27,11 @@ class MediaScanner {
             MediaStore.Images.Media.MIME_TYPE,
             MediaStore.Images.Media.WIDTH,
             MediaStore.Images.Media.HEIGHT,
+            MediaStore.Images.Media.ORIENTATION,
             MediaStore.Images.Media.RELATIVE_PATH,
             MediaStore.Images.Media.DATA,
+            MediaStore.Images.Media.IS_FAVORITE,
+            MediaStore.Images.Media.IS_TRASHED
         )
 
         private val PROJECTION_WITH_GPS = PROJECTION + arrayOf(
@@ -70,8 +73,11 @@ class MediaScanner {
             val mimeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
             val widthColumn = cursor.getColumnIndex(MediaStore.Images.Media.WIDTH)
             val heightColumn = cursor.getColumnIndex(MediaStore.Images.Media.HEIGHT)
+            val orientationColumn = cursor.getColumnIndex(MediaStore.Images.Media.ORIENTATION)
             val relativePathColumn = cursor.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)
             val dataColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+            val isFavoriteColumn = cursor.getColumnIndex(MediaStore.Images.Media.IS_FAVORITE)
+            val isTrashedColumn = cursor.getColumnIndex(MediaStore.Images.Media.IS_TRASHED)
             val latColumn = cursor.getColumnIndex(MediaStore.Images.Media.LATITUDE)
             val lonColumn = cursor.getColumnIndex(MediaStore.Images.Media.LONGITUDE)
 
@@ -93,8 +99,11 @@ class MediaScanner {
                     mimeColumn = mimeColumn,
                     widthColumn = widthColumn,
                     heightColumn = heightColumn,
+                    orientationColumn = orientationColumn,
                     relativePathColumn = relativePathColumn,
                     dataColumn = dataColumn,
+                    isFavoriteColumn = isFavoriteColumn,
+                    isTrashedColumn = isTrashedColumn,
                     latColumn = latColumn,
                     lonColumn = lonColumn
                 )
@@ -151,10 +160,13 @@ class MediaScanner {
         mimeColumn: Int,
         widthColumn: Int,
         heightColumn: Int,
+        orientationColumn: Int,
         relativePathColumn: Int,
         dataColumn: Int,
+        isFavoriteColumn: Int,
+        isTrashedColumn: Int,
         latColumn: Int,
-        lonColumn: Int
+        lonColumn: Int,
     ): Photo {
         val fileName = cursor.getString(nameColumn)
         val dateModified = cursor.getLong(dateModifiedColumn) * 1000
@@ -163,6 +175,7 @@ class MediaScanner {
         val mimeType = cursor.getString(mimeColumn)
         val width = if (widthColumn >= 0) cursor.getIntOrNull(widthColumn) else null
         val height = if (heightColumn >= 0) cursor.getIntOrNull(heightColumn) else null
+        val orientation = if (orientationColumn >= 0) cursor.getIntOrNull(orientationColumn) else null
         val relativePath = if (relativePathColumn >= 0) {
             cursor.getStringOrNull(relativePathColumn)?.trimEnd('/')
         } else if (dataColumn >= 0) {
@@ -170,9 +183,11 @@ class MediaScanner {
         } else null
 
         val folderPath = relativePath ?: ""
+        val isFavorite = cursor.getIntOrNull(isFavoriteColumn) == 1
+        val isTrashed = cursor.getIntOrNull(isTrashedColumn) == 1
         val latitude = if (latColumn >= 0) cursor.getDoubleOrNull(latColumn) else null
         val longitude = if (lonColumn >= 0) cursor.getDoubleOrNull(lonColumn) else null
-        val mediaType = detectMediaType(fileName, folderPath, null, null)
+        val mediaType = detectMediaType(fileName, folderPath, width, height, null, null)
 
         return Photo(
             filePath = contentUri.toString(),
@@ -186,6 +201,9 @@ class MediaScanner {
             fileLastModified = dateModified,
             width = width,
             height = height,
+            orientation = orientation,
+            isFavorite = isFavorite,
+            isHidden = isTrashed,
             latitude = latitude,
             longitude = longitude,
             mediaType = mediaType,
@@ -241,17 +259,47 @@ class MediaScanner {
         )
     }
 
-    private fun detectMediaType(
+    fun detectMediaType(
         fileName: String,
-        folderPath: String,
+        relativePath: String?,
+        width: Int?,
+        height: Int?,
         cameraMake: String?,
         cameraModel: String?
     ): String {
-        return when {
-            fileName.contains("Screenshot", ignoreCase = true) ||
-                    folderPath.contains("Screenshots", ignoreCase = true) -> "screenshot"
+        val path = relativePath?.lowercase() ?: ""
+        val name = fileName.lowercase()
 
+        return when {
+            // 1. Captures d'écran
+            name.contains("screenshot") || path.contains("screenshots") -> "screenshot"
+
+            // 2. Documents & Scans
+            path.contains("scan") || path.contains("adobe scan") || path.contains("office lens") -> "document"
+
+            // 3. Réseaux Sociaux & Messageries
+            path.contains("whatsapp") || path.contains("signal") || path.contains("telegram") -> "social"
+
+            // 4. Rafales (Burst)
+            name.contains("burst") || name.contains("_seq_") -> "burst"
+
+            // 7. Panoramas & Formats spécifiques (nécessite dimensions)
+            width != null && height != null && width > 0 && height > 0 -> {
+                val ratio = width.toFloat() / height.toFloat()
+                val absRatio = if (ratio < 1f) 1f / ratio else ratio
+
+                when {
+                    absRatio > 2.2f -> "panorama"
+                    absRatio == 1f -> "square"
+                    // Selfie probable si DCIM/Camera et Front Camera (nécessite MetadataWorker)
+                    cameraModel?.lowercase()?.contains("front") == true -> "selfie"
+                    else -> "photo"
+                }
+            }
+
+            // 8. Origine Inconnue (Web / App tierce)
             cameraMake == null && cameraModel == null -> "other"
+
             else -> "photo"
         }
     }
