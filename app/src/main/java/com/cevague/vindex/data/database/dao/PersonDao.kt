@@ -23,11 +23,11 @@ interface PersonDao {
         val id: Long,
         val name: String?,
         val photoCount: Int,
-        val coverPath: String,
-        val boxLeft: Float,
-        val boxTop: Float,
-        val boxRight: Float,
-        val boxBottom: Float
+        val coverPath: String?,
+        val boxLeft: Float?,
+        val boxTop: Float?,
+        val boxRight: Float?,
+        val boxBottom: Float?
     )
 
     // Queries - reactive

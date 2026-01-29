@@ -48,20 +48,31 @@ class PeopleAdapter(
                 person.photoCount
             )
 
-            val faceData = FaceDao.FaceWithPhoto(
-                id = person.id,
-                filePath = person.coverPath,
-                boxLeft = person.boxLeft,
-                boxTop = person.boxTop,
-                boxRight = person.boxRight,
-                boxBottom = person.boxBottom
-            )
+            val coverPath = person.coverPath
 
-            Glide.with(binding.imagePerson)
-                .load(person.coverPath)
-                .transform(FaceCenterCrop(faceData), CircleCrop())
-                .override(240, 240)
-                .into(binding.imagePerson)
+            if (coverPath != null) {
+                val faceData = FaceDao.FaceWithPhoto(
+                    id = person.id,
+                    filePath = coverPath,
+                    boxLeft = person.boxLeft ?: 0f,
+                    boxTop = person.boxTop ?: 0f,
+                    boxRight = person.boxRight ?: 0f,
+                    boxBottom = person.boxBottom ?: 0f
+                )
+
+                Glide.with(binding.imagePerson)
+                    .load(coverPath)
+                    .placeholder(R.drawable.vector_peoples) // Image pendant le chargement
+                    .error(R.drawable.vector_peoples)      // Image si erreur de chargement
+                    .transform(FaceCenterCrop(faceData), CircleCrop())
+                    .override(240, 240)
+                    .into(binding.imagePerson)
+            } else {
+                Glide.with(binding.imagePerson)
+                    .load(R.drawable.vector_peoples)
+                    .transform(CircleCrop())
+                    .into(binding.imagePerson)
+            }
 
             binding.root.setOnClickListener { onPersonClick(person) }
 
