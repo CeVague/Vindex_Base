@@ -8,13 +8,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 class PeopleViewModel(private val repository: PersonRepository) : ViewModel() {
-    val allPeople = repository.getNamedPersons()
+    val allPeople = repository.getNamedPersonsWithCover()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val unnamedCount = repository.getUnnamedPersonCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // Dans PeopleViewModel.kt
     val unidentifiedFaceCount: StateFlow<Int> = repository.getPendingFaceCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 }

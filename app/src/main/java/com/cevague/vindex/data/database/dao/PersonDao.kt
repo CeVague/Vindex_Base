@@ -19,7 +19,33 @@ interface PersonDao {
         @ColumnInfo(name = "photo_count") val photoCount: Int
     )
 
+    data class PersonWithCover(
+        val id: Long,
+        val name: String?,
+        val photoCount: Int,
+        val coverPath: String,
+        val boxLeft: Float,
+        val boxTop: Float,
+        val boxRight: Float,
+        val boxBottom: Float
+    )
+
     // Queries - reactive
+
+    @Query("""
+    SELECT p.id, p.name, p.photo_count as photoCount, ph.file_path as coverPath, f.box_left as boxLeft, f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom
+    FROM persons p
+    LEFT JOIN faces f ON f.id = (
+        SELECT id FROM faces 
+        WHERE person_id = p.id 
+        ORDER BY is_primary DESC, id ASC 
+        LIMIT 1
+    )
+    LEFT JOIN photos ph ON f.photo_id = ph.id
+    WHERE p.name IS NOT NULL
+    ORDER BY p.name ASC
+""")
+    fun getNamedPersonsWithCover(): Flow<List<PersonWithCover>>
 
     @Query("SELECT * FROM persons ORDER BY name ASC")
     fun getAllPersons(): Flow<List<Person>>

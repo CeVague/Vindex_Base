@@ -15,6 +15,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.FragmentPeopleBinding
@@ -88,7 +89,7 @@ class PeopleFragment : Fragment() {
         }
     }
 
-    private fun navigateToSearchWithPerson(person: Person) {
+    private fun navigateToSearchWithPerson(person: PersonDao.PersonWithCover) {
         val query = "name:\"${person.name}\""
         val sharedViewModel: MainSharedViewModel by activityViewModels()
 
@@ -96,7 +97,7 @@ class PeopleFragment : Fragment() {
         sharedViewModel.selectTab(R.id.searchFragment)
     }
 
-    private fun showPersonOptionsMenu(person: Person, anchorView: View) {
+    private fun showPersonOptionsMenu(person: PersonDao.PersonWithCover, anchorView: View) {
         val popup = PopupMenu(requireContext(), anchorView)
         popup.menuInflater.inflate(R.menu.menu_person_options, popup.menu)
 
@@ -118,7 +119,7 @@ class PeopleFragment : Fragment() {
         popup.show()
     }
 
-    private fun showRenameDialog(person: Person) {
+    private fun showRenameDialog(person: PersonDao.PersonWithCover) {
         val editText = EditText(requireContext()).apply {
             setText(person.name)
             inputType = InputType.TYPE_TEXT_FLAG_CAP_WORDS or InputType.TYPE_CLASS_TEXT
@@ -138,7 +139,7 @@ class PeopleFragment : Fragment() {
             .show()
     }
 
-    private fun handleRename(person: Person, newName: String) {
+    private fun handleRename(person: PersonDao.PersonWithCover, newName: String) {
         lifecycleScope.launch {
             // Vérifier si une personne avec ce nom existe déjà
             val existingPerson = personRepo.getPersonByName(newName)
@@ -153,7 +154,7 @@ class PeopleFragment : Fragment() {
         }
     }
 
-    private fun showMergeConfirmation(source: Person, target: Person) {
+    private fun showMergeConfirmation(source: PersonDao.PersonWithCover, target: Person) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Fusionner ?")
             .setMessage("\"${target.name}\" existe déjà. Voulez-vous fusionner ${source.photoCount} photos avec cette personne ?")
@@ -166,7 +167,7 @@ class PeopleFragment : Fragment() {
             .show()
     }
 
-    private fun showDeleteConfirmation(person: Person) {
+    private fun showDeleteConfirmation(person: PersonDao.PersonWithCover) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Supprimer ?")
             .setMessage("Supprimer \"${person.name}\" ? Les ${person.photoCount} visages associés seront remis en attente d'identification.")

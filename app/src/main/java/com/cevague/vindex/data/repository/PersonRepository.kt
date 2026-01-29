@@ -21,6 +21,9 @@ class PersonRepository(
 
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
+    fun getNamedPersonsWithCover(): Flow<List<PersonDao.PersonWithCover>> = personDao.getNamedPersonsWithCover()
+
+
     fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
         personDao.getNamedPersonsSummary()
 
