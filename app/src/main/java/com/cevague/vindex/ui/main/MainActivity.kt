@@ -3,9 +3,12 @@ package com.cevague.vindex.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.launch
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.WorkInfo
@@ -16,6 +19,7 @@ import com.cevague.vindex.data.local.FastSettings
 import com.cevague.vindex.databinding.ActivityMainBinding
 import com.cevague.vindex.databinding.LayoutSyncProgressBinding
 import com.cevague.vindex.ui.welcome.WelcomeActivity
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -69,13 +73,14 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
         // Configurer la navigation
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
 
         binding.bottomNav.setupWithNavController(navController)
+
+        observeNavigateToTab()
 
         observeSyncProgress()
     }
@@ -117,5 +122,15 @@ class MainActivity : AppCompatActivity() {
                     syncBinding?.root?.visibility = View.GONE
                 }
             }
+    }
+
+    private fun observeNavigateToTab(){
+        val sharedViewModel: MainSharedViewModel by viewModels()
+
+        lifecycleScope.launch {
+            sharedViewModel.navigateToTab.collect { itemId ->
+                binding.bottomNav.selectedItemId = itemId
+            }
+        }
     }
 }

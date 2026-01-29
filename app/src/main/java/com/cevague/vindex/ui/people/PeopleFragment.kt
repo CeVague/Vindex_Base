@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -17,6 +18,7 @@ import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.FragmentPeopleBinding
+import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
@@ -87,17 +89,11 @@ class PeopleFragment : Fragment() {
     }
 
     private fun navigateToSearchWithPerson(person: Person) {
-        // Naviguer vers l'onglet Recherche avec la requête pré-remplie
         val query = "name:\"${person.name}\""
+        val sharedViewModel: MainSharedViewModel by activityViewModels()
 
-        // Option 1 : Via le NavController avec argument
-        val bundle = Bundle().apply {
-            putString("prefilled_query", query)
-        }
-        findNavController().navigate(R.id.searchFragment, bundle)
-
-        // Note : Il faudra aussi sélectionner l'onglet dans la BottomNav
-        // Ça se fait depuis MainActivity ou via un SharedViewModel
+        sharedViewModel.triggerSearch(query)
+        sharedViewModel.selectTab(R.id.searchFragment)
     }
 
     private fun showPersonOptionsMenu(person: Person, anchorView: View) {

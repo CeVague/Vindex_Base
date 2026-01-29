@@ -29,6 +29,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     app.albumRepository.deleteAll()
                     FastSettings.lastScanTimestamp = 0L
                     Toast.makeText(requireContext(), "Database reset", Toast.LENGTH_SHORT).show()
+                    app.startFullScan()
                 }
                 true
             }
