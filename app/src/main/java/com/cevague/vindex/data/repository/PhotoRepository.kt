@@ -41,7 +41,8 @@ class PhotoRepository(
         photoDao.searchByFileNameSummary(query)
 
     suspend fun syncPhotos(context: Context, onProgress: suspend (Int) -> Unit) {
-        val lastSync = photoDao.getLastSyncTimestamp() ?: 0L
+        val lastSync = FastSettings.lastScanTimestamp
+        val newSync = System.currentTimeMillis()
         val includedFolders = FastSettings.includedFolders
 
         // 1. Charger les métadonnées actuelles pour le diffing
@@ -76,6 +77,8 @@ class PhotoRepository(
         if (pathsToRemove.isNotEmpty()) {
             photoDao.deleteByPaths(pathsToRemove)
         }
+
+        FastSettings.lastScanTimestamp = newSync
     }
 
     suspend fun insertAll(photos: List<Photo>) = photoDao.insertAll(photos)

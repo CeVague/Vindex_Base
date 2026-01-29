@@ -62,9 +62,6 @@ interface PhotoDao {
     @Query("SELECT * FROM photos WHERE is_metadata_extracted = 0")
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo>
 
-    @Query("SELECT MAX(file_last_modified) FROM photos")
-    suspend fun getLastSyncTimestamp(): Long?
-
     @Query(
         """
     SELECT id, file_path, file_name, date_added, date_taken, is_favorite 
