@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.entity.Person
@@ -175,11 +176,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             val totalPending = repositoryPerson.getPendingFaceCount().first()
             val remaining = totalPending - skippedIds.size
 
-            binding.textCounter.text = if (remaining <= 1) {
-                "$remaining restant"
-            } else {
-                "$remaining restants"
-            }
+            binding.textCounter.text = resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
         }
     }
 

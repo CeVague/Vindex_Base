@@ -27,7 +27,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:text="@string/people_to_identify_count"
+        android:text="@string/people_to_identify"
         android:visibility="gone"
         app:icon="@drawable/vector_peoples" />
 

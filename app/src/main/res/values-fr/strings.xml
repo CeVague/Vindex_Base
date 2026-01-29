@@ -53,9 +53,16 @@
     <string name="gallery_empty">Aucune photo trouvée</string>
     <string name="gallery_empty_hint">Sélectionnez un dossier dans les paramètres pour parcourir vos photos.</string>
     <string name="gallery_scanning">Analyse des photos…</string>
-    <string name="gallery_photo_count">%d photos</string>
-    <string name="gallery_photo_count_singular">1 photo</string>
-    <string name="gallery_selected_count">%d sélectionnées</string>
+    <plurals name="gallery_photo_count">
+        <item quantity="one">%d photo</item>
+        <item quantity="many">%d photos</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <plurals name="gallery_selected_count">
+        <item quantity="one">%d sélectionnée</item>
+        <item quantity="many">%d sélectionnées</item>
+        <item quantity="other">%d sélectionnées</item>
+    </plurals>
 
     <!-- Date separator -->
     <string name="date_today">Aujourd\'hui</string>
@@ -106,16 +113,22 @@
     <string name="search_ongoing">Recherche en cours…</string>
     <string name="search_empty">Aucune photo ne correspond à votre recherche</string>
     <string name="search_start">Recherchez des photos par nom, date ou contenu</string>
-    <string name="search_results">%d résultats</string>
-    <string name="search_result_singular">1 résultat</string>
+    <plurals name="search_results">
+        <item quantity="one">%d résultat</item>
+        <item quantity="many">%d résultats</item>
+        <item quantity="other">%d résultats</item>
+    </plurals>
 
     <!-- People -->
     <string name="people_title">Personnes</string>
     <string name="people_empty">Aucune personne identifiée</string>
     <string name="people_empty_hint">Les personnes apparaîtront ici après l\'analyse de reconnaissance faciale.</string>
     <string name="people_to_identify">À identifier</string>
-    <string name="people_to_identify_count">%d visages à identifier</string>
-    <string name="people_to_identify_count_single">1 visage à identifier</string>
+    <plurals name="people_to_identify_count">
+        <item quantity="one">%d visage à identifier</item>
+        <item quantity="many">%d visages à identifier</item>
+        <item quantity="other">%d visages à identifier</item>
+    </plurals>
     <string name="people_unknown">Inconnu</string>
     <plurals name="people_photo_count">
         <item quantity="one">%d photo</item>
@@ -130,6 +143,11 @@
     <string name="people_identify_skip">Ignorer</string>
     <string name="people_identify_not_a_person">Ce n\'est pas une personne</string>
     <string name="people_pass">Passer</string>
+    <plurals name="people_remaining">
+        <item quantity="one">%d restant</item>
+        <item quantity="many">%d restants</item>
+        <item quantity="other">%d restants</item>
+    </plurals>
 
     <!-- Actions on people -->
     <string name="people_rename">Renommer</string>
@@ -215,6 +233,7 @@
     <string name="format_file_size_gb">%s Go</string>
     <string name="format_percentage">%d %%</string>
     <string name="format_confidence">%d %% de correspondance</string>
+    <string name="format_location">(%1$.5f, %2$.5f)</string>
 
     <string name="hello_blank_fragment">Fragment vide</string>
 </resources>

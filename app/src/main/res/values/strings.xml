@@ -52,9 +52,14 @@
     <string name="gallery_empty">No photos found</string>
     <string name="gallery_empty_hint">Select a folder in settings to start browsing your photos.</string>
     <string name="gallery_scanning">Scanning photos…</string>
-    <string name="gallery_photo_count">%d photos</string>
-    <string name="gallery_photo_count_singular">1 photo</string>
-    <string name="gallery_selected_count">%d selected</string>
+    <plurals name="gallery_photo_count">
+        <item quantity="one">1 photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <plurals name="gallery_selected_count">
+        <item quantity="one">1 selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
 
     <!-- Date separator -->
     <string name="date_today">Today</string>
@@ -105,16 +110,20 @@
     <string name="search_ongoing">Searching…</string>
     <string name="search_empty">No photos match your search</string>
     <string name="search_start">Search for photos by name, date, or content</string>
-    <string name="search_results">%d results</string>
-    <string name="search_result_singular">1 result</string>
+    <plurals name="search_results">
+        <item quantity="one">%d result</item>
+        <item quantity="other">%d results</item>
+    </plurals>
 
     <!-- People -->
     <string name="people_title">People</string>
     <string name="people_empty">No people identified</string>
     <string name="people_empty_hint">People will appear here once face recognition analyzes your photos.</string>
     <string name="people_to_identify">To identify</string>
-    <string name="people_to_identify_count">%d faces to identify</string>
-    <string name="people_to_identify_count_single">1 face to identify</string>
+    <plurals name="people_to_identify_count">
+        <item quantity="one">%d face to identify</item>
+        <item quantity="other">%d faces to identify</item>
+    </plurals>
     <string name="people_unknown">Unknown</string>
     <plurals name="people_photo_count">
         <item quantity="one">%d photo</item>
@@ -128,6 +137,10 @@
     <string name="people_identify_skip">Skip</string>
     <string name="people_identify_not_a_person">Not a person</string>
     <string name="people_pass">Pass</string>
+    <plurals name="people_remaining">
+        <item quantity="one">%d remaining</item>
+        <item quantity="other">%d remaining</item>
+    </plurals>
 
     <!-- Actions on people -->
     <string name="people_rename">Rename</string>
@@ -213,6 +226,7 @@
     <string name="format_file_size_gb">%s GB</string>
     <string name="format_percentage">%d%%</string>
     <string name="format_confidence">%d%% match</string>
+    <string name="format_location">(%1$.5f, %2$.5f)</string>
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

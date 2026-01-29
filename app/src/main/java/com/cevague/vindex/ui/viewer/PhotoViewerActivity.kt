@@ -179,7 +179,7 @@ class PhotoViewerActivity : AppCompatActivity() {
 
 
         if (photo.latitude != null && photo.longitude != null) {
-            binding.textLocationCoordinates.text = "${photo.latitude}, ${photo.longitude}"
+            binding.textLocationCoordinates.text = getString(R.string.format_location, photo.latitude, photo.longitude)
         } else {
             binding.textLocationCoordinates.text = getString(R.string.viewer_no_info_short)
         }
