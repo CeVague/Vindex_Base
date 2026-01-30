@@ -1,4 +1,4 @@
-<!-- C:/Users/Administrateur/AndroidStudioProjects/Vindex/app/src/main/res/layout/item_person.xml -->
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -6,7 +6,7 @@
     android:clipToPadding="false"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="12dp">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/imagePerson"
@@ -14,9 +14,10 @@
         android:layout_height="88dp"
         android:padding="2dp"
         android:scaleType="centerCrop"
+        android:src="@drawable/vector_peoples"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
         app:strokeColor="?attr/colorOutlineVariant"
-        app:strokeWidth="2dp" />
+        app:strokeWidth="1dp" />
 
 
     <TextView
@@ -26,13 +27,16 @@
         android:layout_marginTop="8dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textAppearance="?attr/textAppearanceLabelLarge" />
+        android:text="@string/people_unknown"
+        android:textColor="?attr/colorOnSurface"
+        android:textAppearance="?attr/textAppearanceTitleSmall" />
 
     <TextView
         android:id="@+id/textCount"
+        android:text="@string/people_to_identify"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textColor="?attr/colorOutline" />
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
 </LinearLayout>

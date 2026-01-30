@@ -5,14 +5,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".ui.people.PeopleFragment">
+    tools:context=".ui.people.PeopleFragment"
+    android:background="?attr/colorSurface" >
 
     <TextView
         android:id="@+id/textEmpty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:text="@string/people_empty" />
+        android:text="@string/people_empty"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"/>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerPeople"
@@ -28,7 +32,9 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:text="@string/people_to_identify"
-        android:visibility="gone"
-        app:icon="@drawable/vector_peoples" />
+        app:icon="@drawable/vector_peoples"
+        app:backgroundTint="?attr/colorPrimaryContainer"
+        app:iconTint="?attr/colorOnPrimaryContainer"
+        />
 
 </FrameLayout>
