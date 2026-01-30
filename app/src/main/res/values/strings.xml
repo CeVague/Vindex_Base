@@ -49,6 +49,7 @@
 
     <!-- Gallery -->
     <string name="gallery_title">Gallery</string>
+    <string name="gallery_photo_thumbnail">Photo thumbnail</string>
     <string name="gallery_empty">No photos found</string>
     <string name="gallery_empty_hint">Select a folder in settings to start browsing your photos.</string>
     <string name="gallery_scanning">Scanning photos…</string>
@@ -67,6 +68,7 @@
     <string name="date_this_week">This week</string>
     <string name="date_this_month">This month</string>
     <string name="date_last_month">Last month</string>
+    <string name="date_custom">%s</string>
 
     <!-- Photo viewer -->
     <string name="viewer_info">Information</string>

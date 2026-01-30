@@ -30,6 +30,10 @@ object FastSettings {
         get() = prefs.getString(Setting.KEY_THEME, Setting.THEME_SYSTEM) ?: Setting.THEME_SYSTEM
         set(value) = prefs.edit { putString(Setting.KEY_THEME, value) }
 
+    var gridColumns: Int
+        get() = prefs.getInt(Setting.KEY_GRID_COLUMNS, Setting.DEFAULT_GRID_COLUMNS)
+        set(value) = prefs.edit { putInt(Setting.KEY_GRID_COLUMNS, value) }
+
     var lastScanTimestamp: Long
         get() = prefs.getLong(Setting.KEY_LAST_SCAN_TIMESTAMP, 0L)
         set(value) = prefs.edit { putLong(Setting.KEY_LAST_SCAN_TIMESTAMP, value) }

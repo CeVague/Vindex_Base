@@ -21,6 +21,7 @@ data class Setting(
         const val KEY_FIRST_RUN = "is_first_run"
         const val KEY_CITIES_LOADED = "is_cities_loaded"
         const val KEY_GRID_COLUMNS = "grid_columns"
+        const val DEFAULT_GRID_COLUMNS = 3
         const val KEY_THEME = "theme"
         const val KEY_LANGUAGE = "language"
         const val KEY_SHOW_SCORES = "show_scores"

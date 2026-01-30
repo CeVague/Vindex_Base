@@ -50,6 +50,7 @@
 
     <!-- Gallery -->
     <string name="gallery_title">Galerie</string>
+    <string name="gallery_photo_thumbnail">Aperçu de la photo</string>
     <string name="gallery_empty">Aucune photo trouvée</string>
     <string name="gallery_empty_hint">Sélectionnez un dossier dans les paramètres pour parcourir vos photos.</string>
     <string name="gallery_scanning">Analyse des photos…</string>
@@ -70,6 +71,7 @@
     <string name="date_this_week">Cette semaine</string>
     <string name="date_this_month">Ce mois-ci</string>
     <string name="date_last_month">Le mois dernier</string>
+    <string name="date_custom">%s</string>
 
     <!-- Photo viewer -->
     <string name="viewer_info">Informations</string>

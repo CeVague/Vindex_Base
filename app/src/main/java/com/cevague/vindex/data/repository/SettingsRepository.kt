@@ -23,14 +23,16 @@ class SettingsRepository(private val settingDao: SettingDao) {
     // Grid columns
 
     fun getGridColumns(): Flow<Int> = getValue(Setting.KEY_GRID_COLUMNS).map {
-        it?.toIntOrNull() ?: DEFAULT_GRID_COLUMNS
+        it?.toIntOrNull() ?: Setting.DEFAULT_GRID_COLUMNS
     }
 
     suspend fun getGridColumnsOnce(): Int =
-        getValueOnce(Setting.KEY_GRID_COLUMNS)?.toIntOrNull() ?: DEFAULT_GRID_COLUMNS
+        getValueOnce(Setting.KEY_GRID_COLUMNS)?.toIntOrNull() ?: Setting.DEFAULT_GRID_COLUMNS
 
-    suspend fun setGridColumns(columns: Int) =
+    suspend fun setGridColumns(columns: Int) {
         setValue(Setting.KEY_GRID_COLUMNS, columns.toString())
+        FastSettings.gridColumns = columns
+    }
 
     // Theme
 
@@ -107,7 +109,6 @@ class SettingsRepository(private val settingDao: SettingDao) {
         setValue(Setting.KEY_FACE_THRESHOLD_NEW, threshold.toString())
 
     companion object {
-        const val DEFAULT_GRID_COLUMNS = 3
         const val DEFAULT_SHOW_SCORES = false
         const val DEFAULT_FACE_THRESHOLD_HIGH = 0.40f
         const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.60f

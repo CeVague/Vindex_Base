@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao.PersonWithCover
@@ -62,10 +63,11 @@ class PeopleAdapter(
 
                 Glide.with(binding.imagePerson)
                     .load(coverPath)
-                    .placeholder(R.drawable.vector_peoples) // Image pendant le chargement
-                    .error(R.drawable.vector_peoples)      // Image si erreur de chargement
-                    .transform(FaceCenterCrop(faceData), CircleCrop())
+                    .signature(ObjectKey(person.id.toString() + person.photoCount))
+                    .placeholder(R.drawable.vector_peoples)
+                    .error(R.drawable.vector_peoples)
                     .override(240, 240)
+                    .transform(FaceCenterCrop(faceData), CircleCrop())
                     .into(binding.imagePerson)
             } else {
                 Glide.with(binding.imagePerson)
