@@ -18,19 +18,25 @@ import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityMainBinding
 import com.cevague.vindex.databinding.LayoutSyncProgressBinding
 import com.cevague.vindex.ui.welcome.WelcomeActivity
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
+    @Inject
+    lateinit var settingsCache: SettingsCache
     private lateinit var binding: ActivityMainBinding
     private var syncBinding: LayoutSyncProgressBinding? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        applyAppTheme(SettingsCache.themeMode)
-        applyAppLanguage(SettingsCache.userLanguage)
         super.onCreate(savedInstanceState)
+        
+        applyAppTheme(settingsCache.themeMode)
+        applyAppLanguage(settingsCache.userLanguage)
 
-        if (!SettingsCache.isConfigured) {
+        if (!settingsCache.isConfigured) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
             return

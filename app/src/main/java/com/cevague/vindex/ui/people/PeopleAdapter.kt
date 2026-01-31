@@ -14,12 +14,11 @@ import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao.PersonWithCover
 import com.cevague.vindex.data.local.SettingsCache
-import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.ItemPersonBinding
 import kotlinx.coroutines.Job
 
 class PeopleAdapter(
-    private val repository: PersonRepository,
+    private val settingsCache: SettingsCache,
     private val onPersonClick: (PersonWithCover) -> Unit,
     private val onPersonLongClick: (PersonWithCover, View) -> Unit
 ) : ListAdapter<PersonWithCover, PeopleAdapter.ViewHolder>(DiffCallback()) {
@@ -59,7 +58,7 @@ class PeopleAdapter(
                     boxBottom = person.boxBottom ?: 0f
                 )
 
-                val spanCount = SettingsCache.gridColumns
+                val spanCount = settingsCache.gridColumns
                 val screenWidth = binding.root.context.resources.displayMetrics.widthPixels
                 val targetSize = screenWidth / spanCount
 

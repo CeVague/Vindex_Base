@@ -30,6 +30,18 @@
         android:theme="@style/Theme.Vindex"
         tools:targetApi="31">
 
+        <!-- Désactiver l'initialisation par défaut de WorkManager pour utiliser HiltWorkerFactory -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <!-- Déclaration du type de service pour WorkManager (Android 14+) -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"

@@ -1,31 +1,37 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.database.AppDatabase
 import com.cevague.vindex.data.local.SettingsCache
+import com.cevague.vindex.data.repository.CityRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.io.File
 import java.io.FileOutputStream
 
-class CityImportWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class CityImportWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val cityRepository: CityRepository,
+    private val database: AppDatabase,
+    private val settingsCache: SettingsCache
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         return try {
             // Vérifier si déjà importé via SharedPreferences pour plus de rapidité
-            if (SettingsCache.isCitiesLoaded) {
+            if (settingsCache.isCitiesLoaded) {
                 return Result.success()
             }
 
-            val repository = (applicationContext as VindexApplication).cityRepository
-
             // Supprimer les anciennes données
-            repository.deleteAll()
+            cityRepository.deleteAll()
 
             setProgress(
                 workDataOf(
@@ -43,8 +49,7 @@ class CityImportWorker(
             }
 
             // 2. Ouvrir la base de données temporaire
-            val app = applicationContext as VindexApplication
-            val db = app.database.openHelper.writableDatabase
+            val db = database.openHelper.writableDatabase
 
             // On connecte le fichier temporaire
             db.execSQL("ATTACH DATABASE '${tempDbFile.absolutePath}' AS ext_db")
@@ -62,7 +67,7 @@ class CityImportWorker(
 
             tempDbFile.delete()
 
-            SettingsCache.isCitiesLoaded = true
+            settingsCache.isCitiesLoaded = true
             setProgress(
                 workDataOf(
                     "WORK" to applicationContext.getString(R.string.progress_loading_cities),

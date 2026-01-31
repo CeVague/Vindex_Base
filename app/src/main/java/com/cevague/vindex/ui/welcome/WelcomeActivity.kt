@@ -8,19 +8,29 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
 import com.cevague.vindex.ui.main.MainActivity
 import com.cevague.vindex.util.MediaScanner
+import com.cevague.vindex.util.ScanManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class WelcomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWelcomeBinding
     private var availableFolders: List<MediaScanner.FolderInfo> = emptyList()
     private val selectedFolders = mutableSetOf<String>()
+
+    @Inject
+    lateinit var scanManager: ScanManager
+    @Inject
+    lateinit var mediaScanner: MediaScanner
+    @Inject
+    lateinit var settingsCache: SettingsCache
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +74,7 @@ class WelcomeActivity : AppCompatActivity() {
             // Afficher un loading
             //binding.progressBar.visibility = View.VISIBLE
 
-            availableFolders = MediaScanner().listImageFolders(this@WelcomeActivity)
+            availableFolders = mediaScanner.listImageFolders(this@WelcomeActivity)
 
             //binding.progressBar.visibility = View.GONE
 
@@ -109,17 +119,17 @@ class WelcomeActivity : AppCompatActivity() {
     }
 
     private fun saveAndContinue() {
-        val app = application as VindexApplication
 
         lifecycleScope.launch {
             // Sauvegarder les dossiers sélectionnés
-            SettingsCache.includedFolders = selectedFolders
-            SettingsCache.isConfigured = true
-
-            // Lancer le scan
-            app.startFullScan()
+            settingsCache.includedFolders = selectedFolders
+            settingsCache.isConfigured = true
 
             startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
+
+            // Lancer le scan
+            scanManager.startFullScan()
+
             finish()
         }
     }

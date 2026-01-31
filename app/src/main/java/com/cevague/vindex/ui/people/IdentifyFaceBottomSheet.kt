@@ -12,16 +12,18 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.DialogIdentifyFaceBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
 
     private var _binding: DialogIdentifyFaceBinding? = null
@@ -38,7 +40,8 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     // Liste des personnes pour l'auto-complétion
     private var allPersons: List<Person> = emptyList()
 
-    private lateinit var repositoryPerson: PersonRepository
+    @Inject
+    lateinit var personRepository: PersonRepository
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -52,8 +55,6 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        repositoryPerson = (requireActivity().application as VindexApplication).personRepository
-
         setupAutoComplete()
         setupSuggestionChips()
         setupButtons()
@@ -63,7 +64,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     private fun setupAutoComplete() {
         // 1. Observer les personnes existantes
         lifecycleScope.launch {
-            repositoryPerson.getAllPersons().collect { persons ->
+            personRepository.getAllPersons().collect { persons ->
                 allPersons = persons
                 // 2. Créer l'adapter pour l'AutoCompleteTextView
                 val names = persons.mapNotNull { it.name }
@@ -135,7 +136,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         binding.buttonNotPerson.setOnClickListener {
             currentFace?.let { face ->
                 lifecycleScope.launch {
-                    repositoryPerson.markAsIgnored(face.id)  // Marque comme "ignored" en DB
+                    personRepository.markAsIgnored(face.id)  // Marque comme "ignored" en DB
                     loadNextFace()
                 }
             }
@@ -145,7 +146,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     private fun loadNextFace() {
         lifecycleScope.launch {
             // Récupère le prochain visage pending en excluant les skippés
-            currentFace = repositoryPerson.getNextPendingFaceExcluding(skippedIds)
+            currentFace = personRepository.getNextPendingFaceExcluding(skippedIds)
 
             if (currentFace == null) {
                 dismiss()  // Plus rien à traiter
@@ -176,7 +177,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
 
     private fun updateCounter() {
         lifecycleScope.launch {
-            val totalPending = repositoryPerson.getPendingFaceCount().first()
+            val totalPending = personRepository.getPendingFaceCount().first()
             val remaining = totalPending - skippedIds.size
 
             binding.textCounter.text = resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
@@ -188,10 +189,10 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
 
         lifecycleScope.launch {
             // 1. Créer ou récupérer la personne
-            val personId = repositoryPerson.getOrCreatePersonByName(name)
+            val personId = personRepository.getOrCreatePersonByName(name)
 
             // 2. Assigner le visage
-            repositoryPerson.assignFaceToPerson(
+            personRepository.assignFaceToPerson(
                 faceId = face.id,
                 personId = personId,
                 assignmentType = "manual",

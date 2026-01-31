@@ -2,28 +2,33 @@ package com.cevague.vindex.worker
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.repository.CityRepository
+import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.util.MediaScanner
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.*
 
-class MetadataWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class MetadataWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val photoRepository: PhotoRepository,
+    private val cityRepository: CityRepository,
+    private val mediaScanner: MediaScanner
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         return try {
             setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to 0))
 
-            val scanner = MediaScanner()
-            val repository = (applicationContext as VindexApplication).photoRepository
-            val cityRepository = (applicationContext as VindexApplication).cityRepository
-
-            val photosToProcess = repository.getPhotosNeedingMetadataExtraction()
+            val photosToProcess = photoRepository.getPhotosNeedingMetadataExtraction()
             val total = photosToProcess.size
             if (total == 0) return Result.success()
 
@@ -37,7 +42,7 @@ class MetadataWorker(
                         async {
                             try {
                                 // 1. EXIF + GPS
-                                var data = scanner.extractMetadata(applicationContext, photo)
+                                var data = mediaScanner.extractMetadata(photo)
 
                                 // 2. Geocoding
                                 if (data.latitude != null && data.longitude != null) {
@@ -46,7 +51,7 @@ class MetadataWorker(
                                 }
 
                                 // 3. Media Type Refinement
-                                val type = scanner.detectMediaType(data.fileName, data.folderPath, data.width, data.height, data.cameraMake, data.cameraModel)
+                                val type = mediaScanner.detectMediaType(data.fileName, data.folderPath, data.width, data.height, data.cameraMake, data.cameraModel)
                                 data.copy(mediaType = type)
                             } catch (e: Exception) {
                                 photo // En cas d'erreur sur une photo, on la garde telle quelle
@@ -55,7 +60,7 @@ class MetadataWorker(
                     }.awaitAll()
                 }
 
-                repository.insertAll(enrichedBatch)
+                photoRepository.insertAll(enrichedBatch)
 
                 // Update Progress
                 val progress = ((index + 1) * batchSize * 100 / total).coerceAtMost(100)

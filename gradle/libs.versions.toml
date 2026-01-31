@@ -41,6 +41,10 @@ preference = "1.2.1"
 # RecyclerView
 recyclerview = "1.3.2"
 
+# Hilt
+hilt = "2.51.1"
+hiltWork = "1.2.0"
+
 # KSP (for Room annotation processing)
 ksp = "2.0.21-1.0.27"  # Doit correspondre à la version Kotlin
 
@@ -51,6 +55,7 @@ espressoCore = "3.6.1"
 fragmentVersion = "1.8.9"
 lifecycleProcess = "2.10.0"
 swiperefreshlayout = "1.2.0"
+firebaseSessions = "3.0.4"
 
 
 [libraries]
@@ -98,6 +103,12 @@ androidx-preference = { group = "androidx.preference", name = "preference-ktx", 
 # RecyclerView
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 
+# Hilt
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
+
 # Tests
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -105,8 +116,10 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragmentVersion" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
+firebase-sessions = { group = "com.google.firebase", name = "firebase-sessions", version.ref = "firebaseSessions" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

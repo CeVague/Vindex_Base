@@ -13,7 +13,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentSearchBinding
@@ -22,16 +21,19 @@ import com.cevague.vindex.ui.gallery.GalleryItem
 import com.cevague.vindex.ui.gallery.PhotoGrouper
 import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SearchFragment : Fragment() {
 
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: SearchViewModel by viewModels {
-        SearchViewModelFactory((requireActivity().application as VindexApplication).photoRepository)
-    }
+    private val viewModel: SearchViewModel by viewModels()
+    @Inject
+    lateinit var settingsCache: SettingsCache
 
     private lateinit var photoGrouper: PhotoGrouper
 
@@ -58,7 +60,7 @@ class SearchFragment : Fragment() {
             }
         }
 
-        val spanCount = SettingsCache.gridColumns
+        val spanCount = settingsCache.gridColumns
 
         val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
@@ -122,7 +124,7 @@ class SearchFragment : Fragment() {
     }
 
     fun getTargetSize(context: Context): Int {
-        val spanCount = SettingsCache.gridColumns
+        val spanCount = settingsCache.gridColumns
         val screenWidth = context.resources.displayMetrics.widthPixels
         return screenWidth / (spanCount * 2)
     }

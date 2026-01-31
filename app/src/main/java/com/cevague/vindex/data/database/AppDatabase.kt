@@ -55,45 +55,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun analysisLogDao(): AnalysisLogDao
 
     companion object {
-        private const val DATABASE_NAME = "vindex_database"
-
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
-
-        fun getInstance(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
-            }
-        }
-
-        private class DatabaseCallback : Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                val now = System.currentTimeMillis()
-
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FIRST_RUN}', 'true', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_INCLUDED_FOLDERS}', '', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_GRID_COLUMNS}', '3', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_THEME}', '${Setting.THEME_SYSTEM}', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_LANGUAGE}', '${Setting.LANGUAGE_SYSTEM}', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_SHOW_SCORES}', 'false', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FACE_THRESHOLD_HIGH}', '0.40', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FACE_THRESHOLD_MEDIUM}', '0.60', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_FACE_THRESHOLD_NEW}', '0.75', $now)")
-                db.execSQL("INSERT INTO settings (key, value, updated_at) VALUES ('${Setting.KEY_LAST_SCAN_TIMESTAMP}', '0', $now)")
-            }
-        }
-
-        private fun buildDatabase(context: Context): AppDatabase {
-            return Room.databaseBuilder(
-                context.applicationContext,
-                AppDatabase::class.java,
-                DATABASE_NAME
-            )
-                .addCallback(DatabaseCallback())
-                .fallbackToDestructiveMigration()
-                .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
-                .build()
-        }
+        const val DATABASE_NAME = "vindex_database"
     }
 }

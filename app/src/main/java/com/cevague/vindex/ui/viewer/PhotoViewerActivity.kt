@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -16,13 +17,17 @@ import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PhotoViewerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPhotoViewerBinding
-    private lateinit var viewModel: PhotoViewerViewModel
+    private val viewModel: PhotoViewerViewModel by viewModels()
     private lateinit var pagerAdapter: PhotoPagerAdapter
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
 
@@ -47,14 +52,6 @@ class PhotoViewerActivity : AppCompatActivity() {
 
         // Récupérer les extras de l'Intent
         val startPosition = intent.getIntExtra(EXTRA_POSITION, 0)
-
-
-        val app = application as VindexApplication
-        val photoRepository = app.photoRepository
-
-        // Initialiser ViewModel avec Factory
-        val factory = PhotoViewerViewModelFactory(photoRepository)
-        viewModel = ViewModelProvider(this, factory)[PhotoViewerViewModel::class.java]
 
         viewModel.setPhotos(list, startPosition)
 

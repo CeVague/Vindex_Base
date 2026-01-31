@@ -5,8 +5,14 @@ import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class SettingsRepository(private val settingDao: SettingDao) {
+@Singleton
+class SettingsRepository @Inject constructor(
+    private val settingDao: SettingDao,
+    private val settingsCache: SettingsCache
+) {
 
     // Generic access
 
@@ -31,7 +37,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun setGridColumns(columns: Int) {
         setValue(Setting.KEY_GRID_COLUMNS, columns.toString())
-        SettingsCache.gridColumns = columns
+        settingsCache.gridColumns = columns
     }
 
     // Theme
@@ -45,7 +51,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun setTheme(theme: String) {
         setValue(Setting.KEY_THEME, theme)
-        SettingsCache.themeMode = theme
+        settingsCache.themeMode = theme
     }
 
     // Language
@@ -59,7 +65,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun setLanguage(language: String) {
         setValue(Setting.KEY_LANGUAGE, language)
-        SettingsCache.userLanguage = language
+        settingsCache.userLanguage = language
     }
     // Show similarity scores (debug/advanced)
 

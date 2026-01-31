@@ -7,10 +7,13 @@ import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.repository.PhotoRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class GalleryViewModel(
+@HiltViewModel
+class GalleryViewModel @Inject constructor(
     private val photoRepository: PhotoRepository,
     private val photoGrouper: PhotoGrouper
 ) : ViewModel() {

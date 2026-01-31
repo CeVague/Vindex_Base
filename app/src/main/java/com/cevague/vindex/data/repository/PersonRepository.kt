@@ -6,8 +6,11 @@ import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PersonRepository(
+@Singleton
+class PersonRepository @Inject constructor(
     private val personDao: PersonDao,
     private val faceDao: FaceDao
 ) {

@@ -8,8 +8,11 @@ import androidx.lifecycle.switchMap
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.repository.PhotoRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class PhotoViewerViewModel(
+@HiltViewModel
+class PhotoViewerViewModel @Inject constructor(
     private val photoRepository: PhotoRepository
 ) : ViewModel() {
 

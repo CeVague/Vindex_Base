@@ -13,7 +13,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.local.SettingsCache
@@ -21,19 +20,20 @@ import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.FragmentPeopleBinding
 import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PeopleFragment : Fragment() {
 
     private var _binding: FragmentPeopleBinding? = null
     private val binding get() = _binding!!
-
-    private lateinit var personRepo: PersonRepository
-
-
-    private val viewModel: PeopleViewModel by viewModels {
-        PeopleViewModelFactory((requireActivity().application as VindexApplication).personRepository)
-    }
+    @Inject
+    lateinit var personRepository: PersonRepository
+    @Inject
+    lateinit var settingsCache: SettingsCache
+    private val viewModel: PeopleViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,10 +46,8 @@ class PeopleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        personRepo = (requireActivity().application as VindexApplication).personRepository
-
         val adapter = PeopleAdapter(
-            repository = personRepo,
+            settingsCache = settingsCache,
             onPersonClick = { person ->
                 navigateToSearchWithPerson(person)
             },
@@ -60,7 +58,7 @@ class PeopleFragment : Fragment() {
 
         binding.recyclerPeople.apply {
             this.adapter = adapter
-            this.layoutManager = GridLayoutManager(requireContext(), SettingsCache.gridColumns)
+            this.layoutManager = GridLayoutManager(requireContext(), settingsCache.gridColumns)
 
             setHasFixedSize(true)
             setItemViewCacheSize(20)
@@ -142,14 +140,14 @@ class PeopleFragment : Fragment() {
     private fun handleRename(person: PersonDao.PersonWithCover, newName: String) {
         lifecycleScope.launch {
             // Vérifier si une personne avec ce nom existe déjà
-            val existingPerson = personRepo.getPersonByName(newName)
+            val existingPerson = personRepository.getPersonByName(newName)
 
             if (existingPerson != null && existingPerson.id != person.id) {
                 // Proposer la fusion
                 showMergeConfirmation(person, existingPerson)
             } else {
                 // Simple renommage
-                personRepo.updateName(person.id, newName)
+                personRepository.updateName(person.id, newName)
             }
         }
     }
@@ -160,7 +158,7 @@ class PeopleFragment : Fragment() {
             .setMessage("\"${target.name}\" existe déjà. Voulez-vous fusionner ${source.photoCount} photos avec cette personne ?")
             .setPositiveButton("Fusionner") { _, _ ->
                 lifecycleScope.launch {
-                    personRepo.mergePersons(keepId = target.id, mergeId = source.id)
+                    personRepository.mergePersons(keepId = target.id, mergeId = source.id)
                 }
             }
             .setNegativeButton("Annuler", null)
@@ -173,7 +171,7 @@ class PeopleFragment : Fragment() {
             .setMessage("Supprimer \"${person.name}\" ? Les ${person.photoCount} visages associés seront remis en attente d'identification.")
             .setPositiveButton("Supprimer") { _, _ ->
                 lifecycleScope.launch {
-                    personRepo.deletePersonAndResetFaces(person.id)
+                    personRepository.deletePersonAndResetFaces(person.id)
                 }
             }
             .setNegativeButton("Annuler", null)

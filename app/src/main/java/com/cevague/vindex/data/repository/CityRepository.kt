@@ -3,17 +3,23 @@ package com.cevague.vindex.data.repository
 import com.cevague.vindex.data.database.dao.CityDao
 import com.cevague.vindex.data.database.entity.City
 import com.cevague.vindex.data.local.SettingsCache
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CityRepository(private val cityDao: CityDao) {
+@Singleton
+class CityRepository @Inject constructor(
+    private val cityDao: CityDao,
+    private val settingsCache: SettingsCache
+) {
 
     suspend fun isDatabasePopulated(): Boolean {
-        if (SettingsCache.isCitiesLoaded) return true
+        if (settingsCache.isCitiesLoaded) return true
 
         val count = cityDao.getCount()
         val isPopulated = count > 0
 
         if (isPopulated) {
-            SettingsCache.isCitiesLoaded = true
+            settingsCache.isCitiesLoaded = true
         }
 
         return isPopulated
@@ -31,17 +37,17 @@ class CityRepository(private val cityDao: CityDao) {
 
     suspend fun insert(city: City) {
         cityDao.insert(city)
-        SettingsCache.isCitiesLoaded = true
+        settingsCache.isCitiesLoaded = true
     }
 
     suspend fun insertAll(cities: List<City>) {
         cityDao.insertAll(cities)
-        SettingsCache.isCitiesLoaded = true
+        settingsCache.isCitiesLoaded = true
     }
 
     suspend fun deleteAll() {
         cityDao.deleteAll()
-        SettingsCache.isCitiesLoaded = false
+        settingsCache.isCitiesLoaded = false
     }
 
 }

@@ -5,8 +5,11 @@ import com.cevague.vindex.data.database.entity.Album
 import com.cevague.vindex.data.database.entity.AlbumPhoto
 import com.cevague.vindex.data.database.entity.Photo
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AlbumRepository(private val albumDao: AlbumDao) {
+@Singleton
+class AlbumRepository @Inject constructor(private val albumDao: AlbumDao) {
 
     // Album queries - reactive
 

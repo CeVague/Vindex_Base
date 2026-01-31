@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -106,6 +107,7 @@ dependencies {
     implementation(libs.fragment)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.firebase.sessions)
     ksp(libs.androidx.room.compiler)
 
     // WorkManager
@@ -127,6 +129,14 @@ dependencies {
 
     // RecyclerView
     implementation(libs.androidx.recyclerview)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Hilt pour WorkManager
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
 
     // Tests
     testImplementation(libs.junit)

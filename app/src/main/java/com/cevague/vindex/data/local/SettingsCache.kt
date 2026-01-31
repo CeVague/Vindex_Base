@@ -1,14 +1,15 @@
 package com.cevague.vindex.data.local
 
-import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Setting
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object SettingsCache {
-    private val prefs by lazy {
-        VindexApplication.instance.getSharedPreferences("fast_settings", Context.MODE_PRIVATE)
-    }
+@Singleton
+class SettingsCache @Inject constructor(
+    private val prefs: SharedPreferences
+) {
 
     var isFirstRun: Boolean
         get() = prefs.getBoolean(Setting.KEY_FIRST_RUN, true)

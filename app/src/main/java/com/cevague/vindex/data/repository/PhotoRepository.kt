@@ -6,6 +6,7 @@ import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.local.SettingsCache
+import com.cevague.vindex.di.ApplicationScope
 import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -13,10 +14,15 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PhotoRepository(
+@Singleton
+class PhotoRepository @Inject constructor(
     private val photoDao: PhotoDao,
-    externalScope: CoroutineScope
+    private val settingsCache: SettingsCache,
+    private val mediaScanner: MediaScanner,
+    @ApplicationScope private val externalScope: CoroutineScope
 ) {
 
     val dbPhotosMetadata: StateFlow<List<FilePathAndSize>> = photoDao.getAllPathsAndSizes()
@@ -41,18 +47,17 @@ class PhotoRepository(
         photoDao.searchByFileNameSummary(query)
 
     suspend fun syncPhotos(context: Context, onProgress: suspend (Int) -> Unit) {
-        val lastSync = SettingsCache.lastScanTimestamp
+        val lastSync = settingsCache.lastScanTimestamp
         val newSync = System.currentTimeMillis()
-        val includedFolders = SettingsCache.includedFolders
+        val includedFolders = settingsCache.includedFolders
 
         // 1. Charger les métadonnées actuelles pour le diffing
         val dbPhotosMap = photoDao.getAllPathsAndSizes().first().associateBy { it.filePath }
         val seenPaths = mutableSetOf<String>()
         var totalProcessed = 0
-        val scanner = MediaScanner()
 
         // 2. Scan du MediaStore
-        scanner.scanMediaStore(context, includedFolders, lastSync) { path ->
+        mediaScanner.scanMediaStore(includedFolders, lastSync) { path ->
             seenPaths.add(path)
         }.collect { batch ->
             val toUpsert = batch.filter { newPhoto ->
@@ -68,17 +73,18 @@ class PhotoRepository(
             onProgress(totalProcessed)
         }
 
-        // 3. Suppression des photos disparues (uniquement dans les dossiers gérés)
-        val pathsToRemove = dbPhotosMap.keys.filter { path ->
-            val isInManagedFolder = includedFolders.any { folder -> path.contains(folder) }
-            isInManagedFolder && path !in seenPaths
+        if (seenPaths.isNotEmpty() || lastSync == 0L) {
+            val pathsToRemove = dbPhotosMap.keys.filter { path ->
+                val isInManagedFolder = includedFolders.any { folder -> path.contains(folder) }
+                isInManagedFolder && path !in seenPaths
+            }
+
+            if (pathsToRemove.isNotEmpty()) {
+                photoDao.deleteByPaths(pathsToRemove)
+            }
         }
 
-        if (pathsToRemove.isNotEmpty()) {
-            photoDao.deleteByPaths(pathsToRemove)
-        }
-
-        SettingsCache.lastScanTimestamp = newSync
+        settingsCache.lastScanTimestamp = newSync
     }
 
     suspend fun insertAll(photos: List<Photo>) = photoDao.insertAll(photos)

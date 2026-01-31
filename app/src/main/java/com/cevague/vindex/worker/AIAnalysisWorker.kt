@@ -2,17 +2,21 @@ package com.cevague.vindex.worker
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.delay
 import java.io.IOException
 
-class AIAnalysisWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class AIAnalysisWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {

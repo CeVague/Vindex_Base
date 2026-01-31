@@ -11,23 +11,26 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentGalleryBinding
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
 import com.cevague.vindex.ui.viewer.PhotoViewerNavData
+import com.cevague.vindex.util.ScanManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class GalleryFragment : Fragment() {
 
     private var _binding: FragmentGalleryBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: GalleryViewModel by viewModels {
-        val app = requireActivity().application as VindexApplication
-        GalleryViewModelFactory(app.photoRepository, PhotoGrouper(requireContext()))
-    }
-
+    private val viewModel: GalleryViewModel by viewModels()
+    @Inject
+    lateinit var scanManager: ScanManager
+    @Inject
+    lateinit var settingsCache: SettingsCache
     private lateinit var adapter: GalleryAdapter
 
     override fun onCreateView(
@@ -51,7 +54,7 @@ class GalleryFragment : Fragment() {
             openPhotoViewer(adapterPosition)
         }
 
-        val spanCount = SettingsCache.gridColumns
+        val spanCount = settingsCache.gridColumns
 
         val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
@@ -77,11 +80,9 @@ class GalleryFragment : Fragment() {
             setItemViewCacheSize(20)
         }
 
-        val app = requireActivity().application as VindexApplication
-
         binding.swipeRefreshGallery.setOnRefreshListener {
             lifecycleScope.launch {
-                app.startGalleryScan()
+                scanManager.startGalleryScan()
                 binding.swipeRefreshGallery.isRefreshing = false
             }
         }
@@ -106,7 +107,7 @@ class GalleryFragment : Fragment() {
     }
 
     fun getTargetSize(context: Context): Int {
-        val spanCount = SettingsCache.gridColumns
+        val spanCount = settingsCache.gridColumns
         val screenWidth = context.resources.displayMetrics.widthPixels
         return screenWidth / spanCount
     }

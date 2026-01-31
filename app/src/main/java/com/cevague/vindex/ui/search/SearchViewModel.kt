@@ -3,6 +3,7 @@ package com.cevague.vindex.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.data.repository.PhotoRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -10,9 +11,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
+@HiltViewModel
 @OptIn(FlowPreview::class)
-class SearchViewModel(private val repository: PhotoRepository) : ViewModel() {
+class SearchViewModel @Inject constructor(private val repository: PhotoRepository) : ViewModel() {
 
     private val _searchTrigger = MutableSharedFlow<String>(replay = 1)
 

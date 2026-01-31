@@ -1,16 +1,22 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
+import com.cevague.vindex.data.repository.PhotoRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.delay
 
-class DiscoveryWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class DiscoveryWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val photoRepository: PhotoRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -25,10 +31,8 @@ class DiscoveryWorker(
             // Petit délai pour laisser l'UI respirer
             delay(500)
 
-            val repository = (applicationContext as VindexApplication).photoRepository
-
             // Synchronisation globale avec le MediaStore
-            repository.syncPhotos(applicationContext) { count ->
+            photoRepository.syncPhotos(applicationContext) { count ->
                 setProgress(
                     workDataOf(
                         "WORK" to applicationContext.getString(R.string.progress_scanning),

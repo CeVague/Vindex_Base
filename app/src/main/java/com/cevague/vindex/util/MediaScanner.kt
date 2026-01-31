@@ -10,12 +10,18 @@ import android.util.Log
 import androidx.core.net.toUri
 import androidx.exifinterface.media.ExifInterface
 import com.cevague.vindex.data.database.entity.Photo
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class MediaScanner {
+@Singleton
+class MediaScanner @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     companion object {
         private val PROJECTION = arrayOf(
@@ -41,7 +47,6 @@ class MediaScanner {
     }
 
     fun scanMediaStore(
-        context: Context,
         includedFolders: Set<String>,
         lastScanTimestamp: Long,
         onPathSeen: (String) -> Unit
@@ -214,7 +219,7 @@ class MediaScanner {
     /**
      * Extraction approfondie via ExifInterface (GPS original garanti sur Android 10+).
      */
-    fun extractMetadata(context: Context, photo: Photo): Photo {
+    fun extractMetadata(photo: Photo): Photo {
         val uri = photo.filePath.toUri()
         var latitude = photo.latitude
         var longitude = photo.longitude

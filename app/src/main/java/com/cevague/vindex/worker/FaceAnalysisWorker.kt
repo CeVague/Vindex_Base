@@ -2,6 +2,7 @@ package com.cevague.vindex.worker
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -9,13 +10,20 @@ import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Face
+import com.cevague.vindex.data.repository.PersonRepository
+import com.cevague.vindex.data.repository.PhotoRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import java.io.IOException
 
-class FaceAnalysisWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class FaceAnalysisWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val personRepository: PersonRepository,
+    private val photoRepository: PhotoRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -42,15 +50,9 @@ class FaceAnalysisWorker(
             if (BuildConfig.DEBUG) {
                 delay(1000)
 
-
-                // Dans FaceAnalysisWorker.kt
-
-                val personRepo = (applicationContext as VindexApplication).personRepository
-                val photoRepo = (applicationContext as VindexApplication).photoRepository
-
                 // 1. Récupérer toutes les photos existantes
-                val photos = photoRepo.getAllPhotosSummary().first()
-                val existingPeople = personRepo.getAllPersonSummaryOnce()
+                val photos = photoRepository.getAllPhotosSummary().first()
+                val existingPeople = personRepository.getAllPersonSummaryOnce()
 
                 if (photos.isNotEmpty()) {
                     photos.take(20).forEach { photo ->
@@ -68,7 +70,7 @@ class FaceAnalysisWorker(
                                     isPrimary = it == 0,
                                     assignmentType = "pending"
                                 )
-                                val faceId = personRepo.insertFace(face)
+                                val faceId = personRepository.insertFace(face)
 
                                 // 50% de chances de lier à une Personne
                                 if (Math.random() < 0.5) {
@@ -76,7 +78,7 @@ class FaceAnalysisWorker(
                                         if (existingPeople.isNotEmpty() && Math.random() < 0.7) {
                                             existingPeople.random().id
                                         } else {
-                                            personRepo.getOrCreatePersonByName(
+                                            personRepository.getOrCreatePersonByName(
                                                 listOf(
                                                     "Alice",
                                                     "Bob",
@@ -86,7 +88,7 @@ class FaceAnalysisWorker(
                                             )
                                         }
 
-                                    personRepo.assignFaceToPerson(
+                                    personRepository.assignFaceToPerson(
                                         faceId = faceId,
                                         personId = personId,
                                         assignmentType = "manual",
