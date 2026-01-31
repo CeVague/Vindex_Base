@@ -7,6 +7,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.Priority
+import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.github.chrisbanes.photoview.PhotoView
 
@@ -32,6 +35,10 @@ class PhotoPagerAdapter :
 
         Glide.with(holder.itemView.context)
             .load(photo.filePath.toUri())
+            .priority(Priority.IMMEDIATE)
+            .diskCacheStrategy(DiskCacheStrategy.DATA)
+            //.skipMemoryCache(true)
+            .format(DecodeFormat.PREFER_RGB_565)
             .fitCenter()
             .into(holder.photoView)
     }

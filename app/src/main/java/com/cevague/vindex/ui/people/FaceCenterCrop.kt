@@ -67,6 +67,18 @@ class FaceCenterCrop(private val face: FaceDao.FaceWithPhoto) : BitmapTransforma
     }
 
     override fun updateDiskCacheKey(messageDigest: MessageDigest) {
-        messageDigest.update("FaceCenterCrop${face.filePath}${face.boxLeft}".toByteArray())
+        messageDigest.update("FaceCenterCrop".toByteArray())
+        messageDigest.update(face.id.toString().toByteArray())
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other is FaceCenterCrop) {
+            return face.id == other.face.id
+        }
+        return false
+    }
+
+    override fun hashCode(): Int {
+        return face.id.hashCode()
     }
 }

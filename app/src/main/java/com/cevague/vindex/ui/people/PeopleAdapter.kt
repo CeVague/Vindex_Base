@@ -9,12 +9,14 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao.PersonWithCover
 import com.cevague.vindex.data.database.entity.Person
+import com.cevague.vindex.data.local.FastSettings
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.ItemPersonBinding
 import kotlinx.coroutines.Job
@@ -61,12 +63,17 @@ class PeopleAdapter(
                     boxBottom = person.boxBottom ?: 0f
                 )
 
+                val spanCount = FastSettings.gridColumns
+                val screenWidth = binding.root.context.resources.displayMetrics.widthPixels
+                val targetSize = screenWidth / spanCount
+
                 Glide.with(binding.imagePerson)
                     .load(coverPath)
                     .signature(ObjectKey(person.id.toString() + person.photoCount))
+                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                    .override(targetSize)
                     .placeholder(R.drawable.vector_peoples)
                     .error(R.drawable.vector_peoples)
-                    .override(240, 240)
                     .transform(FaceCenterCrop(faceData), CircleCrop())
                     .into(binding.imagePerson)
             } else {

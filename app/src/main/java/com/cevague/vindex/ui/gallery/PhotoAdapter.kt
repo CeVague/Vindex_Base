@@ -7,11 +7,14 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.databinding.ItemGalleryHeaderBinding
 import com.cevague.vindex.databinding.ItemGalleryPhotoBinding
 
 class GalleryAdapter(
+    private val targetSize: Int,
     private val onPhotoClick: (PhotoSummary, Int) -> Unit
 ) : ListAdapter<GalleryItem, RecyclerView.ViewHolder>(GalleryDiffCallback()) {
 
@@ -31,7 +34,8 @@ class GalleryAdapter(
 
     class PhotoViewHolder(
         private val binding: ItemGalleryPhotoBinding,
-        private val onPhotoClick: (PhotoSummary, Int) -> Unit
+        private val onPhotoClick: (PhotoSummary, Int) -> Unit,
+        val targetSize: Int
     ) : RecyclerView.ViewHolder(binding.root) {
 
         private var currentPhoto: PhotoSummary? = null
@@ -49,6 +53,9 @@ class GalleryAdapter(
 
             Glide.with(binding.imagePhoto)
                 .load(item.photo.filePath.toUri())
+                .format(DecodeFormat.PREFER_RGB_565)
+                .override(targetSize)
+                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
                 .centerCrop()
                 .into(binding.imagePhoto)
         }
@@ -75,7 +82,7 @@ class GalleryAdapter(
             }
             VIEW_TYPE_PHOTO -> {
                 val binding = ItemGalleryPhotoBinding.inflate(inflater, parent, false)
-                PhotoViewHolder(binding, onPhotoClick)
+                PhotoViewHolder(binding, onPhotoClick, targetSize)
             }
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
         }

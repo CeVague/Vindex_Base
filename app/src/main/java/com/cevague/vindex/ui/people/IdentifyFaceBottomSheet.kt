@@ -8,7 +8,9 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.FaceDao
@@ -162,8 +164,9 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     private fun displayFace(face: FaceDao.FaceWithPhoto) {
         Glide.with(this)
             .load(face.filePath)
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
             .transform(FaceCenterCrop(face), CircleCrop())
-            .override(480, 480)
+            .transition(DrawableTransitionOptions.withCrossFade())
             .into(binding.imageFace)
 
         // Reset du champ texte
