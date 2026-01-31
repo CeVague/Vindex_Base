@@ -167,6 +167,47 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_system">System default</string>
 
+    <!-- Settings - Category -->
+    <string name="settings_category_stats">Library</string>
+    <string name="settings_category_display">Display</string>
+    <string name="settings_category_face">Face Recognition</string>
+    <string name="settings_category_data">Data</string>
+
+    <!-- Settings - Stats -->
+    <string name="settings_stat_photos">Photos</string>
+    <string name="settings_stat_people">People</string>
+    <string name="settings_stat_faces">Faces to identify</string>
+    <string name="settings_stat_albums">Albums</string>
+    <string name="settings_stat_storage">Storage used</string>
+
+    <string name="settings_stat_hidden">hidden</string>
+    <string name="settings_stat_named">named</string>
+    <string name="settings_stat_unnamed">unnamed</string>
+    <string name="settings_stat_all_identified">All faces identified</string>
+
+    <!-- Settings - Data -->
+    <string name="settings_rescan">Rescan gallery</string>
+    <string name="settings_rescan_summary">Scan for new photos and update existing ones</string>
+
+    <string name="settings_reset_db">Reset database</string>
+    <string name="settings_reset_db_summary">Delete all data and rescan from scratch</string>
+    <string name="settings_reset_db_title">Reset database?</string>
+    <string name="settings_reset_db_message">This will delete all photos, people, albums and analysis data. Your actual files won\'t be affected.\n\nThis action cannot be undone.</string>
+    <string name="settings_reset_db_done">Database reset successfully</string>
+
+    <string name="settings_reset_done">Settings reset to defaults</string>
+
+    <!-- Settings - Threshold -->
+    <string name="settings_threshold_high">High confidence threshold</string>
+    <string name="settings_threshold_high_summary">Auto-assign when confidence ≥ this value (default: 0.40)</string>
+
+    <string name="settings_threshold_medium">Medium confidence threshold</string>
+    <string name="settings_threshold_medium_summary">Show as suggestion when confidence ≥ this value (default: 0.60)</string>
+
+    <string name="settings_threshold_new">New person threshold</string>
+    <string name="settings_threshold_new_summary">Create new person when no match above this value (default: 0.75)</string>
+
+
     <!-- Settings - AI -->
     <string name="settings_ai">AI Analysis</string>
     <string name="settings_ai_not_configured">Not configured</string>
@@ -218,6 +259,7 @@
     <string name="error_permission_denied">Permission denied</string>
     <string name="error_storage_full">Storage is full</string>
     <string name="error_database">Database error</string>
+    <string name="error_generic">An error occurred</string>
 
     <!-- Format and units -->
     <string name="format_dimensions">%1$d × %2$d</string>

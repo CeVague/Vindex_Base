@@ -174,6 +174,46 @@
     <string name="settings_language">Langue</string>
     <string name="settings_language_system">Langue du système</string>
 
+    <!-- Settings - Stats -->
+    <string name="settings_stat_photos">Photos</string>
+    <string name="settings_stat_people">Personnes</string>
+    <string name="settings_stat_faces">Visages à identifier</string>
+    <string name="settings_stat_albums">Albums</string>
+    <string name="settings_stat_storage">Espace utilisé</string>
+
+    <string name="settings_stat_hidden">masquées</string>
+    <string name="settings_stat_named">nommées</string>
+    <string name="settings_stat_unnamed">sans nom</string>
+    <string name="settings_stat_all_identified">Tous les visages sont identifiés</string>
+
+    <!-- Settings - Category -->
+    <string name="settings_category_stats">Bibliothèque</string>
+    <string name="settings_category_display">Affichage</string>
+    <string name="settings_category_face">Reconnaissance faciale</string>
+    <string name="settings_category_data">Données</string>
+
+    <!-- Settings - Data -->
+    <string name="settings_rescan">Rescanner la galerie</string>
+    <string name="settings_rescan_summary">Rechercher de nouvelles photos et mettre à jour</string>
+
+    <string name="settings_reset_db">Réinitialiser la base de données</string>
+    <string name="settings_reset_db_summary">Supprimer toutes les données et rescanner</string>
+    <string name="settings_reset_db_title">Réinitialiser la base de données ?</string>
+    <string name="settings_reset_db_message">Cela supprimera toutes les photos, personnes, albums et données d\'analyse. Vos fichiers réels ne seront pas affectés.\n\nCette action est irréversible.</string>
+    <string name="settings_reset_db_done">Base de données réinitialisée</string>
+
+    <string name="settings_reset_done">Paramètres réinitialisés</string>
+
+    <!-- Settings - Threshold -->
+    <string name="settings_threshold_high">Seuil de confiance élevé</string>
+    <string name="settings_threshold_high_summary">Attribution auto si confiance ≥ cette valeur (défaut : 0.40)</string>
+
+    <string name="settings_threshold_medium">Seuil de confiance moyen</string>
+    <string name="settings_threshold_medium_summary">Afficher en suggestion si confiance ≥ cette valeur (défaut : 0.60)</string>
+
+    <string name="settings_threshold_new">Seuil nouvelle personne</string>
+    <string name="settings_threshold_new_summary">Créer une nouvelle personne si aucune correspondance au-dessus (défaut : 0.75)</string>
+
     <!-- Settings - AI -->
     <string name="settings_ai">Analyse IA</string>
     <string name="settings_ai_not_configured">Non configuré</string>
@@ -225,6 +265,7 @@
     <string name="error_permission_denied">Permission refusée</string>
     <string name="error_storage_full">Espace de stockage insuffisant</string>
     <string name="error_database">Erreur de base de données</string>
+    <string name="error_generic">Une erreur est survenue</string>
 
     <!-- Format and units -->
     <string name="format_dimensions">%1$d × %2$d</string>

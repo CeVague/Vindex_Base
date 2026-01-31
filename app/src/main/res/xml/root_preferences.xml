@@ -1,73 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- STATISTIQUES DE LA BIBLIOTHÈQUE                                      -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
 
-    <PreferenceCategory app:title="Expert">
+    <PreferenceCategory
+        app:key="category_stats"
+        app:title="@string/settings_category_stats"
+        app:iconSpaceReserved="false">
+
         <Preference
-            app:key="reset_database"
-            app:title="Réinitialiser la base de données" />
+            app:key="stat_photos"
+            app:title="@string/settings_stat_photos"
+            app:summary="@string/msg_loading"
+            app:icon="@drawable/vector_gallery"
+            app:selectable="false" />
+
+        <Preference
+            app:key="stat_people"
+            app:title="@string/settings_stat_people"
+            app:summary="@string/msg_loading"
+            app:icon="@drawable/vector_peoples"
+            app:selectable="false" />
+
+        <Preference
+            app:key="stat_faces"
+            app:title="@string/settings_stat_faces"
+            app:summary="@string/msg_loading"
+            app:icon="@drawable/vector_face"
+            app:selectable="false" />
+
+        <Preference
+            app:key="stat_albums"
+            app:title="@string/settings_stat_albums"
+            app:summary="@string/msg_loading"
+            app:icon="@drawable/vector_albums"
+            app:selectable="false" />
+
+        <Preference
+            app:key="stat_storage"
+            app:title="@string/settings_stat_storage"
+            app:summary="@string/msg_loading"
+            app:icon="@drawable/vector_storage"
+            app:selectable="false" />
+
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="Affichage">
-        <ListPreference
-            app:defaultValue="system"
-            app:entries="@array/language_entries"
-            app:entryValues="@array/language_values"
-            app:key="language"
-            app:title="Langue de l'application"
-            app:useSimpleSummaryProvider="true" />
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- AFFICHAGE                                                            -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
 
+    <PreferenceCategory
+        app:key="category_display"
+        app:title="@string/settings_category_display"
+        app:iconSpaceReserved="false">
 
         <ListPreference
-            app:defaultValue="system"
+            app:key="theme"
+            app:title="@string/settings_theme"
+            app:icon="@drawable/vector_palette"
             app:entries="@array/theme_entries"
             app:entryValues="@array/theme_values"
-            app:key="theme"
-            app:title="Thème de l'application"
+            app:defaultValue="system"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:key="language"
+            app:title="@string/settings_language"
+            app:icon="@drawable/vector_language"
+            app:entries="@array/language_entries"
+            app:entryValues="@array/language_values"
+            app:defaultValue="system"
             app:useSimpleSummaryProvider="true" />
 
         <SeekBarPreference
-            android:max="6"
-            app:defaultValue="3"
             app:key="grid_columns"
+            app:title="@string/settings_grid_columns"
+            app:icon="@drawable/vector_grid"
+            android:max="6"
             app:min="2"
-            app:showSeekBarValue="true"
-            app:title="Nombre de colonnes" />
+            app:defaultValue="3"
+            app:showSeekBarValue="true" />
+
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="Source">
-        <Preference
-            app:key="source_folder_uri"
-            app:summary="Changer le dossier source des photos"
-            app:title="Dossier racine" />
-    </PreferenceCategory>
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- RECONNAISSANCE FACIALE                                               -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
 
-    <PreferenceCategory app:title="IA &amp; Reconnaissance">
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue="0.40"
-            app:key="face_threshold_high"
-            app:title="Seuil de confiance élevé"
-            app:useSimpleSummaryProvider="true" />
-
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue="0.60"
-            app:key="face_threshold_medium"
-            app:title="Seuil de confiance moyen"
-            app:useSimpleSummaryProvider="true" />
-
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue="0.75"
-            app:key="face_threshold_new"
-            app:title="Seuil nouveau visage"
-            app:useSimpleSummaryProvider="true" />
+    <PreferenceCategory
+        app:key="category_face_recognition"
+        app:title="@string/settings_category_face"
+        app:iconSpaceReserved="false">
 
         <SwitchPreferenceCompat
-            app:defaultValue="false"
             app:key="show_scores"
-            app:title="Afficher les scores de confiance" />
+            app:title="@string/settings_show_scores"
+            app:summary="@string/settings_show_scores_summary"
+            app:icon="@drawable/vector_percent"
+            app:defaultValue="false" />
+
+        <EditTextPreference
+            app:key="face_threshold_high"
+            app:title="@string/settings_threshold_high"
+            app:summary="@string/settings_threshold_high_summary"
+            app:icon="@drawable/vector_verified"
+            app:defaultValue="0.40"
+            android:inputType="numberDecimal" />
+
+        <EditTextPreference
+            app:key="face_threshold_medium"
+            app:title="@string/settings_threshold_medium"
+            app:summary="@string/settings_threshold_medium_summary"
+            app:icon="@drawable/vector_help"
+            app:defaultValue="0.60"
+            android:inputType="numberDecimal" />
+
+        <EditTextPreference
+            app:key="face_threshold_new"
+            app:title="@string/settings_threshold_new"
+            app:summary="@string/settings_threshold_new_summary"
+            app:icon="@drawable/vector_person_add"
+            app:defaultValue="0.75"
+            android:inputType="numberDecimal" />
+
+    </PreferenceCategory>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- DONNÉES                                                              -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:key="category_data"
+        app:title="@string/settings_category_data"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            app:key="source_folders"
+            app:title="@string/settings_source_folder"
+            app:summary="@string/settings_source_folder_summary"
+            app:icon="@drawable/vector_folder" />
+
+        <Preference
+            app:key="rescan_gallery"
+            app:title="@string/settings_rescan"
+            app:summary="@string/settings_rescan_summary"
+            app:icon="@drawable/vector_refresh" />
+
+        <Preference
+            app:key="reset_database"
+            app:title="@string/settings_reset_db"
+            app:summary="@string/settings_reset_db_summary"
+            app:icon="@drawable/vector_delete_forever" />
+
+        <Preference
+            app:key="reset_settings"
+            app:title="@string/settings_reset"
+            app:summary="@string/settings_reset_summary"
+            app:icon="@drawable/vector_restore" />
+
+    </PreferenceCategory>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- À PROPOS                                                             -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:key="category_about"
+        app:title="@string/settings_about"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            app:key="app_version"
+            app:title="@string/settings_version"
+            app:summary=""
+            app:icon="@drawable/vector_info"
+            app:selectable="false" />
+
+        <Preference
+            app:key="source_code"
+            app:title="@string/settings_source_code"
+            app:summary="@string/settings_source_code_summary"
+            app:icon="@drawable/vector_code" />
+
+        <Preference
+            app:key="license"
+            app:title="@string/settings_license"
+            app:summary="@string/settings_license_value"
+            app:icon="@drawable/vector_license" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

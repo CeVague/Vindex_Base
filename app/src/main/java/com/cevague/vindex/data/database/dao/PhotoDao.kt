@@ -53,6 +53,12 @@ interface PhotoDao {
     @Query("SELECT COUNT(*) FROM photos")
     fun getPhotoCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM photos WHERE is_hidden = 0")
+    fun getVisiblePhotoCount(): Flow<Int>
+
+    @Query("SELECT COALESCE(SUM(file_size), 0) FROM photos")
+    suspend fun getTotalStorageUsed(): Long
+
     @Query("SELECT DISTINCT relative_path FROM photos WHERE relative_path IS NOT NULL ORDER BY relative_path")
     fun getAllFolders(): Flow<List<String>>
 
