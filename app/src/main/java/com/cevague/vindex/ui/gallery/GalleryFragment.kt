@@ -1,5 +1,6 @@
 package com.cevague.vindex.ui.gallery
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -46,29 +47,35 @@ class GalleryFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = GalleryAdapter { photo, adapterPosition ->
+        adapter = GalleryAdapter(getTargetSize(requireContext())) { photo, adapterPosition ->
             openPhotoViewer(adapterPosition)
         }
 
         val spanCount = FastSettings.gridColumns
 
-        val layoutManager = GridLayoutManager(requireContext(), spanCount)
-
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return when (adapter.getItemViewType(position)) {
-                    GalleryAdapter.VIEW_TYPE_HEADER -> spanCount  // Toute la largeur
-                    GalleryAdapter.VIEW_TYPE_PHOTO -> 1           // 1 colonne
-                    else -> 1
+        val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
+            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int {
+                    // Ici 'adapter' pointe bien vers le fragment car SpanSizeLookup n'en a pas
+                    return if (adapter.getItemViewType(position) == GalleryAdapter.VIEW_TYPE_HEADER) {
+                        spanCount
+                    } else {
+                        1
+                    }
                 }
             }
+
+            spanSizeLookup.isSpanIndexCacheEnabled = true
+            spanSizeLookup.isSpanGroupIndexCacheEnabled = true
         }
 
-        binding.recyclerGallery.layoutManager = layoutManager
-        binding.recyclerGallery.adapter = adapter
+        binding.recyclerGallery.apply {
+            this.adapter = this@GalleryFragment.adapter
+            this.layoutManager = gridLayoutManager
 
-        binding.recyclerGallery.setHasFixedSize(true)
-        binding.recyclerGallery.setItemViewCacheSize(20)
+            setHasFixedSize(true)
+            setItemViewCacheSize(20)
+        }
 
         val app = requireActivity().application as VindexApplication
 
@@ -98,6 +105,11 @@ class GalleryFragment : Fragment() {
         }
     }
 
+    fun getTargetSize(context: Context): Int {
+        val spanCount = FastSettings.gridColumns
+        val screenWidth = context.resources.displayMetrics.widthPixels
+        return screenWidth / spanCount
+    }
 
     private fun renderState(state: GalleryUiState) {
         // when exhaustif grâce à la sealed class !

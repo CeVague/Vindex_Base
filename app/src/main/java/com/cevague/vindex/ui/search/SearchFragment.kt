@@ -1,5 +1,6 @@
 package com.cevague.vindex.ui.search
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -48,7 +49,7 @@ class SearchFragment : Fragment() {
 
         photoGrouper = PhotoGrouper(requireContext())
 
-        val adapter = GalleryAdapter { _, position ->
+        val adapter = GalleryAdapter (getTargetSize(requireContext())){ _, position ->
             val photosOnly = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotosOnly()
             val photoIndex = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotoIndex(position)
 
@@ -59,19 +60,25 @@ class SearchFragment : Fragment() {
 
         val spanCount = FastSettings.gridColumns
 
-        val gridLayoutManager = GridLayoutManager(requireContext(), spanCount)
-        gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return when (adapter.getItemViewType(position)) {
-                    GalleryAdapter.VIEW_TYPE_HEADER -> spanCount // Prend toute la largeur
-                    else -> 1 // Une seule colonne
+        val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
+            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int {return when (adapter.getItemViewType(position)) {
+                    GalleryAdapter.VIEW_TYPE_HEADER -> spanCount
+                    else -> 1
+                }
                 }
             }
+
+            spanSizeLookup.isSpanIndexCacheEnabled = true
+            spanSizeLookup.isSpanGroupIndexCacheEnabled = true
         }
 
         binding.recyclerSearch.apply {
             this.adapter = adapter
             this.layoutManager = gridLayoutManager
+
+            setHasFixedSize(true)
+            setItemViewCacheSize(20)
         }
 
         // 3. Écouter la saisie utilisateur
@@ -112,6 +119,12 @@ class SearchFragment : Fragment() {
                 }
             }
         }
+    }
+
+    fun getTargetSize(context: Context): Int {
+        val spanCount = FastSettings.gridColumns
+        val screenWidth = context.resources.displayMetrics.widthPixels
+        return screenWidth / (spanCount * 2)
     }
 
     private fun updateUIState(photos: List<PhotoSummary>) {

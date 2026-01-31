@@ -17,6 +17,7 @@ import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Person
+import com.cevague.vindex.data.local.FastSettings
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.FragmentPeopleBinding
 import com.cevague.vindex.ui.main.MainSharedViewModel
@@ -60,7 +61,10 @@ class PeopleFragment : Fragment() {
 
         binding.recyclerPeople.apply {
             this.adapter = adapter
-            this.layoutManager = GridLayoutManager(requireContext(), 3)
+            this.layoutManager = GridLayoutManager(requireContext(), FastSettings.gridColumns)
+
+            setHasFixedSize(true)
+            setItemViewCacheSize(20)
         }
 
         // Observer les personnes
