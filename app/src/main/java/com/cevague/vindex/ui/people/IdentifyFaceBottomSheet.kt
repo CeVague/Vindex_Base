@@ -180,7 +180,8 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             val totalPending = personRepository.getPendingFaceCount().first()
             val remaining = totalPending - skippedIds.size
 
-            binding.textCounter.text = resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
+            binding.textCounter.text =
+                resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
         }
     }
 

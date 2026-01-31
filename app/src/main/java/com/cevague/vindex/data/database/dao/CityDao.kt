@@ -28,7 +28,8 @@ interface CityDao {
         return findNearestCitySlow(lat, lon)
     }
 
-    @Query("""
+    @Query(
+        """
         SELECT *, 
         ((:lat - latitude) * (:lat - latitude) + (:lon - longitude) * (:lon - longitude)) AS distance
         FROM cities 
@@ -36,16 +37,19 @@ interface CityDao {
           AND longitude BETWEEN :lon - :delta AND :lon + :delta
         ORDER BY distance ASC 
         LIMIT 1
-    """)
+    """
+    )
     suspend fun findNearestCityWithDelta(lat: Double, lon: Double, delta: Double): City?
 
-    @Query("""
+    @Query(
+        """
         SELECT *, 
         ((:lat - latitude) * (:lat - latitude) + (:lon - longitude) * (:lon - longitude)) AS distance
         FROM cities 
         ORDER BY distance ASC 
         LIMIT 1
-    """)
+    """
+    )
     suspend fun findNearestCitySlow(lat: Double, lon: Double): City?
 
     @Query("SELECT COUNT(*) FROM cities")

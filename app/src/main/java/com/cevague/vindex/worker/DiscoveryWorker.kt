@@ -6,7 +6,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.repository.PhotoRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject

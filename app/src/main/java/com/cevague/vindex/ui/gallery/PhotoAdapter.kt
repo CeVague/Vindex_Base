@@ -80,10 +80,12 @@ class GalleryAdapter(
                 val binding = ItemGalleryHeaderBinding.inflate(inflater, parent, false)
                 HeaderViewHolder(binding)
             }
+
             VIEW_TYPE_PHOTO -> {
                 val binding = ItemGalleryPhotoBinding.inflate(inflater, parent, false)
                 PhotoViewHolder(binding, onPhotoClick, targetSize)
             }
+
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
         }
     }

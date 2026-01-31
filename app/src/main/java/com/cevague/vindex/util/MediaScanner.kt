@@ -180,7 +180,8 @@ class MediaScanner @Inject constructor(
         val mimeType = cursor.getString(mimeColumn)
         val width = if (widthColumn >= 0) cursor.getIntOrNull(widthColumn) else null
         val height = if (heightColumn >= 0) cursor.getIntOrNull(heightColumn) else null
-        val orientation = if (orientationColumn >= 0) cursor.getIntOrNull(orientationColumn) else null
+        val orientation =
+            if (orientationColumn >= 0) cursor.getIntOrNull(orientationColumn) else null
         val relativePath = if (relativePathColumn >= 0) {
             cursor.getStringOrNull(relativePathColumn)?.trimEnd('/')
         } else if (dataColumn >= 0) {

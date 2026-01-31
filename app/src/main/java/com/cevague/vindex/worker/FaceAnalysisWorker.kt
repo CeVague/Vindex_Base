@@ -8,7 +8,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository

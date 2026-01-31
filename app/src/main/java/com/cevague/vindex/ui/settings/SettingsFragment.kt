@@ -22,14 +22,19 @@ import javax.inject.Inject
 class SettingsFragment : PreferenceFragmentCompat() {
     @Inject
     lateinit var scanManager: ScanManager
+
     @Inject
     lateinit var settingsRepository: SettingsRepository
+
     @Inject
     lateinit var photoRepository: PhotoRepository
+
     @Inject
     lateinit var personRepository: PersonRepository
+
     @Inject
     lateinit var albumRepository: AlbumRepository
+
     @Inject
     lateinit var settingsCache: SettingsCache
 

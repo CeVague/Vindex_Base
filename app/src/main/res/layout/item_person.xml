@@ -28,14 +28,14 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="@string/people_unknown"
-        android:textColor="?attr/colorOnSurface"
-        android:textAppearance="?attr/textAppearanceTitleSmall" />
+        android:textAppearance="?attr/textAppearanceTitleSmall"
+        android:textColor="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/textCount"
-        android:text="@string/people_to_identify"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="@string/people_to_identify"
         android:textAppearance="?attr/textAppearanceBodySmall"
         android:textColor="?attr/colorOnSurfaceVariant" />
 

@@ -11,17 +11,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.widget.ViewPager2
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
-import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class PhotoViewerActivity : AppCompatActivity() {
@@ -176,7 +172,8 @@ class PhotoViewerActivity : AppCompatActivity() {
 
 
         if (photo.latitude != null && photo.longitude != null) {
-            binding.textLocationCoordinates.text = getString(R.string.format_location, photo.latitude, photo.longitude)
+            binding.textLocationCoordinates.text =
+                getString(R.string.format_location, photo.latitude, photo.longitude)
         } else {
             binding.textLocationCoordinates.text = getString(R.string.viewer_no_info_short)
         }

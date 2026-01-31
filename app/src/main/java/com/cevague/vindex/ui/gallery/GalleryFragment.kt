@@ -27,8 +27,10 @@ class GalleryFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: GalleryViewModel by viewModels()
+
     @Inject
     lateinit var scanManager: ScanManager
+
     @Inject
     lateinit var settingsCache: SettingsCache
     private lateinit var adapter: GalleryAdapter
@@ -123,16 +125,19 @@ class GalleryFragment : Fragment() {
                 // binding.emptyLayout?.isVisible = false
                 // binding.errorLayout?.isVisible = false
             }
+
             is GalleryUiState.Success -> {
                 binding.textEmpty.visibility = View.GONE
                 binding.recyclerGallery.visibility = View.VISIBLE
                 //binding.progressBar.isVisible = false
                 //binding.recyclerView.isVisible = true
             }
+
             is GalleryUiState.Empty -> {
                 binding.textEmpty.visibility = View.VISIBLE
                 binding.recyclerGallery.visibility = View.GONE
             }
+
             is GalleryUiState.Error -> {
                 binding.textEmpty.visibility = View.VISIBLE
                 binding.recyclerGallery.visibility = View.GONE

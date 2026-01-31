@@ -29,8 +29,10 @@ class PeopleFragment : Fragment() {
 
     private var _binding: FragmentPeopleBinding? = null
     private val binding get() = _binding!!
+
     @Inject
     lateinit var personRepository: PersonRepository
+
     @Inject
     lateinit var settingsCache: SettingsCache
     private val viewModel: PeopleViewModel by viewModels()
@@ -76,7 +78,11 @@ class PeopleFragment : Fragment() {
             viewModel.unidentifiedFaceCount.collect { count ->
                 binding.fabIdentify.apply {
                     visibility = if (count > 0) View.VISIBLE else View.GONE
-                    text = resources.getQuantityString(R.plurals.people_to_identify_count, count, count)
+                    text = resources.getQuantityString(
+                        R.plurals.people_to_identify_count,
+                        count,
+                        count
+                    )
 
                     setOnClickListener {
                         // Ouvrir le BottomSheet d'identification

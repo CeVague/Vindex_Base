@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         applyAppTheme(settingsCache.themeMode)
         applyAppLanguage(settingsCache.userLanguage)
 
@@ -129,7 +129,7 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private fun observeNavigateToTab(){
+    private fun observeNavigateToTab() {
         val sharedViewModel: MainSharedViewModel by viewModels()
 
         lifecycleScope.launch {

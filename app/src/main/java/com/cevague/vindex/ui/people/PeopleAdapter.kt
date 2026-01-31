@@ -38,7 +38,8 @@ class PeopleAdapter(
 
 
         fun bind(person: PersonWithCover) {
-            binding.textName.text = person.name ?: binding.root.context.getString(R.string.people_unknown)
+            binding.textName.text =
+                person.name ?: binding.root.context.getString(R.string.people_unknown)
 
             binding.textCount.text = binding.root.resources.getQuantityString(
                 R.plurals.people_photo_count,
@@ -90,13 +91,15 @@ class PeopleAdapter(
     class DiffCallback : DiffUtil.ItemCallback<PersonWithCover>() {
         override fun areItemsTheSame(
             oldItem: PersonWithCover,
-            newItem: PersonWithCover): Boolean {
+            newItem: PersonWithCover
+        ): Boolean {
             return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(
             oldItem: PersonWithCover,
-            newItem: PersonWithCover): Boolean {
+            newItem: PersonWithCover
+        ): Boolean {
             return oldItem == newItem
         }
     }

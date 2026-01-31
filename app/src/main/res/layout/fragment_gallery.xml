@@ -10,10 +10,10 @@
         android:id="@+id/textEmpty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textAppearance="?attr/textAppearanceBodyLarge"
-        android:textColor="?attr/colorOnSurfaceVariant"
         android:gravity="center"
-        android:text="@string/gallery_empty" />
+        android:text="@string/gallery_empty"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshGallery"

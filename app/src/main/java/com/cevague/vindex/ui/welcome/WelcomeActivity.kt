@@ -27,8 +27,10 @@ class WelcomeActivity : AppCompatActivity() {
 
     @Inject
     lateinit var scanManager: ScanManager
+
     @Inject
     lateinit var mediaScanner: MediaScanner
+
     @Inject
     lateinit var settingsCache: SettingsCache
 

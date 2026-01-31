@@ -32,6 +32,7 @@ class SearchFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SearchViewModel by viewModels()
+
     @Inject
     lateinit var settingsCache: SettingsCache
 
@@ -51,9 +52,10 @@ class SearchFragment : Fragment() {
 
         photoGrouper = PhotoGrouper(requireContext())
 
-        val adapter = GalleryAdapter (getTargetSize(requireContext())){ _, position ->
+        val adapter = GalleryAdapter(getTargetSize(requireContext())) { _, position ->
             val photosOnly = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotosOnly()
-            val photoIndex = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotoIndex(position)
+            val photoIndex =
+                (binding.recyclerSearch.adapter as GalleryAdapter).getPhotoIndex(position)
 
             if (photosOnly.isNotEmpty()) {
                 PhotoViewerActivity.start(requireContext(), ArrayList(photosOnly), photoIndex)
@@ -64,10 +66,11 @@ class SearchFragment : Fragment() {
 
         val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(position: Int): Int {return when (adapter.getItemViewType(position)) {
-                    GalleryAdapter.VIEW_TYPE_HEADER -> spanCount
-                    else -> 1
-                }
+                override fun getSpanSize(position: Int): Int {
+                    return when (adapter.getItemViewType(position)) {
+                        GalleryAdapter.VIEW_TYPE_HEADER -> spanCount
+                        else -> 1
+                    }
                 }
             }
 

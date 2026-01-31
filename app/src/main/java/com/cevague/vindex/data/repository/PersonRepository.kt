@@ -24,7 +24,8 @@ class PersonRepository @Inject constructor(
 
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
-    fun getNamedPersonsWithCover(): Flow<List<PersonDao.PersonWithCover>> = personDao.getNamedPersonsWithCover()
+    fun getNamedPersonsWithCover(): Flow<List<PersonDao.PersonWithCover>> =
+        personDao.getNamedPersonsWithCover()
 
 
     fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
@@ -96,6 +97,7 @@ class PersonRepository @Inject constructor(
         faceDao.unassignFromPerson(personId)
         personDao.deleteById(personId)
     }
+
     suspend fun deleteAllPersons() = personDao.deleteAll()
 
     suspend fun deleteAllFaces() = faceDao.deleteAll()

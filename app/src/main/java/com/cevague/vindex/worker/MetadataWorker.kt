@@ -1,19 +1,20 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
-import android.database.sqlite.SQLiteException
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
-import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.repository.CityRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.util.MediaScanner
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
 
 @HiltWorker
 class MetadataWorker @AssistedInject constructor(
@@ -26,15 +27,20 @@ class MetadataWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to 0))
+            setProgress(
+                workDataOf(
+                    "WORK" to applicationContext.getString(R.string.progress_exif),
+                    "PROGRESS" to 0
+                )
+            )
 
             val photosToProcess = photoRepository.getPhotosNeedingMetadataExtraction()
             val total = photosToProcess.size
             if (total == 0) return Result.success()
 
             // On parallélise par petits batchs pour ne pas saturer la RAM
-            val batchSize = 20 
-            
+            val batchSize = 20
+
             photosToProcess.chunked(batchSize).forEachIndexed { index, batch ->
                 // Utilisation de Dispatchers.IO pour les accès fichiers + async pour le parallélisme
                 val enrichedBatch = withContext(Dispatchers.IO) {
@@ -46,12 +52,25 @@ class MetadataWorker @AssistedInject constructor(
 
                                 // 2. Geocoding
                                 if (data.latitude != null && data.longitude != null) {
-                                    val city = cityRepository.findNearestCity(data.latitude!!, data.longitude!!)
-                                    city?.let { data = data.copy(locationName = "${it.name}, ${it.countryCode}") }
+                                    val city = cityRepository.findNearestCity(
+                                        data.latitude!!,
+                                        data.longitude!!
+                                    )
+                                    city?.let {
+                                        data =
+                                            data.copy(locationName = "${it.name}, ${it.countryCode}")
+                                    }
                                 }
 
                                 // 3. Media Type Refinement
-                                val type = mediaScanner.detectMediaType(data.fileName, data.folderPath, data.width, data.height, data.cameraMake, data.cameraModel)
+                                val type = mediaScanner.detectMediaType(
+                                    data.fileName,
+                                    data.folderPath,
+                                    data.width,
+                                    data.height,
+                                    data.cameraMake,
+                                    data.cameraModel
+                                )
                                 data.copy(mediaType = type)
                             } catch (e: Exception) {
                                 photo // En cas d'erreur sur une photo, on la garde telle quelle
@@ -64,7 +83,12 @@ class MetadataWorker @AssistedInject constructor(
 
                 // Update Progress
                 val progress = ((index + 1) * batchSize * 100 / total).coerceAtMost(100)
-                setProgress(workDataOf("WORK" to applicationContext.getString(R.string.progress_exif), "PROGRESS" to progress))
+                setProgress(
+                    workDataOf(
+                        "WORK" to applicationContext.getString(R.string.progress_exif),
+                        "PROGRESS" to progress
+                    )
+                )
             }
 
             Result.success()

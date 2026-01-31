@@ -4,7 +4,11 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.cevague.vindex.worker.*
+import com.cevague.vindex.worker.AIAnalysisWorker
+import com.cevague.vindex.worker.CityImportWorker
+import com.cevague.vindex.worker.DiscoveryWorker
+import com.cevague.vindex.worker.FaceAnalysisWorker
+import com.cevague.vindex.worker.MetadataWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton

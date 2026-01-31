@@ -4,7 +4,9 @@ import android.content.Context
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class PhotoGrouper(private val context: Context) {
 
@@ -29,7 +31,7 @@ class PhotoGrouper(private val context: Context) {
         for (photo in photos) {
             // Déterminer dans quelle catégorie tombe cette photo
             val category = getCategoryForDate(
-                timestamp = photo.dateTaken?:0L,
+                timestamp = photo.dateTaken ?: 0L,
                 todayStart = todayStart,
                 weekStart = weekStart,
                 monthStart = monthStart,
@@ -39,11 +41,13 @@ class PhotoGrouper(private val context: Context) {
             // Si on change de catégorie, ajouter un nouveau header
             if (category != currentCategory) {
                 currentCategory = category
-                result.add(GalleryItem.Header(
-                    title = category,
-                    // ID unique basé sur le titre (pour DiffUtil)
-                    id = "header_${category.lowercase().replace(" ", "_")}"
-                ))
+                result.add(
+                    GalleryItem.Header(
+                        title = category,
+                        // ID unique basé sur le titre (pour DiffUtil)
+                        id = "header_${category.lowercase().replace(" ", "_")}"
+                    )
+                )
             }
 
             // Ajouter la photo

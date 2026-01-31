@@ -6,7 +6,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.cevague.vindex.data.database.AppDatabase
-import com.cevague.vindex.data.database.dao.*
+import com.cevague.vindex.data.database.dao.AiModelDao
+import com.cevague.vindex.data.database.dao.AlbumDao
+import com.cevague.vindex.data.database.dao.AnalysisLogDao
+import com.cevague.vindex.data.database.dao.CityDao
+import com.cevague.vindex.data.database.dao.FaceDao
+import com.cevague.vindex.data.database.dao.PersonDao
+import com.cevague.vindex.data.database.dao.PhotoDao
+import com.cevague.vindex.data.database.dao.PhotoHashDao
+import com.cevague.vindex.data.database.dao.SettingDao
 import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.ui.gallery.PhotoGrouper
 import dagger.Module
