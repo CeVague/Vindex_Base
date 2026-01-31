@@ -1,17 +1,16 @@
 package com.cevague.vindex.ui.main
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class MainSharedViewModel : ViewModel() {
-    // LiveData est plus simple et "consommable" facilement
-    private val _searchQuery = MutableLiveData<String?>()
-    val searchQuery: LiveData<String?> = _searchQuery
+    private val _searchQuery = MutableStateFlow<String?>("")
+    val searchQuery: StateFlow<String?> = _searchQuery
 
     fun triggerSearch(query: String) {
         _searchQuery.value = query

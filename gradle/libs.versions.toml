@@ -55,7 +55,6 @@ espressoCore = "3.6.1"
 fragmentVersion = "1.8.9"
 lifecycleProcess = "2.10.0"
 swiperefreshlayout = "1.2.0"
-firebaseSessions = "3.0.4"
 
 
 [libraries]
@@ -116,7 +115,6 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragmentVersion" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
-firebase-sessions = { group = "com.google.firebase", name = "firebase-sessions", version.ref = "firebaseSessions" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

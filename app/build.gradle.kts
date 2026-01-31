@@ -107,7 +107,6 @@ dependencies {
     implementation(libs.fragment)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.firebase.sessions)
     ksp(libs.androidx.room.compiler)
 
     // WorkManager

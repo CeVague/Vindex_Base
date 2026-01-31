@@ -116,11 +116,15 @@ class SearchFragment : Fragment() {
 
         // 5. Gestion de la recherche partagée (People -> Search)
         val sharedViewModel: MainSharedViewModel by activityViewModels()
-        sharedViewModel.searchQuery.observe(viewLifecycleOwner) { query ->
-            if (query != null) {
-                binding.inputSearch.post {
-                    binding.inputSearch.setQuery(query, true)
-                    sharedViewModel.clearSearchQuery()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.searchQuery.collect { query ->
+                    if (!query.isNullOrEmpty()) {
+                        binding.inputSearch.post {
+                            binding.inputSearch.setQuery(query, true)
+                            sharedViewModel.clearSearchQuery()
+                        }
+                    }
                 }
             }
         }

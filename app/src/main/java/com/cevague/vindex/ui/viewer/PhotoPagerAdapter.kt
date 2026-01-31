@@ -43,6 +43,11 @@ class PhotoPagerAdapter :
             .into(holder.photoView)
     }
 
+    override fun onViewRecycled(holder: PhotoPageViewHolder) {
+        Glide.with(holder.photoView).clear(holder.photoView)
+        super.onViewRecycled(holder)
+    }
+
     companion object {
         private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<PhotoSummary>() {
             override fun areItemsTheSame(oldItem: PhotoSummary, newItem: PhotoSummary): Boolean {

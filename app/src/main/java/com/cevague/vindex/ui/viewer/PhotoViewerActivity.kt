@@ -11,6 +11,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.PhotoSummary
@@ -18,6 +21,7 @@ import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class PhotoViewerActivity : AppCompatActivity() {
@@ -91,18 +95,25 @@ class PhotoViewerActivity : AppCompatActivity() {
             }
         })
 
-        viewModel.photos.observe(this) { photos ->
-            pagerAdapter.submitList(photos)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.photos.collect { photos ->
+                        pagerAdapter.submitList(photos)
 
-            // Positionner sur la photo cliquée seulement au premier chargement
-            if (isFirstLoad && photos.isNotEmpty()) {
-                binding.viewPagerPhotos.setCurrentItem(startPosition, false)
-                isFirstLoad = false
+                        // Positionner sur la photo cliquée seulement au premier chargement
+                        if (isFirstLoad && photos.isNotEmpty()) {
+                            binding.viewPagerPhotos.setCurrentItem(startPosition, false)
+                            isFirstLoad = false
+                        }
+                    }
+                }
+                launch {
+                    viewModel.currentPhoto.collect { photo ->
+                        photo?.let { updateInfoPanel(it) }
+                    }
+                }
             }
-        }
-
-        viewModel.currentPhoto.observe(this) { photo ->
-            photo?.let { updateInfoPanel(it) }
         }
 
         pagerAdapter.onPhotoTap = {
