@@ -173,9 +173,7 @@ class PeopleFragment : Fragment() {
             .setMessage("Supprimer \"${person.name}\" ? Les ${person.photoCount} visages associés seront remis en attente d'identification.")
             .setPositiveButton("Supprimer") { _, _ ->
                 lifecycleScope.launch {
-                    // Remettre les visages en "pending"
-                    // TODO: ajouter une méthode dans PersonRepository pour ça
-                    personRepo.deleteById(person.id)
+                    personRepo.deletePersonAndResetFaces(person.id)
                 }
             }
             .setNegativeButton("Annuler", null)

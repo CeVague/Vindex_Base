@@ -88,6 +88,11 @@ class PersonRepository(
 
     suspend fun delete(person: Person) = personDao.delete(person)
 
+    @Transaction
+    suspend fun deletePersonAndResetFaces(personId: Long) {
+        faceDao.unassignFromPerson(personId)
+        personDao.deleteById(personId)
+    }
     suspend fun deleteAllPersons() = personDao.deleteAll()
 
     suspend fun deleteAllFaces() = faceDao.deleteAll()
