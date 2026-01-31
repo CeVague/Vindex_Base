@@ -5,7 +5,7 @@ import androidx.core.content.edit
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.entity.Setting
 
-object FastSettings {
+object SettingsCache {
     private val prefs by lazy {
         VindexApplication.instance.getSharedPreferences("fast_settings", Context.MODE_PRIVATE)
     }

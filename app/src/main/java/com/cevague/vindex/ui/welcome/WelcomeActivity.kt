@@ -9,7 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
 import com.cevague.vindex.ui.main.MainActivity
 import com.cevague.vindex.util.MediaScanner
@@ -113,8 +113,8 @@ class WelcomeActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             // Sauvegarder les dossiers sélectionnés
-            FastSettings.includedFolders = selectedFolders
-            FastSettings.isConfigured = true
+            SettingsCache.includedFolders = selectedFolders
+            SettingsCache.isConfigured = true
 
             // Lancer le scan
             app.startFullScan()

@@ -12,7 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentGalleryBinding
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
 import com.cevague.vindex.ui.viewer.PhotoViewerNavData
@@ -51,7 +51,7 @@ class GalleryFragment : Fragment() {
             openPhotoViewer(adapterPosition)
         }
 
-        val spanCount = FastSettings.gridColumns
+        val spanCount = SettingsCache.gridColumns
 
         val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
@@ -106,7 +106,7 @@ class GalleryFragment : Fragment() {
     }
 
     fun getTargetSize(context: Context): Int {
-        val spanCount = FastSettings.gridColumns
+        val spanCount = SettingsCache.gridColumns
         val screenWidth = context.resources.displayMetrics.widthPixels
         return screenWidth / spanCount
     }

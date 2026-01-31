@@ -2,18 +2,18 @@ package com.cevague.vindex.data.repository
 
 import com.cevague.vindex.data.database.dao.CityDao
 import com.cevague.vindex.data.database.entity.City
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 
 class CityRepository(private val cityDao: CityDao) {
 
     suspend fun isDatabasePopulated(): Boolean {
-        if (FastSettings.isCitiesLoaded) return true
+        if (SettingsCache.isCitiesLoaded) return true
 
         val count = cityDao.getCount()
         val isPopulated = count > 0
 
         if (isPopulated) {
-            FastSettings.isCitiesLoaded = true
+            SettingsCache.isCitiesLoaded = true
         }
 
         return isPopulated
@@ -31,17 +31,17 @@ class CityRepository(private val cityDao: CityDao) {
 
     suspend fun insert(city: City) {
         cityDao.insert(city)
-        FastSettings.isCitiesLoaded = true
+        SettingsCache.isCitiesLoaded = true
     }
 
     suspend fun insertAll(cities: List<City>) {
         cityDao.insertAll(cities)
-        FastSettings.isCitiesLoaded = true
+        SettingsCache.isCitiesLoaded = true
     }
 
     suspend fun deleteAll() {
         cityDao.deleteAll()
-        FastSettings.isCitiesLoaded = false
+        SettingsCache.isCitiesLoaded = false
     }
 
 }

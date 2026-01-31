@@ -88,7 +88,7 @@ class PersonRepository(
 
     suspend fun delete(person: Person) = personDao.delete(person)
 
-    suspend fun deleteAllPerson() = personDao.deleteAll()
+    suspend fun deleteAllPersons() = personDao.deleteAll()
 
     suspend fun deleteAllFaces() = faceDao.deleteAll()
 
@@ -153,7 +153,6 @@ class PersonRepository(
 
     suspend fun insertFaces(faces: List<Face>): List<Long> = faceDao.insertAll(faces)
 
-    @Transaction
     suspend fun assignFaceToPerson(
         faceId: Long,
         personId: Long?,
@@ -169,7 +168,6 @@ class PersonRepository(
             weight = weight,
             timestamp = System.currentTimeMillis()
         )
-        // Recalculate photo count for the person
         personId?.let { personDao.recalculatePhotoCount(it) }
     }
 

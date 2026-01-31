@@ -3,8 +3,6 @@ package com.cevague.vindex.ui.people
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.findViewTreeLifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -15,12 +13,10 @@ import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao.PersonWithCover
-import com.cevague.vindex.data.database.entity.Person
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.ItemPersonBinding
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 class PeopleAdapter(
     private val repository: PersonRepository,
@@ -63,7 +59,7 @@ class PeopleAdapter(
                     boxBottom = person.boxBottom ?: 0f
                 )
 
-                val spanCount = FastSettings.gridColumns
+                val spanCount = SettingsCache.gridColumns
                 val screenWidth = binding.root.context.resources.displayMetrics.widthPixels
                 val targetSize = screenWidth / spanCount
 
@@ -74,7 +70,7 @@ class PeopleAdapter(
                     .override(targetSize)
                     .placeholder(R.drawable.vector_peoples)
                     .error(R.drawable.vector_peoples)
-                    .transform(FaceCenterCrop(faceData), CircleCrop())
+                    .transform(FaceCropTransformation(faceData), CircleCrop())
                     .into(binding.imagePerson)
             } else {
                 Glide.with(binding.imagePerson)

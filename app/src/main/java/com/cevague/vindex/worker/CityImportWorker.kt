@@ -6,7 +6,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import java.io.File
 import java.io.FileOutputStream
 
@@ -18,7 +18,7 @@ class CityImportWorker(
     override suspend fun doWork(): Result {
         return try {
             // Vérifier si déjà importé via SharedPreferences pour plus de rapidité
-            if (FastSettings.isCitiesLoaded) {
+            if (SettingsCache.isCitiesLoaded) {
                 return Result.success()
             }
 
@@ -62,7 +62,7 @@ class CityImportWorker(
 
             tempDbFile.delete()
 
-            FastSettings.isCitiesLoaded = true
+            SettingsCache.isCitiesLoaded = true
             setProgress(
                 workDataOf(
                     "WORK" to applicationContext.getString(R.string.progress_loading_cities),

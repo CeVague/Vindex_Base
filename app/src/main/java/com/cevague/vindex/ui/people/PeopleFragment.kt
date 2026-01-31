@@ -11,13 +11,12 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Person
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.FragmentPeopleBinding
 import com.cevague.vindex.ui.main.MainSharedViewModel
@@ -61,7 +60,7 @@ class PeopleFragment : Fragment() {
 
         binding.recyclerPeople.apply {
             this.adapter = adapter
-            this.layoutManager = GridLayoutManager(requireContext(), FastSettings.gridColumns)
+            this.layoutManager = GridLayoutManager(requireContext(), SettingsCache.gridColumns)
 
             setHasFixedSize(true)
             setItemViewCacheSize(20)

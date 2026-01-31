@@ -5,7 +5,7 @@ import com.cevague.vindex.data.database.dao.FilePathAndSize
 import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -41,9 +41,9 @@ class PhotoRepository(
         photoDao.searchByFileNameSummary(query)
 
     suspend fun syncPhotos(context: Context, onProgress: suspend (Int) -> Unit) {
-        val lastSync = FastSettings.lastScanTimestamp
+        val lastSync = SettingsCache.lastScanTimestamp
         val newSync = System.currentTimeMillis()
-        val includedFolders = FastSettings.includedFolders
+        val includedFolders = SettingsCache.includedFolders
 
         // 1. Charger les métadonnées actuelles pour le diffing
         val dbPhotosMap = photoDao.getAllPathsAndSizes().first().associateBy { it.filePath }
@@ -78,7 +78,7 @@ class PhotoRepository(
             photoDao.deleteByPaths(pathsToRemove)
         }
 
-        FastSettings.lastScanTimestamp = newSync
+        SettingsCache.lastScanTimestamp = newSync
     }
 
     suspend fun insertAll(photos: List<Photo>) = photoDao.insertAll(photos)

@@ -3,7 +3,6 @@ package com.cevague.vindex.ui.main
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import androidx.activity.result.launch
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -15,7 +14,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.entity.Setting
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityMainBinding
 import com.cevague.vindex.databinding.LayoutSyncProgressBinding
 import com.cevague.vindex.ui.welcome.WelcomeActivity
@@ -27,11 +26,11 @@ class MainActivity : AppCompatActivity() {
     private var syncBinding: LayoutSyncProgressBinding? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        applyAppTheme(FastSettings.themeMode)
-        applyAppLanguage(FastSettings.userLanguage)
+        applyAppTheme(SettingsCache.themeMode)
+        applyAppLanguage(SettingsCache.userLanguage)
         super.onCreate(savedInstanceState)
 
-        if (!FastSettings.isConfigured) {
+        if (!SettingsCache.isConfigured) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
             return

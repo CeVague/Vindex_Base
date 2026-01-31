@@ -8,7 +8,7 @@ import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.cevague.vindex.data.database.dao.FaceDao
 import java.security.MessageDigest
 
-class FaceCenterCrop(private val face: FaceDao.FaceWithPhoto) : BitmapTransformation() {
+class FaceCropTransformation(private val face: FaceDao.FaceWithPhoto) : BitmapTransformation() {
 
     override fun transform(
         pool: BitmapPool,
@@ -72,7 +72,7 @@ class FaceCenterCrop(private val face: FaceDao.FaceWithPhoto) : BitmapTransforma
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other is FaceCenterCrop) {
+        if (other is FaceCropTransformation) {
             return face.id == other.face.id
         }
         return false

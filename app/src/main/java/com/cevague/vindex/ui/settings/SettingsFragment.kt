@@ -8,7 +8,7 @@ import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
 import com.cevague.vindex.R
 import com.cevague.vindex.VindexApplication
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -24,10 +24,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             Preference.OnPreferenceClickListener {
                 lifecycleScope.launch {
                     app.photoRepository.deleteAll()
-                    app.personRepository.deleteAllPerson()
+                    app.personRepository.deleteAllPersons()
                     app.personRepository.deleteAllFaces()
                     app.albumRepository.deleteAll()
-                    FastSettings.lastScanTimestamp = 0L
+                    SettingsCache.lastScanTimestamp = 0L
                     Toast.makeText(requireContext(), "Database reset", Toast.LENGTH_SHORT).show()
                     app.startFullScan()
                 }

@@ -2,7 +2,7 @@ package com.cevague.vindex.data.repository
 
 import com.cevague.vindex.data.database.dao.SettingDao
 import com.cevague.vindex.data.database.entity.Setting
-import com.cevague.vindex.data.local.FastSettings
+import com.cevague.vindex.data.local.SettingsCache
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -31,7 +31,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun setGridColumns(columns: Int) {
         setValue(Setting.KEY_GRID_COLUMNS, columns.toString())
-        FastSettings.gridColumns = columns
+        SettingsCache.gridColumns = columns
     }
 
     // Theme
@@ -45,7 +45,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun setTheme(theme: String) {
         setValue(Setting.KEY_THEME, theme)
-        FastSettings.themeMode = theme
+        SettingsCache.themeMode = theme
     }
 
     // Language
@@ -59,7 +59,7 @@ class SettingsRepository(private val settingDao: SettingDao) {
 
     suspend fun setLanguage(language: String) {
         setValue(Setting.KEY_LANGUAGE, language)
-        FastSettings.userLanguage = language
+        SettingsCache.userLanguage = language
     }
     // Show similarity scores (debug/advanced)
 

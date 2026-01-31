@@ -165,7 +165,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         Glide.with(this)
             .load(face.filePath)
             .diskCacheStrategy(DiskCacheStrategy.NONE)
-            .transform(FaceCenterCrop(face), CircleCrop())
+            .transform(FaceCropTransformation(face), CircleCrop())
             .transition(DrawableTransitionOptions.withCrossFade())
             .into(binding.imageFace)
 
