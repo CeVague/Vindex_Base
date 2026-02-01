@@ -35,6 +35,8 @@ android {
 
             // Optionnel : utile pour certains outils de debug réseau
             isDebuggable = true
+
+            signingConfig = signingConfigs.getByName("debug")
         }
 
         getByName("release") {
@@ -62,7 +64,7 @@ android {
             vcsInfo.include = false
 
             // Signature (à configurer quand tu auras ton keystore)
-            // signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
