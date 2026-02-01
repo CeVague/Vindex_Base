@@ -272,5 +272,17 @@
     <string name="format_confidence">%d%% match</string>
     <string name="format_location">(%1$.5f, %2$.5f)</string>
 
+    <!-- Media Type -->
+    <string name="media_type_other">Other</string>
+    <string name="media_type_photo">Photo</string>
+    <string name="media_type_selfie">Selfie</string>
+    <string name="media_type_panorama">Panorama</string>
+    <string name="media_type_burst">Burst</string>
+    <string name="media_type_screenshot">Screenshot</string>
+    <string name="media_type_document">Document</string>
+    <string name="media_type_social">Social</string>
+    <string name="media_type_square">Square</string>
+    <string name="media_type_not_define">Not defined</string>
+
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

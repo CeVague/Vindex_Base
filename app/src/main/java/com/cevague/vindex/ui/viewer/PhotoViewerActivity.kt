@@ -19,9 +19,11 @@ import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
+import com.cevague.vindex.util.MediaTypeFormatter
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class PhotoViewerActivity : AppCompatActivity() {
@@ -31,6 +33,8 @@ class PhotoViewerActivity : AppCompatActivity() {
     private lateinit var pagerAdapter: PhotoPagerAdapter
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
 
+    @Inject
+    lateinit var mediaTypeFormatter: MediaTypeFormatter
     // État UI
     private var isUiVisible = true
 
@@ -175,7 +179,7 @@ class PhotoViewerActivity : AppCompatActivity() {
         }
 
         // Type d'image (photo, selfie, screenshot, etc.)
-        binding.textImageType.text = photo.mediaType
+        binding.textImageType.text = mediaTypeFormatter.getDisplayName(photo.mediaType)
 
         // Localisation (afficher seulement si disponible, sinon afficher GPS, sinon vide)
         binding.textLocationText.text =

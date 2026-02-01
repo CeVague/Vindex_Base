@@ -272,22 +272,22 @@ class MediaScanner @Inject constructor(
         height: Int?,
         cameraMake: String?,
         cameraModel: String?
-    ): String {
+    ): Int {
         val path = relativePath?.lowercase() ?: ""
         val name = fileName.lowercase()
 
         return when {
             // 1. Captures d'écran
-            name.contains("screenshot") || path.contains("screenshots") -> "screenshot"
+            name.contains("screenshot") || path.contains("screenshots") -> Photo.MEDIA_TYPE_SCREENSHOT
 
             // 2. Documents & Scans
-            path.contains("scan") || path.contains("adobe scan") || path.contains("office lens") -> "document"
+            path.contains("scan") || path.contains("adobe scan") || path.contains("office lens") -> Photo.MEDIA_TYPE_DOCUMENT
 
             // 3. Réseaux Sociaux & Messageries
-            path.contains("whatsapp") || path.contains("signal") || path.contains("telegram") -> "social"
+            path.contains("whatsapp") || path.contains("signal") || name.contains("signal") || path.contains("telegram") -> Photo.MEDIA_TYPE_SOCIAL
 
             // 4. Rafales (Burst)
-            name.contains("burst") || name.contains("_seq_") -> "burst"
+            name.contains("burst") || name.contains("_seq_") -> Photo.MEDIA_TYPE_BURST
 
             // 7. Panoramas & Formats spécifiques (nécessite dimensions)
             width != null && height != null && width > 0 && height > 0 -> {
@@ -295,18 +295,18 @@ class MediaScanner @Inject constructor(
                 val absRatio = if (ratio < 1f) 1f / ratio else ratio
 
                 when {
-                    absRatio > 2.2f -> "panorama"
-                    absRatio == 1f -> "square"
+                    absRatio > 2.2f -> Photo.MEDIA_TYPE_PANORAMA
+                    absRatio == 1f -> Photo.MEDIA_TYPE_SQUARE
                     // Selfie probable si DCIM/Camera et Front Camera (nécessite MetadataWorker)
-                    cameraModel?.lowercase()?.contains("front") == true -> "selfie"
-                    else -> "photo"
+                    cameraModel?.lowercase()?.contains("front") == true -> Photo.MEDIA_TYPE_SELFIE
+                    else -> Photo.MEDIA_TYPE_PHOTO
                 }
             }
 
             // 8. Origine Inconnue (Web / App tierce)
-            cameraMake == null && cameraModel == null -> "other"
+            cameraMake == null && cameraModel == null -> Photo.MEDIA_TYPE_OTHER
 
-            else -> "photo"
+            else -> Photo.MEDIA_TYPE_PHOTO
         }
     }
 

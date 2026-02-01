@@ -278,5 +278,17 @@
     <string name="format_confidence">%d %% de correspondance</string>
     <string name="format_location">(%1$.5f, %2$.5f)</string>
 
+    <!-- Media Type -->
+    <string name="media_type_other">Autre</string>
+    <string name="media_type_photo">Photo</string>
+    <string name="media_type_selfie">Selfie</string>
+    <string name="media_type_panorama">Panorama</string>
+    <string name="media_type_burst">Rafale</string>
+    <string name="media_type_screenshot">Capture d\'écrant</string>
+    <string name="media_type_document">Document</string>
+    <string name="media_type_social">Réseau social</string>
+    <string name="media_type_square">Carré</string>
+    <string name="media_type_not_define">Indéfinit</string>
+
     <string name="hello_blank_fragment">Fragment vide</string>
 </resources>

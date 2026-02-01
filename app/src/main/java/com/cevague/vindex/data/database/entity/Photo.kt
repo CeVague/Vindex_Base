@@ -1,9 +1,11 @@
 package com.cevague.vindex.data.database.entity
 
+import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.cevague.vindex.R
 
 @Entity(
     tableName = "photos",
@@ -12,6 +14,8 @@ import androidx.room.PrimaryKey
         Index(value = ["folder_path"]),
         Index(value = ["file_path"], unique = true),
         Index(value = ["is_metadata_extracted"]),
+        Index(value = ["is_favorite"]),
+        Index(value = ["is_hidden"]),
         Index(value = ["relative_path"])
     ]
 )
@@ -62,8 +66,8 @@ data class Photo(
     @ColumnInfo(name = "mime_type")
     val mimeType: String? = null,
 
-    @ColumnInfo(name = "media_type", defaultValue = "'photo'")
-    val mediaType: String = "photo",
+    @ColumnInfo(name = "media_type", defaultValue = "0")
+    val mediaType: Int = MEDIA_TYPE_OTHER,
 
     @ColumnInfo(name = "is_favorite", defaultValue = "0")
     val isFavorite: Boolean = false,
@@ -117,5 +121,17 @@ data class Photo(
         var result = id.hashCode()
         result = 31 * result + filePath.hashCode()
         return result
+    }
+
+    companion object {
+        const val MEDIA_TYPE_OTHER = 0
+        const val MEDIA_TYPE_PHOTO = 1
+        const val MEDIA_TYPE_SELFIE = 2
+        const val MEDIA_TYPE_PANORAMA = 3
+        const val MEDIA_TYPE_BURST = 4
+        const val MEDIA_TYPE_SCREENSHOT = 5
+        const val MEDIA_TYPE_DOCUMENT = 6
+        const val MEDIA_TYPE_SOCIAL = 7
+        const val MEDIA_TYPE_SQUARE = 8
     }
 }
