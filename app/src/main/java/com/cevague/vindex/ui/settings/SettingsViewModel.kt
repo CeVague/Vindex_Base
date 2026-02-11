@@ -3,11 +3,13 @@ package com.cevague.vindex.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.BuildConfig
+import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.SettingsRepository
+import com.cevague.vindex.util.ScanManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,9 +26,9 @@ import javax.inject.Inject
  * ViewModel pour l'écran des paramètres.
  *
  * Responsabilités:
- * - Charger les statistiques de la bibliothèque de manière asynchrone
- * - Fournir les informations de l'application (version, etc.)
- * - Gérer la synchronisation cache <-> database
+ * - Fournir les statistiques de la bibliothèque et l'espace disque
+ * - Gérer la persistance des réglages (Database + Cache)
+ * - Coordonner les actions globales (Scan, Reset)
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -34,17 +36,14 @@ class SettingsViewModel @Inject constructor(
     private val personRepository: PersonRepository,
     private val albumRepository: AlbumRepository,
     private val settingsRepository: SettingsRepository,
-    private val settingsCache: SettingsCache
+    val settingsCache: SettingsCache, // Gardé public pour le DataStore du Fragment
+    private val scanManager: ScanManager
 ) : ViewModel() {
 
     // ════════════════════════════════════════════════════════════════════════
-    // Statistiques de la bibliothèque
+    // Statistiques
     // ════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Statistiques combinées de la bibliothèque.
-     * Toutes les données sont chargées en parallèle via combine().
-     */
     val libraryStats: StateFlow<LibraryStats> = combine(
         photoRepository.getPhotoCount(),
         photoRepository.getVisiblePhotoCount(),
@@ -67,22 +66,15 @@ class SettingsViewModel @Inject constructor(
         initialValue = LibraryStats()
     )
 
-    /**
-     * Espace disque utilisé par les photos (calculé une seule fois).
-     */
     private val _storageUsed = MutableStateFlow<Long>(0L)
     val storageUsed: StateFlow<Long> = _storageUsed.asStateFlow()
 
     // ════════════════════════════════════════════════════════════════════════
-    // Informations de l'application
+    // App Info
     // ════════════════════════════════════════════════════════════════════════
 
     val appVersion: String = BuildConfig.VERSION_NAME
     val appVersionCode: Int = BuildConfig.VERSION_CODE
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Initialisation
-    // ════════════════════════════════════════════════════════════════════════
 
     init {
         loadStorageUsed()
@@ -95,75 +87,73 @@ class SettingsViewModel @Inject constructor(
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // Actions
+    // Actions Métier
     // ════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Sauvegarde une valeur string dans les settings.
-     */
+    fun startFullScan() {
+        scanManager.startFullScan()
+    }
+
+    fun resetDatabase() {
+        viewModelScope.launch {
+            photoRepository.deleteAll()
+            personRepository.deleteAllPersons()
+            personRepository.deleteAllFaces()
+            albumRepository.deleteAll()
+            settingsCache.lastScanTimestamp = 0L
+            
+            // Relancer un scan pour reconstruire la base à partir des fichiers réels
+            scanManager.startFullScan()
+        }
+    }
+
+    fun resetSettings() {
+        settingsCache.resetToDefaults()
+        // On pourrait aussi vider la table 'settings' de la DB ici
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Persistance des réglages
+    // ════════════════════════════════════════════════════════════════════════
+
     fun saveStringSetting(key: String, value: String) {
+        // Mise à jour immédiate du cache (synchrone pour l'UI)
+        when (key) {
+            Setting.KEY_THEME -> settingsCache.themeMode = value
+            Setting.KEY_LANGUAGE -> settingsCache.userLanguage = value
+            Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()?.let { settingsCache.faceThresholdHigh = it }
+            Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()?.let { settingsCache.faceThresholdMedium = it }
+            Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()?.let { settingsCache.faceThresholdNew = it }
+        }
+
+        // Sauvegarde DB asynchrone
         viewModelScope.launch {
             settingsRepository.setValue(key, value)
-            // Mettre à jour le cache selon la clé
-            when (key) {
-                com.cevague.vindex.data.database.entity.Setting.KEY_THEME ->
-                    settingsCache.themeMode = value
-                com.cevague.vindex.data.database.entity.Setting.KEY_LANGUAGE ->
-                    settingsCache.userLanguage = value
-            }
         }
     }
 
-    /**
-     * Sauvegarde une valeur int dans les settings.
-     */
     fun saveIntSetting(key: String, value: Int) {
+        if (key == Setting.KEY_GRID_COLUMNS) {
+            settingsCache.gridColumns = value
+        }
         viewModelScope.launch {
             settingsRepository.setValue(key, value.toString())
-            when (key) {
-                com.cevague.vindex.data.database.entity.Setting.KEY_GRID_COLUMNS ->
-                    settingsCache.gridColumns = value
-            }
         }
     }
 
-    /**
-     * Sauvegarde une valeur boolean dans les settings.
-     */
     fun saveBooleanSetting(key: String, value: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setValue(key, value.toString())
-            when (key) {
-                com.cevague.vindex.data.database.entity.Setting.KEY_SHOW_SCORES ->
-                    settingsCache.showScores = value
-            }
+        if (key == Setting.KEY_SHOW_SCORES) {
+            settingsCache.showScores = value
         }
-    }
-
-    /**
-     * Sauvegarde une valeur float dans les settings (pour les thresholds).
-     */
-    fun saveFloatSetting(key: String, value: Float) {
         viewModelScope.launch {
             settingsRepository.setValue(key, value.toString())
-            when (key) {
-                com.cevague.vindex.data.database.entity.Setting.KEY_FACE_THRESHOLD_HIGH ->
-                    settingsCache.faceThresholdHigh = value
-                com.cevague.vindex.data.database.entity.Setting.KEY_FACE_THRESHOLD_MEDIUM ->
-                    settingsCache.faceThresholdMedium = value
-                com.cevague.vindex.data.database.entity.Setting.KEY_FACE_THRESHOLD_NEW ->
-                    settingsCache.faceThresholdNew = value
-            }
         }
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // Data classes
+    // Data Classes
     // ════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Statistiques de la bibliothèque.
-     */
     data class LibraryStats(
         val totalPhotos: Int = 0,
         val visiblePhotos: Int = 0,
@@ -178,19 +168,13 @@ class SettingsViewModel @Inject constructor(
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Extensions utilitaires
+// Extensions
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Formate un nombre avec les séparateurs de milliers selon la locale.
- */
 fun Int.formatNumber(): String {
     return NumberFormat.getNumberInstance(Locale.getDefault()).format(this)
 }
 
-/**
- * Formate une taille en bytes en une chaîne lisible (KB, MB, GB).
- */
 fun Long.formatFileSize(): String {
     if (this <= 0) return "0 B"
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
