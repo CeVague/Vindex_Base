@@ -41,6 +41,8 @@ class MetadataWorker @AssistedInject constructor(
             // On parallélise par petits batchs pour ne pas saturer la RAM
             val batchSize = 20
 
+            Dispatchers.IO.limitedParallelism(4)
+            
             photosToProcess.chunked(batchSize).forEachIndexed { index, batch ->
                 // Utilisation de Dispatchers.IO pour les accès fichiers + async pour le parallélisme
                 val enrichedBatch = withContext(Dispatchers.IO) {
