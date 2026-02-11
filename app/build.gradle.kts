@@ -58,7 +58,6 @@ android {
             // 3. Configuration pour F-Droid / Publication
             // Pour la version finale, on retire généralement les suffixes
             // pour que l'ID corresponde exactement au store
-            applicationIdSuffix = ".release" // À retirer pour la prod
             versionNameSuffix = "-release"   // À retirer pour la prod
 
             // Recommandé pour F-Droid : assure la reproductibilité du build
@@ -70,12 +69,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 
     buildFeatures {
