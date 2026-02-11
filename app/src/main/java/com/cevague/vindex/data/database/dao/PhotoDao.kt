@@ -1,5 +1,6 @@
 package com.cevague.vindex.data.database.dao
 
+import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Insert
@@ -57,7 +58,8 @@ interface PhotoDao {
 
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
     fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>>
-
+    @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
+    fun getVisiblePhotosSummaryPaged(): PagingSource<Int, PhotoSummary>
     @Query("SELECT * FROM photos WHERE relative_path = :relativePath ORDER BY date_taken DESC")
     fun getPhotosByRelativePath(relativePath: String): Flow<List<Photo>>
 

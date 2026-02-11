@@ -10,6 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentGalleryBinding
@@ -17,6 +18,7 @@ import com.cevague.vindex.ui.viewer.PhotoViewerActivity
 import com.cevague.vindex.ui.viewer.ViewerSource
 import com.cevague.vindex.util.ScanManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,8 +54,11 @@ class GalleryFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = GalleryAdapter(getTargetSize(requireContext())) { photo, adapterPosition ->
-            openPhotoViewer(adapterPosition)
+        adapter = GalleryAdapter(getTargetSize(requireContext())) { photo, _ ->
+            PhotoViewerActivity.start(
+                requireContext(),
+                ViewerSource.Gallery(startPhotoId = photo.id)
+            )
         }
 
         val spanCount = settingsCache.gridColumns
@@ -94,14 +99,22 @@ class GalleryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.galleryItems.collect { items ->
-                        adapter.submitList(items)
+                    viewModel.galleryItems.collectLatest { pagingData ->
+                        adapter.submitData(pagingData)
                     }
                 }
 
                 launch {
-                    viewModel.uiState.collect { state ->
-                        renderState(state)
+                    adapter.loadStateFlow.collectLatest { loadStates ->
+                        val refresh = loadStates.refresh
+                        when (refresh) {
+                            is LoadState.Loading -> renderState(GalleryUiState.Loading)
+                            is LoadState.Error -> renderState(GalleryUiState.Error(refresh.error.message ?: ""))
+                            is LoadState.NotLoading -> {
+                                if (adapter.itemCount == 0) renderState(GalleryUiState.Empty)
+                                else renderState(GalleryUiState.Success)
+                            }
+                        }
                     }
                 }
             }
@@ -145,18 +158,6 @@ class GalleryFragment : Fragment() {
                 // binding.errorText?.text = state.message
             }
         }
-    }
-
-    private fun openPhotoViewer(adapterPosition: Int) {
-        val photoIndex = adapter.getPhotoIndex(adapterPosition)
-        val photos = adapter.getPhotosOnly()
-
-        if (photos.isEmpty() || photoIndex < 0 || photoIndex >= photos.size) return
-
-        PhotoViewerActivity.start(
-            requireContext(),
-            ViewerSource.Gallery(startPhotoId = photos[photoIndex].id)
-        )
     }
 
     override fun onDestroyView() {

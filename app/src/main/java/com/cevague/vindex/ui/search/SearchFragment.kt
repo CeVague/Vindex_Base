@@ -12,6 +12,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.local.SettingsCache
@@ -111,10 +112,8 @@ class SearchFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.searchResults.collect { photos ->
-                    // Groupement par date avant affichage
-                    // val items = photoGrouper.groupByDate(photos)
-                    val items = photos.map { photo -> GalleryItem.PhotoItem(photo) }
-                    adapter.submitList(items)
+                    val items = photos.map { GalleryItem.PhotoItem(it) }
+                    adapter.submitData(PagingData.from(items))
                     updateUIState(photos)
                 }
             }

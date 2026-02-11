@@ -57,6 +57,27 @@ class PhotoGrouper(private val context: Context) {
         return result
     }
 
+    fun makeHeader(timestamp: Long): GalleryItem.Header {
+        val now = System.currentTimeMillis()
+        val todayStart = getStartOfDay(now)
+        val weekStart = getStartOfWeek(now)
+        val monthStart = getStartOfMonth(now)
+        val yearStart = getStartOfYear(now)
+
+        val category = getCategoryForDate(
+            timestamp = timestamp,
+            todayStart = todayStart,
+            weekStart = weekStart,
+            monthStart = monthStart,
+            yearStart = yearStart
+        )
+
+        return GalleryItem.Header(
+            title = category,
+            // ID unique basé sur le titre (pour DiffUtil)
+            id = "header_${category.lowercase().replace(" ", "_")}")
+    }
+
     private fun getCategoryForDate(
         timestamp: Long,
         todayStart: Long,

@@ -59,6 +59,8 @@ fragmentVersion = "1.8.9"
 lifecycleProcess = "2.10.0"
 swiperefreshlayout = "1.2.0"
 lifecycleViewmodelSavedstate = "2.10.0"
+pagingCommon = "3.4.0"
+pagingRuntimeKtx = "3.4.0"
 
 
 [libraries]
@@ -124,6 +126,8 @@ fragment = { group = "androidx.fragment", name = "fragment", version.ref = "frag
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
 androidx-lifecycle-viewmodel-savedstate = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-savedstate", version.ref = "lifecycleViewmodelSavedstate" }
+androidx-paging-common = { group = "androidx.paging", name = "paging-common", version.ref = "pagingCommon" }
+androidx-paging-runtime-ktx = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "pagingRuntimeKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

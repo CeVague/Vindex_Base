@@ -1,6 +1,9 @@
 package com.cevague.vindex.data.repository
 
 import android.content.Context
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.cevague.vindex.data.database.dao.FilePathAndSize
 import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoSummary
@@ -36,6 +39,17 @@ class PhotoRepository @Inject constructor(
     fun getAllPhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getAllPhotosSummary()
     fun getVisiblePhotos(): Flow<List<Photo>> = photoDao.getVisiblePhotos()
     fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getVisiblePhotosSummary()
+    fun getVisiblePhotosSummaryPaged(): Flow<PagingData<PhotoSummary>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 80,
+                prefetchDistance = 40,
+                initialLoadSize = 120,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { photoDao.getVisiblePhotosSummaryPaged() }
+        ).flow
+    }
     fun getPhotoById(id: Long): Flow<Photo?> = photoDao.getPhotoById(id)
     fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>> = photoDao.getPhotosSummaryByIds(ids)
     fun getPhotoCount(): Flow<Int> = photoDao.getPhotoCount()

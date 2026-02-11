@@ -3,6 +3,7 @@ package com.cevague.vindex.ui.gallery
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.net.toUri
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -16,7 +17,7 @@ import com.cevague.vindex.databinding.ItemGalleryPhotoBinding
 class GalleryAdapter(
     private val targetSize: Int,
     private val onPhotoClick: (PhotoSummary, Int) -> Unit
-) : ListAdapter<GalleryItem, RecyclerView.ViewHolder>(GalleryDiffCallback()) {
+) : PagingDataAdapter<GalleryItem, RecyclerView.ViewHolder>(GalleryDiffCallback()) {
 
     companion object {
         const val VIEW_TYPE_HEADER = 0
@@ -69,6 +70,7 @@ class GalleryAdapter(
         return when (getItem(position)) {
             is GalleryItem.Header -> VIEW_TYPE_HEADER
             is GalleryItem.PhotoItem -> VIEW_TYPE_PHOTO
+            else -> throw IllegalArgumentException("Unknown item type at position $position")
         }
     }
 
@@ -91,7 +93,8 @@ class GalleryAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when (val item = getItem(position)) {
+        val item = getItem(position) ?: return
+        when (item) {
             is GalleryItem.Header -> (holder as HeaderViewHolder).bind(item)
             is GalleryItem.PhotoItem -> (holder as PhotoViewHolder).bind(item)
         }
@@ -104,21 +107,8 @@ class GalleryAdapter(
         }
     }
 
-
-    fun getPhotoIndex(adapterPosition: Int): Int {
-        var photoIndex = 0
-        for (i in 0 until adapterPosition) {
-            if (getItem(i) is GalleryItem.PhotoItem) {
-                photoIndex++
-            }
-        }
-        return photoIndex
-    }
-
     fun getPhotosOnly(): List<PhotoSummary> {
-        return currentList
-            .filterIsInstance<GalleryItem.PhotoItem>()  // Garde seulement les PhotoItem
-            .map { it.photo }  // Extrait le PhotoSummary de chaque PhotoItem
+        return snapshot().items.filterIsInstance<GalleryItem.PhotoItem>().map { it.photo }
     }
 }
 
