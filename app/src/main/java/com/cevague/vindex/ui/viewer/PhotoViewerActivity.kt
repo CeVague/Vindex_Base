@@ -105,15 +105,13 @@ class PhotoViewerActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.photos.collect { photos ->
-                        pagerAdapter.submitList(photos)
-
-                        // Positionner sur la photo cliquée seulement au premier chargement
-                        if (isFirstLoad && photos.isNotEmpty()) {
-                            binding.viewPagerPhotos.setCurrentItem(
-                                viewModel.initialIndex.value,
-                                false
-                            )
-                            isFirstLoad = false
+                        pagerAdapter.submitList(photos) {
+                            if (isFirstLoad && photos.isNotEmpty()) {
+                                binding.viewPagerPhotos.setCurrentItem(
+                                    viewModel.initialIndex.value, false
+                                )
+                                isFirstLoad = false
+                            }
                         }
                     }
                 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -51,35 +52,24 @@ class PhotoViewerViewModel @Inject constructor(
     }
 
     private suspend fun loadGallery(startId: Long) {
-        photoRepository.getVisiblePhotosSummary()
-            .collect { photos ->
-                _photos.value = photos
-                val index = photos.indexOfFirst { it.id == startId }.coerceAtLeast(0)
-                _initialIndex.value = index
-                _currentPosition.value = index
-            }
+        val photos = photoRepository.getVisiblePhotosSummary().first()
+        val index = photos.indexOfFirst { it.id == startId }
+        _initialIndex.value = if (index >= 0) index else 0
+        _photos.value = photos
     }
 
     private suspend fun loadSearch(ids: List<Long>, startId: Long) {
-        // Query unique par IDs, pas de re-recherche IA
-        photoRepository.getPhotosSummaryByIds(ids)
-            .collect { photos ->
-                _photos.value = photos
-                val index = photos.indexOfFirst { it.id == startId }.coerceAtLeast(0)
-                _initialIndex.value = index
-                _currentPosition.value = index
-            }
+        val photos = photoRepository.getPhotosSummaryByIds(ids).first()
+        val index = photos.indexOfFirst { it.id == startId }
+        _initialIndex.value = if (index >= 0) index else 0
+        _photos.value = photos
     }
 
     private suspend fun loadAlbum(albumId: Long, startId: Long) {
-        // Future implémentation
-        albumRepository.getPhotosInAlbum(albumId)
-            .collect { photos ->
-                _photos.value = photos.toSummaryList()
-                val index = photos.indexOfFirst { it.id == startId }.coerceAtLeast(0)
-                _initialIndex.value = index
-                _currentPosition.value = index
-            }
+        val photos = albumRepository.getPhotosInAlbum(albumId).first()
+        val index = photos.indexOfFirst { it.id == startId }
+        _initialIndex.value = index
+        _currentPosition.value = index
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
