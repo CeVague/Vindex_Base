@@ -284,7 +284,9 @@ class MediaScanner @Inject constructor(
             path.contains("scan") || path.contains("adobe scan") || path.contains("office lens") -> Photo.MEDIA_TYPE_DOCUMENT
 
             // 3. Réseaux Sociaux & Messageries
-            path.contains("whatsapp") || path.contains("signal") || name.contains("signal") || path.contains("telegram") -> Photo.MEDIA_TYPE_SOCIAL
+            path.contains("whatsapp") || path.contains("signal") || name.contains("signal") || path.contains(
+                "telegram"
+            ) -> Photo.MEDIA_TYPE_SOCIAL
 
             // 4. Rafales (Burst)
             name.contains("burst") || name.contains("_seq_") -> Photo.MEDIA_TYPE_BURST

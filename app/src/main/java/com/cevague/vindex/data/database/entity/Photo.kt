@@ -1,11 +1,9 @@
 package com.cevague.vindex.data.database.entity
 
-import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.cevague.vindex.R
 
 @Entity(
     tableName = "photos",

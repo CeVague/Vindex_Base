@@ -109,7 +109,12 @@ class GalleryFragment : Fragment() {
                         val refresh = loadStates.refresh
                         when (refresh) {
                             is LoadState.Loading -> renderState(GalleryUiState.Loading)
-                            is LoadState.Error -> renderState(GalleryUiState.Error(refresh.error.message ?: ""))
+                            is LoadState.Error -> renderState(
+                                GalleryUiState.Error(
+                                    refresh.error.message ?: ""
+                                )
+                            )
+
                             is LoadState.NotLoading -> {
                                 if (adapter.itemCount == 0) renderState(GalleryUiState.Empty)
                                 else renderState(GalleryUiState.Success)

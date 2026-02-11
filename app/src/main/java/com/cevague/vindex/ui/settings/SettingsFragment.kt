@@ -1,7 +1,6 @@
 package com.cevague.vindex.ui.settings
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
@@ -15,7 +14,6 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SeekBarPreference
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
@@ -87,7 +85,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupAboutPreferences() {
-        findPreference<Preference>("app_version")?.summary = "${viewModel.appVersion} (${viewModel.appVersionCode})"
+        findPreference<Preference>("app_version")?.summary =
+            "${viewModel.appVersion} (${viewModel.appVersionCode})"
         findPreference<Preference>("source_code")?.setOnPreferenceClickListener { openUrl("https://github.com/CeVague/Vindex"); true }
         findPreference<Preference>("license")?.setOnPreferenceClickListener { openUrl("https://www.gnu.org/licenses/gpl-3.0.html"); true }
     }
@@ -125,7 +124,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>("stat_faces")?.summary = when {
             stats.pendingFaces == 0 -> getString(R.string.settings_stat_all_identified)
-            else -> resources.getQuantityString(R.plurals.people_to_identify_count, stats.pendingFaces, stats.pendingFaces)
+            else -> resources.getQuantityString(
+                R.plurals.people_to_identify_count,
+                stats.pendingFaces,
+                stats.pendingFaces
+            )
         }
 
         findPreference<Preference>("stat_albums")?.summary = stats.totalAlbums.formatNumber()
@@ -141,7 +144,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun applyLanguage(language: String) {
-        val localeList = if (language == Setting.LANGUAGE_SYSTEM) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(language)
+        val localeList =
+            if (language == Setting.LANGUAGE_SYSTEM) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(
+                language
+            )
         AppCompatDelegate.setApplicationLocales(localeList)
     }
 
@@ -151,7 +157,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
             .setMessage(R.string.settings_reset_db_message)
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 viewModel.resetDatabase()
-                Toast.makeText(requireContext(), R.string.settings_reset_db_done, Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    R.string.settings_reset_db_done,
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()
@@ -213,9 +223,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
             when (key) {
                 Setting.KEY_THEME -> settingsCache.themeMode = value
                 Setting.KEY_LANGUAGE -> settingsCache.userLanguage = value
-                Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()?.let { settingsCache.faceThresholdHigh = it }
-                Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()?.let { settingsCache.faceThresholdMedium = it }
-                Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()?.let { settingsCache.faceThresholdNew = it }
+                Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()
+                    ?.let { settingsCache.faceThresholdHigh = it }
+
+                Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()
+                    ?.let { settingsCache.faceThresholdMedium = it }
+
+                Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()
+                    ?.let { settingsCache.faceThresholdNew = it }
             }
             viewModel.saveStringSetting(key, value)
         }

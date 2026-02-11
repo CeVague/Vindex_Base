@@ -50,8 +50,11 @@ class PhotoRepository @Inject constructor(
             pagingSourceFactory = { photoDao.getVisiblePhotosSummaryPaged() }
         ).flow
     }
+
     fun getPhotoById(id: Long): Flow<Photo?> = photoDao.getPhotoById(id)
-    fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>> = photoDao.getPhotosSummaryByIds(ids)
+    fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>> =
+        photoDao.getPhotosSummaryByIds(ids)
+
     fun getPhotoCount(): Flow<Int> = photoDao.getPhotoCount()
     fun getVisiblePhotoCount(): Flow<Int> = photoDao.getVisiblePhotoCount()
     suspend fun getTotalStorageUsed(): Long = photoDao.getTotalStorageUsed()

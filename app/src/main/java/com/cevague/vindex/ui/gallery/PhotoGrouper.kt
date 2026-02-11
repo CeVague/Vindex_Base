@@ -2,7 +2,6 @@ package com.cevague.vindex.ui.gallery
 
 import android.content.Context
 import com.cevague.vindex.R
-import com.cevague.vindex.data.database.dao.PhotoSummary
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -49,6 +48,7 @@ class PhotoGrouper(private val context: Context) {
         calendar.set(Calendar.DAY_OF_YEAR, 1)
         yearStart = calendar.timeInMillis
     }
+
     fun makeHeader(timestamp: Long): GalleryItem.Header {
         updateThresholds()
 
@@ -63,7 +63,8 @@ class PhotoGrouper(private val context: Context) {
         return GalleryItem.Header(
             title = category,
             // ID unique basé sur le titre (pour DiffUtil)
-            id = "header_${category.lowercase().replace(" ", "_")}")
+            id = "header_${category.lowercase().replace(" ", "_")}"
+        )
     }
 
     private fun getCategoryForDate(

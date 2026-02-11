@@ -47,7 +47,8 @@ class SettingsCache @Inject constructor(
         set(value) = prefs.edit { putString(Setting.KEY_THEME, value) }
 
     var userLanguage: String
-        get() = prefs.getString(Setting.KEY_LANGUAGE, Setting.LANGUAGE_SYSTEM) ?: Setting.LANGUAGE_SYSTEM
+        get() = prefs.getString(Setting.KEY_LANGUAGE, Setting.LANGUAGE_SYSTEM)
+            ?: Setting.LANGUAGE_SYSTEM
         set(value) = prefs.edit { putString(Setting.KEY_LANGUAGE, value) }
 
     var gridColumns: Int

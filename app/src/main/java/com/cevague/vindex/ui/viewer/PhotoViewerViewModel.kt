@@ -1,6 +1,5 @@
 package com.cevague.vindex.ui.viewer
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.data.database.dao.PhotoSummary

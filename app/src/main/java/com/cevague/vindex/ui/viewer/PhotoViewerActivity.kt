@@ -35,6 +35,7 @@ class PhotoViewerActivity : AppCompatActivity() {
 
     @Inject
     lateinit var mediaTypeFormatter: MediaTypeFormatter
+
     // État UI
     private var isUiVisible = true
 
@@ -55,7 +56,9 @@ class PhotoViewerActivity : AppCompatActivity() {
             intent.getParcelableExtra(EXTRA_SOURCE) as? ViewerSource
         }
 
-        if (source == null) { finish(); return }
+        if (source == null) {
+            finish(); return
+        }
         viewModel.init(source)
 
         pagerAdapter = PhotoPagerAdapter()
@@ -106,7 +109,10 @@ class PhotoViewerActivity : AppCompatActivity() {
 
                         // Positionner sur la photo cliquée seulement au premier chargement
                         if (isFirstLoad && photos.isNotEmpty()) {
-                            binding.viewPagerPhotos.setCurrentItem(viewModel.initialIndex.value, false)
+                            binding.viewPagerPhotos.setCurrentItem(
+                                viewModel.initialIndex.value,
+                                false
+                            )
                             isFirstLoad = false
                         }
                     }

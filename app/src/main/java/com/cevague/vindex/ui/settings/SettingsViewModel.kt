@@ -101,7 +101,7 @@ class SettingsViewModel @Inject constructor(
             personRepository.deleteAllFaces()
             albumRepository.deleteAll()
             settingsCache.lastScanTimestamp = 0L
-            
+
             // Relancer un scan pour reconstruire la base à partir des fichiers réels
             scanManager.startFullScan()
         }
@@ -121,9 +121,14 @@ class SettingsViewModel @Inject constructor(
         when (key) {
             Setting.KEY_THEME -> settingsCache.themeMode = value
             Setting.KEY_LANGUAGE -> settingsCache.userLanguage = value
-            Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()?.let { settingsCache.faceThresholdHigh = it }
-            Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()?.let { settingsCache.faceThresholdMedium = it }
-            Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()?.let { settingsCache.faceThresholdNew = it }
+            Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()
+                ?.let { settingsCache.faceThresholdHigh = it }
+
+            Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()
+                ?.let { settingsCache.faceThresholdMedium = it }
+
+            Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()
+                ?.let { settingsCache.faceThresholdNew = it }
         }
 
         // Sauvegarde DB asynchrone
