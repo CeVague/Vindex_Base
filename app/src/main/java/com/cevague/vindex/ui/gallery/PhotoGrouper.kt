@@ -13,56 +13,44 @@ class PhotoGrouper(private val context: Context) {
     private val monthYearFormatter = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     private val monthFormatter = SimpleDateFormat("MMMM", Locale.getDefault())
 
-    fun groupByDate(photos: List<PhotoSummary>): List<GalleryItem> {
-        if (photos.isEmpty()) return emptyList()
+    // Cache pour les limites temporelles
+    private var lastUpdateDay = -1
+    private var todayStart = 0L
+    private var weekStart = 0L
+    private var monthStart = 0L
+    private var yearStart = 0L
 
-        val result = mutableListOf<GalleryItem>()
+    /**
+     * Met à jour les bornes temporelles si nécessaire (une seule fois par jour)
+     */
+    private fun updateThresholds() {
+        val calendar = Calendar.getInstance()
+        val currentDay = calendar.get(Calendar.DAY_OF_YEAR)
 
-        var currentCategory: String? = null
+        if (currentDay == lastUpdateDay) return
+        lastUpdateDay = currentDay
 
-        val now = System.currentTimeMillis()
-        val todayStart = getStartOfDay(now)
-        val weekStart = getStartOfWeek(now)
-        val monthStart = getStartOfMonth(now)
-        val yearStart = getStartOfYear(now)
+        // Aujourd'hui
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        todayStart = calendar.timeInMillis
 
+        // Cette semaine
+        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+        weekStart = calendar.timeInMillis
 
-        // Parcourir toutes les photos
-        for (photo in photos) {
-            // Déterminer dans quelle catégorie tombe cette photo
-            val category = getCategoryForDate(
-                timestamp = photo.dateTaken ?: 0L,
-                todayStart = todayStart,
-                weekStart = weekStart,
-                monthStart = monthStart,
-                yearStart = yearStart
-            )
+        // Ce mois-ci
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        monthStart = calendar.timeInMillis
 
-            // Si on change de catégorie, ajouter un nouveau header
-            if (category != currentCategory) {
-                currentCategory = category
-                result.add(
-                    GalleryItem.Header(
-                        title = category,
-                        // ID unique basé sur le titre (pour DiffUtil)
-                        id = "header_${category.lowercase().replace(" ", "_")}"
-                    )
-                )
-            }
-
-            // Ajouter la photo
-            result.add(GalleryItem.PhotoItem(photo))
-        }
-
-        return result
+        // Cette année
+        calendar.set(Calendar.DAY_OF_YEAR, 1)
+        yearStart = calendar.timeInMillis
     }
-
     fun makeHeader(timestamp: Long): GalleryItem.Header {
-        val now = System.currentTimeMillis()
-        val todayStart = getStartOfDay(now)
-        val weekStart = getStartOfWeek(now)
-        val monthStart = getStartOfMonth(now)
-        val yearStart = getStartOfYear(now)
+        updateThresholds()
 
         val category = getCategoryForDate(
             timestamp = timestamp,
@@ -121,51 +109,5 @@ class PhotoGrouper(private val context: Context) {
                 )
             }
         }
-    }
-
-
-    private fun getStartOfDay(timestamp: Long): Long {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = timestamp
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
-    }
-
-    private fun getStartOfWeek(timestamp: Long): Long {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = timestamp
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        // firstDayOfWeek est automatiquement correct selon la locale
-        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
-        return calendar.timeInMillis
-    }
-
-    private fun getStartOfMonth(timestamp: Long): Long {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = timestamp
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
-    }
-
-    private fun getStartOfYear(timestamp: Long): Long {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = timestamp
-        calendar.set(Calendar.DAY_OF_YEAR, 1)
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
     }
 }
