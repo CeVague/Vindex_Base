@@ -61,7 +61,10 @@ object AppModule {
                 }
             })
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // CRUCIAL
-            .fallbackToDestructiveMigration()
+            // .fallbackToDestructiveMigration() // Supprimé pour forcer l'écriture de migrations.
+            // TODO: Quand vous changerez la version de la DB, ajoutez une migration ici.
+            // Pour des changements simples -> Auto-migrations dans AppDatabase.kt
+            // Pour des changements complexes -> .addMigrations(MIGRATION_1_2, ...)
             .build()
     }
 
