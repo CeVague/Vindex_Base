@@ -2,6 +2,7 @@ package com.cevague.vindex.ui.viewer
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
@@ -16,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
 import com.cevague.vindex.R
-import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
 import com.cevague.vindex.util.MediaTypeFormatter
@@ -47,17 +47,16 @@ class PhotoViewerActivity : AppCompatActivity() {
         binding = ActivityPhotoViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val list = PhotoViewerNavData.currentList
-
-        if (list.isEmpty()) {
-            finish()
-            return
+        // Récupérer les extras de l'Intent
+        val source = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(EXTRA_SOURCE, ViewerSource::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(EXTRA_SOURCE) as? ViewerSource
         }
 
-        // Récupérer les extras de l'Intent
-        val startPosition = intent.getIntExtra(EXTRA_POSITION, 0)
-
-        viewModel.setPhotos(list, startPosition)
+        if (source == null) { finish(); return }
+        viewModel.init(source)
 
         pagerAdapter = PhotoPagerAdapter()
         binding.viewPagerPhotos.adapter = pagerAdapter
@@ -107,7 +106,7 @@ class PhotoViewerActivity : AppCompatActivity() {
 
                         // Positionner sur la photo cliquée seulement au premier chargement
                         if (isFirstLoad && photos.isNotEmpty()) {
-                            binding.viewPagerPhotos.setCurrentItem(startPosition, false)
+                            binding.viewPagerPhotos.setCurrentItem(viewModel.initialIndex.value, false)
                             isFirstLoad = false
                         }
                     }
@@ -213,16 +212,13 @@ class PhotoViewerActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val EXTRA_POSITION = "extra_position"
+        private const val EXTRA_SOURCE = "viewer_source"
 
         // Helper pour lancer l'activité proprement
-        fun start(context: Context, list: List<PhotoSummary>, position: Int) {
-            PhotoViewerNavData.currentList = list
-
-            val intent = Intent(context, PhotoViewerActivity::class.java).apply {
-                putExtra(EXTRA_POSITION, position)
-            }
-            context.startActivity(intent)
+        fun start(context: Context, source: ViewerSource) {
+            context.startActivity(Intent(context, PhotoViewerActivity::class.java).apply {
+                putExtra(EXTRA_SOURCE, source)
+            })
         }
     }
 }

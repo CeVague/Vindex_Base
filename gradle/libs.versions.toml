@@ -58,6 +58,7 @@ espressoCore = "3.6.1"
 fragmentVersion = "1.8.9"
 lifecycleProcess = "2.10.0"
 swiperefreshlayout = "1.2.0"
+lifecycleViewmodelSavedstate = "2.10.0"
 
 
 [libraries]
@@ -122,9 +123,11 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragmentVersion" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
+androidx-lifecycle-viewmodel-savedstate = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-savedstate", version.ref = "lifecycleViewmodelSavedstate" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

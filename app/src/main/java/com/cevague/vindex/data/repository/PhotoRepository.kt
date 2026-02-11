@@ -37,6 +37,7 @@ class PhotoRepository @Inject constructor(
     fun getVisiblePhotos(): Flow<List<Photo>> = photoDao.getVisiblePhotos()
     fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getVisiblePhotosSummary()
     fun getPhotoById(id: Long): Flow<Photo?> = photoDao.getPhotoById(id)
+    fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>> = photoDao.getPhotosSummaryByIds(ids)
     fun getPhotoCount(): Flow<Int> = photoDao.getPhotoCount()
     fun getVisiblePhotoCount(): Flow<Int> = photoDao.getVisiblePhotoCount()
     suspend fun getTotalStorageUsed(): Long = photoDao.getTotalStorageUsed()

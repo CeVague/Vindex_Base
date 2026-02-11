@@ -21,6 +21,7 @@ import com.cevague.vindex.ui.gallery.GalleryItem
 import com.cevague.vindex.ui.gallery.PhotoGrouper
 import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
+import com.cevague.vindex.ui.viewer.ViewerSource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -52,13 +53,18 @@ class SearchFragment : Fragment() {
 
         photoGrouper = PhotoGrouper(requireContext())
 
-        val adapter = GalleryAdapter(getTargetSize(requireContext())) { _, position ->
+        val adapter = GalleryAdapter(getTargetSize(requireContext())) { photoSummary, position ->
             val photosOnly = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotosOnly()
-            val photoIndex =
-                (binding.recyclerSearch.adapter as GalleryAdapter).getPhotoIndex(position)
 
             if (photosOnly.isNotEmpty()) {
-                PhotoViewerActivity.start(requireContext(), ArrayList(photosOnly), photoIndex)
+                val photoIds = photosOnly.map { it.id }
+
+                val source = ViewerSource.Search(
+                    photoIds = photoIds,
+                    startPhotoId = photoSummary.id
+                )
+
+                PhotoViewerActivity.start(requireContext(), source)
             }
         }
 

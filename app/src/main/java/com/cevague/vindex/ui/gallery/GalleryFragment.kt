@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentGalleryBinding
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
-import com.cevague.vindex.ui.viewer.PhotoViewerNavData
+import com.cevague.vindex.ui.viewer.ViewerSource
 import com.cevague.vindex.util.ScanManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -149,14 +149,14 @@ class GalleryFragment : Fragment() {
 
     private fun openPhotoViewer(adapterPosition: Int) {
         val photoIndex = adapter.getPhotoIndex(adapterPosition)
-
         val photos = adapter.getPhotosOnly()
 
-        if (photos.isEmpty() || photoIndex >= photos.size) return
+        if (photos.isEmpty() || photoIndex < 0 || photoIndex >= photos.size) return
 
-        PhotoViewerNavData.currentList = photos
-
-        PhotoViewerActivity.start(requireContext(), photos, photoIndex)
+        PhotoViewerActivity.start(
+            requireContext(),
+            ViewerSource.Gallery(startPhotoId = photos[photoIndex].id)
+        )
     }
 
     override fun onDestroyView() {

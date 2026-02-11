@@ -26,6 +26,20 @@ data class PhotoSummary(
     @ColumnInfo(name = "is_favorite") val isFavorite: Boolean
 )
 
+fun Photo.toSummary(): PhotoSummary {
+    return PhotoSummary(id = this.id,
+        filePath = this.filePath,
+        fileName = this.fileName,
+        dateAdded = this.dateAdded,
+        dateTaken = this.dateTaken,
+        isFavorite = this.isFavorite
+    )
+}
+
+fun List<Photo>.toSummaryList(): List<PhotoSummary> {
+    return this.map { it.toSummary() }
+}
+
 @Dao
 interface PhotoDao {
 
@@ -49,6 +63,9 @@ interface PhotoDao {
 
     @Query("SELECT * FROM photos WHERE id = :id")
     fun getPhotoById(id: Long): Flow<Photo?>
+
+    @Query("SELECT id, file_path, date_taken, file_name, date_added, is_favorite FROM photos WHERE id IN (:ids)")
+    fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>>
 
     @Query("SELECT COUNT(*) FROM photos")
     fun getPhotoCount(): Flow<Int>
