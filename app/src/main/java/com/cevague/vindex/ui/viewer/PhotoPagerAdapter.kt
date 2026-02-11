@@ -38,7 +38,7 @@ class PhotoPagerAdapter :
             .priority(Priority.IMMEDIATE)
             .diskCacheStrategy(DiskCacheStrategy.DATA)
             //.skipMemoryCache(true)
-            .format(DecodeFormat.PREFER_RGB_565)
+            .format(DecodeFormat.PREFER_ARGB_8888)
             .fitCenter()
             .into(holder.photoView)
     }
