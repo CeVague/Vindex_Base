@@ -38,7 +38,8 @@ class SearchFragment : Fragment() {
     @Inject
     lateinit var settingsCache: SettingsCache
 
-    private lateinit var photoGrouper: PhotoGrouper
+    @Inject
+    lateinit var photoGrouper: PhotoGrouper
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,8 +52,6 @@ class SearchFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        photoGrouper = PhotoGrouper(requireContext())
 
         val adapter = GalleryAdapter(getTargetSize(requireContext())) { photoSummary, position ->
             val photosOnly = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotosOnly()
