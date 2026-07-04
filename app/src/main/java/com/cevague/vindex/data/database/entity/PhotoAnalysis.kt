@@ -4,15 +4,12 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "photo_analyses",
+    primaryKeys = ["photo_id", "analysis_type", "model_name"],
     indices = [
-        Index(value = ["photo_id"]),
-        Index(value = ["analysis_type"]),
-        Index(value = ["model_name"]),
-        Index(value = ["photo_id", "analysis_type", "model_name"], unique = true)
+        Index(value = ["analysis_type", "model_name"], name = "idx_analyses_type_model")
     ],
     foreignKeys = [
         ForeignKey(
@@ -24,9 +21,6 @@ import androidx.room.PrimaryKey
     ]
 )
 data class PhotoAnalysis(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-
     @ColumnInfo(name = "photo_id")
     val photoId: Long,
 
@@ -36,20 +30,27 @@ data class PhotoAnalysis(
     @ColumnInfo(name = "model_name")
     val modelName: String,
 
-    @ColumnInfo(name = "result_value")
-    val resultValue: String? = null,
+    @ColumnInfo(name = "text_result")
+    val textResult: String? = null,
 
     @ColumnInfo(name = "embedding", typeAffinity = ColumnInfo.BLOB)
     val embedding: ByteArray? = null,
 
-    @ColumnInfo(name = "timestamp")
-    val timestamp: Long = System.currentTimeMillis()
+    @ColumnInfo(name = "embedding_dim")
+    val embeddingDim: Int? = null,
+
+    @ColumnInfo(name = "created_at")
+    val createdAt: Long = System.currentTimeMillis(),
+
+    @ColumnInfo(name = "duration_ms")
+    val durationMs: Long? = null
 ) {
     companion object {
         const val TYPE_CAPTION = "caption"
+        const val TYPE_CAPTION_EMBEDDING = "caption_embedding"
+        const val TYPE_CLIP_EMBEDDING = "clip_embedding"
         const val TYPE_TAGS = "tags"
         const val TYPE_OCR = "ocr"
-        const val TYPE_EMBEDDING = "embedding"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -58,17 +59,13 @@ data class PhotoAnalysis(
 
         other as PhotoAnalysis
 
-        if (id != other.id) return false
-        if (photoId != other.photoId) return false
-        if (analysisType != other.analysisType) return false
-        if (modelName != other.modelName) return false
-
-        return true
+        return photoId == other.photoId &&
+                analysisType == other.analysisType &&
+                modelName == other.modelName
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + photoId.hashCode()
+        var result = photoId.hashCode()
         result = 31 * result + analysisType.hashCode()
         result = 31 * result + modelName.hashCode()
         return result

@@ -82,9 +82,6 @@ interface PhotoDao {
     @Query("SELECT DISTINCT relative_path FROM photos WHERE relative_path IS NOT NULL ORDER BY relative_path")
     fun getAllFolders(): Flow<List<String>>
 
-    @Query("SELECT * FROM photos WHERE needs_reanalysis = 1")
-    fun getPhotosNeedingAnalysis(): Flow<List<Photo>>
-
     @Query("SELECT * FROM photos WHERE is_metadata_extracted = 0")
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo>
 

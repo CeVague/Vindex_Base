@@ -94,30 +94,6 @@ class SettingsCache @Inject constructor(
         }
     }
 
-    /**
-     * Synchronise le cache avec des valeurs provenant de la base de données.
-     * Appelé au démarrage pour s'assurer que le cache est à jour.
-     */
-    fun syncFromDatabase(
-        theme: String?,
-        language: String?,
-        gridColumns: Int?,
-        showScores: Boolean?,
-        thresholdHigh: Float?,
-        thresholdMedium: Float?,
-        thresholdNew: Float?
-    ) {
-        prefs.edit {
-            theme?.let { putString(Setting.KEY_THEME, it) }
-            language?.let { putString(Setting.KEY_LANGUAGE, it) }
-            gridColumns?.let { putInt(Setting.KEY_GRID_COLUMNS, it) }
-            showScores?.let { putBoolean(Setting.KEY_SHOW_SCORES, it) }
-            thresholdHigh?.let { putFloat(Setting.KEY_FACE_THRESHOLD_HIGH, it) }
-            thresholdMedium?.let { putFloat(Setting.KEY_FACE_THRESHOLD_MEDIUM, it) }
-            thresholdNew?.let { putFloat(Setting.KEY_FACE_THRESHOLD_NEW, it) }
-        }
-    }
-
     companion object {
         const val DEFAULT_SHOW_SCORES = false
         const val DEFAULT_FACE_THRESHOLD_HIGH = 0.40f

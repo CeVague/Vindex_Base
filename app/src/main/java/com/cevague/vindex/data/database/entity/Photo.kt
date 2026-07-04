@@ -80,13 +80,7 @@ data class Photo(
     val qualityScore: Float? = null,
 
     @ColumnInfo(name = "is_blurry", defaultValue = "0")
-    val isBlurry: Boolean = false,
-
-    @ColumnInfo(name = "last_analyzed")
-    val lastAnalyzed: Long? = null,
-
-    @ColumnInfo(name = "needs_reanalysis", defaultValue = "1")
-    val needsReanalysis: Boolean = true
+    val isBlurry: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

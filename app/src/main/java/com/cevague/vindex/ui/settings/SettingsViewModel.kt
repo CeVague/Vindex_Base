@@ -8,7 +8,6 @@ import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
-import com.cevague.vindex.data.repository.SettingsRepository
 import com.cevague.vindex.util.ScanManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +26,7 @@ import javax.inject.Inject
  *
  * Responsabilités:
  * - Fournir les statistiques de la bibliothèque et l'espace disque
- * - Gérer la persistance des réglages (Database + Cache)
+ * - Gérer la persistance des réglages (SharedPreferences via SettingsCache)
  * - Coordonner les actions globales (Scan, Reset)
  */
 @HiltViewModel
@@ -35,7 +34,6 @@ class SettingsViewModel @Inject constructor(
     private val photoRepository: PhotoRepository,
     private val personRepository: PersonRepository,
     private val albumRepository: AlbumRepository,
-    private val settingsRepository: SettingsRepository,
     val settingsCache: SettingsCache, // Gardé public pour le DataStore du Fragment
     private val scanManager: ScanManager
 ) : ViewModel() {
@@ -109,7 +107,6 @@ class SettingsViewModel @Inject constructor(
 
     fun resetSettings() {
         settingsCache.resetToDefaults()
-        // On pourrait aussi vider la table 'settings' de la DB ici
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -117,7 +114,6 @@ class SettingsViewModel @Inject constructor(
     // ════════════════════════════════════════════════════════════════════════
 
     fun saveStringSetting(key: String, value: String) {
-        // Mise à jour immédiate du cache (synchrone pour l'UI)
         when (key) {
             Setting.KEY_THEME -> settingsCache.themeMode = value
             Setting.KEY_LANGUAGE -> settingsCache.userLanguage = value
@@ -130,28 +126,17 @@ class SettingsViewModel @Inject constructor(
             Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()
                 ?.let { settingsCache.faceThresholdNew = it }
         }
-
-        // Sauvegarde DB asynchrone
-        viewModelScope.launch {
-            settingsRepository.setValue(key, value)
-        }
     }
 
     fun saveIntSetting(key: String, value: Int) {
         if (key == Setting.KEY_GRID_COLUMNS) {
             settingsCache.gridColumns = value
         }
-        viewModelScope.launch {
-            settingsRepository.setValue(key, value.toString())
-        }
     }
 
     fun saveBooleanSetting(key: String, value: Boolean) {
         if (key == Setting.KEY_SHOW_SCORES) {
             settingsCache.showScores = value
-        }
-        viewModelScope.launch {
-            settingsRepository.setValue(key, value.toString())
         }
     }
 

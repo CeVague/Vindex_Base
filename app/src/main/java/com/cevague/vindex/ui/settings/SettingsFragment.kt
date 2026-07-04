@@ -220,28 +220,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         override fun putString(key: String, value: String?) {
             value ?: return
-            when (key) {
-                Setting.KEY_THEME -> settingsCache.themeMode = value
-                Setting.KEY_LANGUAGE -> settingsCache.userLanguage = value
-                Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()
-                    ?.let { settingsCache.faceThresholdHigh = it }
-
-                Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()
-                    ?.let { settingsCache.faceThresholdMedium = it }
-
-                Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()
-                    ?.let { settingsCache.faceThresholdNew = it }
-            }
             viewModel.saveStringSetting(key, value)
         }
 
         override fun putInt(key: String, value: Int) {
-            if (key == Setting.KEY_GRID_COLUMNS) settingsCache.gridColumns = value
             viewModel.saveIntSetting(key, value)
         }
 
         override fun putBoolean(key: String, value: Boolean) {
-            if (key == Setting.KEY_SHOW_SCORES) settingsCache.showScores = value
             viewModel.saveBooleanSetting(key, value)
         }
     }

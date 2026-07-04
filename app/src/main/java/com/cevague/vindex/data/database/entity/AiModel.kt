@@ -36,6 +36,9 @@ data class AiModel(
     @ColumnInfo(name = "is_builtin", defaultValue = "0")
     val isBuiltin: Boolean = false,
 
+    @ColumnInfo(name = "config_json")
+    val configJson: String? = null,
+
     @ColumnInfo(name = "added_at")
     val addedAt: Long
 ) {
