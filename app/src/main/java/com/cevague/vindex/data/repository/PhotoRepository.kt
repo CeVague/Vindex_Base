@@ -81,26 +81,14 @@ class PhotoRepository @Inject constructor(
         var totalProcessed = 0
 
         mediaScanner.scanMediaStore(includedFolders, lastSync).collect { batch ->
-            val toUpsert = batch.mapNotNull { scanned ->
-                val existing = dbPhotosMap[scanned.filePath]
-                when {
-                    existing == null -> scanned
-                    // Si le ID MediaStore a changé pour un même path (rare mais possible après purge MediaStore)
-                    // ou si la taille/date a changé -> on met à jour
-                    existing.id != scanned.id ||
-                    existing.fileSize != scanned.fileSize ||
-                            existing.fileLastModified != scanned.fileLastModified ->
-                        scanned
-                    else -> null
-                }
-            }
+            val toUpsert = SyncDiff.photosToUpsert(batch, dbPhotosMap)
             if (toUpsert.isNotEmpty()) photoDao.upsertAll(toUpsert)
             totalProcessed += batch.size
             onProgress(totalProcessed)
         }
 
         mediaScanner.queryManagedUris(includedFolders)?.let { liveUris ->
-            (dbPhotosMap.keys - liveUris)
+            SyncDiff.urisToDelete(dbPhotosMap.keys, liveUris)
                 .chunked(CHUNK_SIZE)
                 .forEach { photoDao.deleteByContentUris(it) }
         }
