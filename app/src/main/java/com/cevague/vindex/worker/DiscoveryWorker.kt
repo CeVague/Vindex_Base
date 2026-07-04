@@ -1,6 +1,7 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -9,7 +10,7 @@ import com.cevague.vindex.R
 import com.cevague.vindex.data.repository.PhotoRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 
 @HiltWorker
 class DiscoveryWorker @AssistedInject constructor(
@@ -27,11 +28,7 @@ class DiscoveryWorker @AssistedInject constructor(
                 )
             )
 
-            // Petit délai pour laisser l'UI respirer
-            delay(500)
-
-            // Synchronisation globale avec le MediaStore
-            photoRepository.syncPhotos(applicationContext) { count ->
+            photoRepository.syncPhotos { count ->
                 setProgress(
                     workDataOf(
                         "WORK" to applicationContext.getString(R.string.progress_scanning),
@@ -41,8 +38,15 @@ class DiscoveryWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Result.failure()
+            Log.e(TAG, "MediaStore sync failed", e)
+            if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
+    }
+
+    private companion object {
+        const val TAG = "DiscoveryWorker"
     }
 }

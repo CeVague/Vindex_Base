@@ -3,11 +3,9 @@ package com.cevague.vindex.data.database.dao
 import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.Upsert
 import com.cevague.vindex.data.database.entity.Photo
 import kotlinx.coroutines.flow.Flow
 
@@ -101,15 +99,14 @@ interface PhotoDao {
     )
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>>
 
-    @Transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(photos: List<Photo>): List<Long>
-
     @Update
     suspend fun update(photo: Photo)
 
-    @Query("DELETE FROM photos WHERE file_path IN (:filePaths)")
-    suspend fun deleteByPaths(filePaths: List<String>)
+    @Upsert
+    suspend fun upsertAll(photos: List<Photo>)
+
+    @Query("DELETE FROM photos WHERE file_path IN (:contentUris)")
+    suspend fun deleteByContentUris(contentUris: List<String>)
 
     @Query("DELETE FROM photos")
     suspend fun deleteAll()

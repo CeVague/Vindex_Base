@@ -1,48 +1,25 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ROOM & SQLITE
+-keep class androidx.room.** { *; }
+-keep class androidx.sqlite.** { *; }
+-keep class com.cevague.vindex.data.database.**_Impl { *; }
+-keepclassmembers class com.cevague.vindex.data.database.entity.** { *; }
+-keepclassmembers class com.cevague.vindex.data.database.dao.** { *; }
+-keep class androidx.room.paging.** { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-# Room
--keep class * extends androidx.room.RoomDatabase
--keep @androidx.room.Entity class *
--keepclassmembers class * {
-    @androidx.room.* <methods>;
-}
-
-# Glide
+# GLIDE
 -keep public class * implements com.bumptech.glide.module.GlideModule
 -keep class * extends com.bumptech.glide.module.AppGlideModule { <init>(...); }
 
-# Hilt
--keep class dagger.hilt.** { *; }
--keep class javax.inject.** { *; }
--keep class * extends dagger.hilt.android.internal.managers.ComponentSupplier { *; }
+# METADATA EXTRACTOR
+-keep class com.drew.** { *; }
+-dontwarn com.drew.**
 
-# Coroutines
--keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
--keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+# KOTLIN & PARCELABLE
+-keepattributes Signature,AnnotationDefault,EnclosingMethod,InnerClasses,
+                SourceFile,LineNumberTable
 
-# Data classes (pour éviter les problèmes de sérialisation)
--keepclassmembers class com.cevague.vindex.data.database.entity.** { *; }
-
-# Debug stack traces
--keepattributes SourceFile,LineNumberTable
--renamesourcefileattribute SourceFile
+-keep class com.cevague.vindex.ui.viewer.ViewerSource { *; }
+-keep class com.cevague.vindex.ui.viewer.ViewerSource$* { *; }
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}

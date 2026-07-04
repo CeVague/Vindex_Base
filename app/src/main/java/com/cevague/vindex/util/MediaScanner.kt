@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,21 +47,26 @@ class MediaScanner @Inject constructor(
         )
     }
 
+    fun contentUriFor(id: Long): String =
+        ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id).toString()
+
+    private fun imagesCollection(): Uri =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+
     fun scanMediaStore(
         includedFolders: Set<String>,
-        lastScanTimestamp: Long,
-        onPathSeen: (String) -> Unit
+        lastScanTimestamp: Long
     ): Flow<List<Photo>> = flow {
         val batch = mutableListOf<Photo>()
         val selection = buildSelection(includedFolders, lastScanTimestamp)
         val selectionArgs = buildSelectionArgs(includedFolders, lastScanTimestamp)
         val sortOrder = "${MediaStore.Images.Media.DATE_MODIFIED} DESC"
 
-        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-        } else {
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        }
+        val collection = imagesCollection()
 
         context.contentResolver.query(
             collection,
@@ -88,10 +94,7 @@ class MediaScanner @Inject constructor(
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
-                val contentUri = ContentUris.withAppendedId(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                )
-                onPathSeen(contentUri.toString())
+                val contentUri = contentUriFor(id)
 
                 val photo = createPhotoFromCursor(
                     cursor = cursor,
@@ -120,7 +123,7 @@ class MediaScanner @Inject constructor(
             }
         }
         if (batch.isNotEmpty()) emit(batch)
-    }
+    }.flowOn(Dispatchers.IO)
 
     private fun buildSelection(includedFolders: Set<String>, lastScanTimestamp: Long): String {
         val conditions = mutableListOf<String>()
@@ -157,7 +160,7 @@ class MediaScanner @Inject constructor(
     private fun createPhotoFromCursor(
         cursor: Cursor,
         idColumn: Int,
-        contentUri: Uri,
+        contentUri: String,
         nameColumn: Int,
         dateTakenColumn: Int,
         dateModifiedColumn: Int,
@@ -196,7 +199,7 @@ class MediaScanner @Inject constructor(
         val mediaType = detectMediaType(fileName, folderPath, width, height, null, null)
 
         return Photo(
-            filePath = contentUri.toString(),
+            filePath = contentUri,
             fileName = fileName,
             folderPath = folderPath,
             relativePath = relativePath,
@@ -325,14 +328,11 @@ class MediaScanner @Inject constructor(
         return null
     }
 
-    suspend fun listImageFolders(context: Context): List<FolderInfo> = withContext(Dispatchers.IO) {
+    suspend fun listImageFolders(): List<FolderInfo> = withContext(Dispatchers.IO) {
         val folders = mutableMapOf<String, Int>()
         val projection =
             arrayOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.RELATIVE_PATH else MediaStore.Images.Media.DATA)
-        val collection =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.Images.Media.getContentUri(
-                MediaStore.VOLUME_EXTERNAL
-            ) else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val collection = imagesCollection()
 
         context.contentResolver.query(collection, projection, null, null, null)?.use { cursor ->
             val pathColumn = cursor.getColumnIndexOrThrow(projection[0])
@@ -346,6 +346,23 @@ class MediaScanner @Inject constructor(
         }
         folders.map { FolderInfo(it.key, it.value) }.sortedByDescending { it.photoCount }
     }
+
+    suspend fun queryManagedUris(includedFolders: Set<String>): Set<String>? =
+        withContext(Dispatchers.IO) {
+            val cursor = context.contentResolver.query(
+                imagesCollection(),
+                arrayOf(MediaStore.Images.Media._ID),
+                buildSelection(includedFolders, 0L),
+                buildSelectionArgs(includedFolders, 0L),
+                null
+            ) ?: return@withContext null
+            cursor.use { c ->
+                buildSet(c.count) {
+                    val idColumn = c.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                    while (c.moveToNext()) add(contentUriFor(c.getLong(idColumn)))
+                }
+            }
+        }
 
     data class FolderInfo(val relativePath: String, val photoCount: Int)
 

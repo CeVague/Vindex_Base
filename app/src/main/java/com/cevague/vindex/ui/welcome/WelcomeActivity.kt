@@ -76,7 +76,7 @@ class WelcomeActivity : AppCompatActivity() {
             // Afficher un loading
             //binding.progressBar.visibility = View.VISIBLE
 
-            availableFolders = mediaScanner.listImageFolders(this@WelcomeActivity)
+            availableFolders = mediaScanner.listImageFolders()
 
             //binding.progressBar.visibility = View.GONE
 

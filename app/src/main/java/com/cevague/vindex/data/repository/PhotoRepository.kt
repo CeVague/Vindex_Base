@@ -1,6 +1,5 @@
 package com.cevague.vindex.data.repository
 
-import android.content.Context
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -27,6 +26,9 @@ class PhotoRepository @Inject constructor(
     private val mediaScanner: MediaScanner,
     @ApplicationScope private val externalScope: CoroutineScope
 ) {
+    private companion object {
+        const val CHUNK_SIZE = 900
+    }
 
     val dbPhotosMetadata: StateFlow<List<FilePathAndSize>> = photoDao.getAllPathsAndSizes()
         .stateIn(
@@ -66,49 +68,42 @@ class PhotoRepository @Inject constructor(
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>> =
         photoDao.searchByFileNameSummary(query)
 
-    suspend fun syncPhotos(context: Context, onProgress: suspend (Int) -> Unit) {
+    suspend fun syncPhotos(onProgress: suspend (Int) -> Unit) {
         val lastSync = settingsCache.lastScanTimestamp
         val newSync = System.currentTimeMillis()
         val includedFolders = settingsCache.includedFolders
 
-        // 1. Charger les métadonnées actuelles pour le diffing
         val dbPhotosMap = photoDao.getAllPathsAndSizes().first().associateBy { it.filePath }
-        val seenPaths = mutableSetOf<String>()
         var totalProcessed = 0
 
-        // 2. Scan du MediaStore
-        mediaScanner.scanMediaStore(includedFolders, lastSync) { path ->
-            seenPaths.add(path)
-        }.collect { batch ->
-            val toUpsert = batch.filter { newPhoto ->
-                val existing = dbPhotosMap[newPhoto.filePath]
-                existing == null || existing.fileSize != newPhoto.fileSize || existing.fileLastModified != newPhoto.fileLastModified
+        mediaScanner.scanMediaStore(includedFolders, lastSync).collect { batch ->
+            val toUpsert = batch.mapNotNull { scanned ->
+                val existing = dbPhotosMap[scanned.filePath]
+                when {
+                    existing == null -> scanned
+                    existing.fileSize != scanned.fileSize ||
+                            existing.fileLastModified != scanned.fileLastModified ->
+                        scanned.copy(id = existing.id)
+                    else -> null
+                }
             }
-
-            if (toUpsert.isNotEmpty()) {
-                photoDao.insertAll(toUpsert)
-            }
-
+            if (toUpsert.isNotEmpty()) photoDao.upsertAll(toUpsert)
             totalProcessed += batch.size
             onProgress(totalProcessed)
         }
 
-        if (seenPaths.isNotEmpty() || lastSync == 0L) {
-            val pathsToRemove = dbPhotosMap.keys.filter { path ->
-                val isInManagedFolder = includedFolders.any { folder -> path.contains(folder) }
-                isInManagedFolder && path !in seenPaths
-            }
-
-            if (pathsToRemove.isNotEmpty()) {
-                photoDao.deleteByPaths(pathsToRemove)
-            }
+        mediaScanner.queryManagedUris(includedFolders)?.let { liveUris ->
+            (dbPhotosMap.keys - liveUris)
+                .chunked(CHUNK_SIZE)
+                .forEach { photoDao.deleteByContentUris(it) }
         }
 
         settingsCache.lastScanTimestamp = newSync
     }
 
-    suspend fun insertAll(photos: List<Photo>) = photoDao.insertAll(photos)
     suspend fun update(photo: Photo) = photoDao.update(photo)
-    suspend fun deleteByPaths(filePaths: List<String>) = photoDao.deleteByPaths(filePaths)
+    suspend fun upsertAll(photos: List<Photo>) = photoDao.upsertAll(photos)
+    suspend fun deleteByContentUris(contentUris: List<String>) =
+        contentUris.chunked(CHUNK_SIZE).forEach { photoDao.deleteByContentUris(it) }
     suspend fun deleteAll() = photoDao.deleteAll()
 }

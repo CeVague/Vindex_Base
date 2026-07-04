@@ -4,9 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
 import androidx.room.Update
 import com.cevague.vindex.data.database.entity.Face
 import kotlinx.coroutines.flow.Flow
@@ -149,11 +147,10 @@ interface FaceDao {
 
     // Insert
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(face: Face): Long
 
-    @Transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insertAll(faces: List<Face>): List<Long>
 
     // Update

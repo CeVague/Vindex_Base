@@ -1,6 +1,7 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -11,10 +12,12 @@ import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.util.MediaScanner
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
 
 @HiltWorker
 class MetadataWorker @AssistedInject constructor(
@@ -24,6 +27,9 @@ class MetadataWorker @AssistedInject constructor(
     private val cityRepository: CityRepository,
     private val mediaScanner: MediaScanner
 ) : CoroutineWorker(appContext, workerParams) {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val extractionDispatcher = Dispatchers.IO.limitedParallelism(4)
 
     override suspend fun doWork(): Result {
         return try {
@@ -38,33 +44,25 @@ class MetadataWorker @AssistedInject constructor(
             val total = photosToProcess.size
             if (total == 0) return Result.success()
 
-            // On parallélise par petits batchs pour ne pas saturer la RAM
             val batchSize = 20
 
-            Dispatchers.IO.limitedParallelism(4)
-
             photosToProcess.chunked(batchSize).forEachIndexed { index, batch ->
-                // Utilisation de Dispatchers.IO pour les accès fichiers + async pour le parallélisme
-                val enrichedBatch = withContext(Dispatchers.IO) {
+                val enrichedBatch = coroutineScope {
                     batch.map { photo ->
-                        async {
+                        async(extractionDispatcher) {
                             try {
-                                // 1. EXIF + GPS
                                 var data = mediaScanner.extractMetadata(photo)
 
-                                // 2. Geocoding
                                 if (data.latitude != null && data.longitude != null) {
                                     val city = cityRepository.findNearestCity(
                                         data.latitude!!,
                                         data.longitude!!
                                     )
                                     city?.let {
-                                        data =
-                                            data.copy(locationName = "${it.name}, ${it.countryCode}")
+                                        data = data.copy(locationName = "${it.name}, ${it.countryCode}")
                                     }
                                 }
 
-                                // 3. Media Type Refinement
                                 val type = mediaScanner.detectMediaType(
                                     data.fileName,
                                     data.folderPath,
@@ -74,16 +72,17 @@ class MetadataWorker @AssistedInject constructor(
                                     data.cameraModel
                                 )
                                 data.copy(mediaType = type)
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
-                                photo // En cas d'erreur sur une photo, on la garde telle quelle
+                                photo
                             }
                         }
                     }.awaitAll()
                 }
 
-                photoRepository.insertAll(enrichedBatch)
+                photoRepository.upsertAll(enrichedBatch)
 
-                // Update Progress
                 val progress = ((index + 1) * batchSize * 100 / total).coerceAtMost(100)
                 setProgress(
                     workDataOf(
@@ -94,8 +93,15 @@ class MetadataWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            Log.e(TAG, "Metadata extraction failed", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
+    }
+
+    private companion object {
+        const val TAG = "MetadataWorker"
     }
 }
