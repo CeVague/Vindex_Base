@@ -4,9 +4,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.cevague.vindex.data.database.dao.FilePathAndSize
+import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
 import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.di.ApplicationScope
 import com.cevague.vindex.util.MediaScanner
@@ -22,6 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class PhotoRepository @Inject constructor(
     private val photoDao: PhotoDao,
+    private val photoAnalysisDao: PhotoAnalysisDao,
     private val settingsCache: SettingsCache,
     private val mediaScanner: MediaScanner,
     @ApplicationScope private val externalScope: CoroutineScope
@@ -73,6 +76,7 @@ class PhotoRepository @Inject constructor(
         val newSync = System.currentTimeMillis()
         val includedFolders = settingsCache.includedFolders
 
+        // Clé = filePath pour la détection de changements
         val dbPhotosMap = photoDao.getAllPathsAndSizes().first().associateBy { it.filePath }
         var totalProcessed = 0
 
@@ -81,9 +85,12 @@ class PhotoRepository @Inject constructor(
                 val existing = dbPhotosMap[scanned.filePath]
                 when {
                     existing == null -> scanned
+                    // Si le ID MediaStore a changé pour un même path (rare mais possible après purge MediaStore)
+                    // ou si la taille/date a changé -> on met à jour
+                    existing.id != scanned.id ||
                     existing.fileSize != scanned.fileSize ||
                             existing.fileLastModified != scanned.fileLastModified ->
-                        scanned.copy(id = existing.id)
+                        scanned
                     else -> null
                 }
             }
@@ -106,4 +113,15 @@ class PhotoRepository @Inject constructor(
     suspend fun deleteByContentUris(contentUris: List<String>) =
         contentUris.chunked(CHUNK_SIZE).forEach { photoDao.deleteByContentUris(it) }
     suspend fun deleteAll() = photoDao.deleteAll()
+
+    // --- Analyses ---
+
+    fun getAnalysesForPhoto(photoId: Long): Flow<List<PhotoAnalysis>> =
+        photoAnalysisDao.getAnalysesForPhoto(photoId)
+
+    suspend fun upsertAnalysis(analysis: PhotoAnalysis) =
+        photoAnalysisDao.upsertAnalysis(analysis)
+
+    suspend fun upsertAnalyses(analyses: List<PhotoAnalysis>) =
+        photoAnalysisDao.upsertAnalyses(analyses)
 }

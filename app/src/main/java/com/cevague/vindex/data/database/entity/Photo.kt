@@ -18,8 +18,8 @@ import androidx.room.PrimaryKey
     ]
 )
 data class Photo(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val id: Long,
 
     @ColumnInfo(name = "file_path")
     val filePath: String,
@@ -81,26 +81,6 @@ data class Photo(
 
     @ColumnInfo(name = "is_blurry", defaultValue = "0")
     val isBlurry: Boolean = false,
-
-    val description: String? = null,
-
-    @ColumnInfo(name = "description_embedding", typeAffinity = ColumnInfo.BLOB)
-    val descriptionEmbedding: ByteArray? = null,
-
-    @ColumnInfo(name = "description_model")
-    val descriptionModel: String? = null,
-
-    @ColumnInfo(name = "tags_json")
-    val tagsJson: String? = null,
-
-    @ColumnInfo(name = "tags_model")
-    val tagsModel: String? = null,
-
-    @ColumnInfo(name = "ocr_text")
-    val ocrText: String? = null,
-
-    @ColumnInfo(name = "ocr_model")
-    val ocrModel: String? = null,
 
     @ColumnInfo(name = "last_analyzed")
     val lastAnalyzed: Long? = null,

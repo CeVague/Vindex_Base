@@ -8,6 +8,7 @@ import com.cevague.vindex.data.database.dao.AnalysisLogDao
 import com.cevague.vindex.data.database.dao.CityDao
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao
+import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
 import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoHashDao
 import com.cevague.vindex.data.database.dao.SettingDao
@@ -19,12 +20,14 @@ import com.cevague.vindex.data.database.entity.City
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.database.entity.Photo
+import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.database.entity.PhotoHash
 import com.cevague.vindex.data.database.entity.Setting
 
 @Database(
     entities = [
         Photo::class,
+        PhotoAnalysis::class,
         Person::class,
         Face::class,
         Album::class,
@@ -42,6 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     // DAOs
     abstract fun photoDao(): PhotoDao
+    abstract fun photoAnalysisDao(): PhotoAnalysisDao
     abstract fun personDao(): PersonDao
     abstract fun faceDao(): FaceDao
     abstract fun albumDao(): AlbumDao

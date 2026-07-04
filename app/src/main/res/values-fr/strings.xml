@@ -21,9 +21,9 @@
     <!-- Progress message -->
     <string name="progress_generic">Travail en cours…</string>
     <string name="progress_loading_cities">Chargement des villes…</string>
-    <string name="progress_scanning">Analyse en cours… %d photos</string>
-    <string name="progress_exif">Extraction des métadonnées… %d%</string>
-    <string name="progress_summary">Création des description… %d%</string>
+    <string name="progress_scanning">Analyse en cours… %d fichiers</string>
+    <string name="progress_exif">Extraction des métadonnées… %d %%</string>
+    <string name="progress_summary">Création des descriptions… %d %%</string>
     <string name="progress_vector">Génération des vecteurs… %d%</string>
     <string name="progress_faces">Analyse des visages… %d%</string>
 
@@ -284,11 +284,11 @@
     <string name="media_type_selfie">Selfie</string>
     <string name="media_type_panorama">Panorama</string>
     <string name="media_type_burst">Rafale</string>
-    <string name="media_type_screenshot">Capture d\'écrant</string>
+    <string name="media_type_screenshot">Capture d\'écran</string>
     <string name="media_type_document">Document</string>
     <string name="media_type_social">Réseau social</string>
     <string name="media_type_square">Carré</string>
-    <string name="media_type_not_define">Indéfinit</string>
+    <string name="media_type_not_define">Indéfini</string>
 
     <string name="hello_blank_fragment">Fragment vide</string>
 </resources>

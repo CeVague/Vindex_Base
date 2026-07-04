@@ -98,8 +98,8 @@ class MediaScanner @Inject constructor(
 
                 val photo = createPhotoFromCursor(
                     cursor = cursor,
+                    id = id,
                     contentUri = contentUri,
-                    idColumn = idColumn,
                     nameColumn = nameColumn,
                     dateTakenColumn = dateTakenColumn,
                     dateModifiedColumn = dateModifiedColumn,
@@ -159,7 +159,7 @@ class MediaScanner @Inject constructor(
 
     private fun createPhotoFromCursor(
         cursor: Cursor,
-        idColumn: Int,
+        id: Long,
         contentUri: String,
         nameColumn: Int,
         dateTakenColumn: Int,
@@ -199,6 +199,7 @@ class MediaScanner @Inject constructor(
         val mediaType = detectMediaType(fileName, folderPath, width, height, null, null)
 
         return Photo(
+            id = id,
             filePath = contentUri,
             fileName = fileName,
             folderPath = folderPath,

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "e11b3278c52cfb22e47fa4b31e9b30e7",
+    "identityHash": "0880763d9959814486cbcd106d3fef61",
     "entities": [
       {
         "tableName": "photos",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `file_path` TEXT NOT NULL, `file_name` TEXT NOT NULL, `file_last_modified` INTEGER NOT NULL, `folder_path` TEXT NOT NULL, `relative_path` TEXT, `date_taken` INTEGER, `date_added` INTEGER NOT NULL, `width` INTEGER, `height` INTEGER, `orientation` INTEGER, `latitude` REAL, `longitude` REAL, `location_name` TEXT, `camera_make` TEXT, `camera_model` TEXT, `file_size` INTEGER, `mime_type` TEXT, `media_type` TEXT NOT NULL DEFAULT 'photo', `is_favorite` INTEGER NOT NULL DEFAULT 0, `is_hidden` INTEGER NOT NULL DEFAULT 0, `is_metadata_extracted` INTEGER NOT NULL DEFAULT 0, `quality_score` REAL, `is_blurry` INTEGER NOT NULL DEFAULT 0, `description` TEXT, `description_embedding` BLOB, `description_model` TEXT, `tags_json` TEXT, `tags_model` TEXT, `ocr_text` TEXT, `ocr_model` TEXT, `last_analyzed` INTEGER, `needs_reanalysis` INTEGER NOT NULL DEFAULT 1)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `file_path` TEXT NOT NULL, `file_name` TEXT NOT NULL, `file_last_modified` INTEGER NOT NULL, `folder_path` TEXT NOT NULL, `relative_path` TEXT, `date_taken` INTEGER, `date_added` INTEGER NOT NULL, `width` INTEGER, `height` INTEGER, `orientation` INTEGER, `latitude` REAL, `longitude` REAL, `location_name` TEXT, `camera_make` TEXT, `camera_model` TEXT, `file_size` INTEGER, `mime_type` TEXT, `media_type` INTEGER NOT NULL DEFAULT 0, `is_favorite` INTEGER NOT NULL DEFAULT 0, `is_hidden` INTEGER NOT NULL DEFAULT 0, `is_metadata_extracted` INTEGER NOT NULL DEFAULT 0, `quality_score` REAL, `is_blurry` INTEGER NOT NULL DEFAULT 0, `last_analyzed` INTEGER, `needs_reanalysis` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -119,9 +119,9 @@
           {
             "fieldPath": "mediaType",
             "columnName": "media_type",
-            "affinity": "TEXT",
+            "affinity": "INTEGER",
             "notNull": true,
-            "defaultValue": "'photo'"
+            "defaultValue": "0"
           },
           {
             "fieldPath": "isFavorite",
@@ -158,48 +158,6 @@
             "defaultValue": "0"
           },
           {
-            "fieldPath": "description",
-            "columnName": "description",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "descriptionEmbedding",
-            "columnName": "description_embedding",
-            "affinity": "BLOB",
-            "notNull": false
-          },
-          {
-            "fieldPath": "descriptionModel",
-            "columnName": "description_model",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "tagsJson",
-            "columnName": "tags_json",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "tagsModel",
-            "columnName": "tags_model",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "ocrText",
-            "columnName": "ocr_text",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "ocrModel",
-            "columnName": "ocr_model",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
             "fieldPath": "lastAnalyzed",
             "columnName": "last_analyzed",
             "affinity": "INTEGER",
@@ -214,7 +172,7 @@
           }
         ],
         "primaryKey": {
-          "autoGenerate": true,
+          "autoGenerate": false,
           "columnNames": [
             "id"
           ]
@@ -257,6 +215,24 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_is_metadata_extracted` ON `${TABLE_NAME}` (`is_metadata_extracted`)"
           },
           {
+            "name": "index_photos_is_favorite",
+            "unique": false,
+            "columnNames": [
+              "is_favorite"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_is_favorite` ON `${TABLE_NAME}` (`is_favorite`)"
+          },
+          {
+            "name": "index_photos_is_hidden",
+            "unique": false,
+            "columnNames": [
+              "is_hidden"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photos_is_hidden` ON `${TABLE_NAME}` (`is_hidden`)"
+          },
+          {
             "name": "index_photos_relative_path",
             "unique": false,
             "columnNames": [
@@ -267,6 +243,113 @@
           }
         ],
         "foreignKeys": []
+      },
+      {
+        "tableName": "photo_analyses",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `photo_id` INTEGER NOT NULL, `analysis_type` TEXT NOT NULL, `model_name` TEXT NOT NULL, `result_value` TEXT, `embedding` BLOB, `timestamp` INTEGER NOT NULL, FOREIGN KEY(`photo_id`) REFERENCES `photos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photoId",
+            "columnName": "photo_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "analysisType",
+            "columnName": "analysis_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelName",
+            "columnName": "model_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultValue",
+            "columnName": "result_value",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "embedding",
+            "columnName": "embedding",
+            "affinity": "BLOB",
+            "notNull": false
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_photo_analyses_photo_id",
+            "unique": false,
+            "columnNames": [
+              "photo_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photo_analyses_photo_id` ON `${TABLE_NAME}` (`photo_id`)"
+          },
+          {
+            "name": "index_photo_analyses_analysis_type",
+            "unique": false,
+            "columnNames": [
+              "analysis_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photo_analyses_analysis_type` ON `${TABLE_NAME}` (`analysis_type`)"
+          },
+          {
+            "name": "index_photo_analyses_model_name",
+            "unique": false,
+            "columnNames": [
+              "model_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photo_analyses_model_name` ON `${TABLE_NAME}` (`model_name`)"
+          },
+          {
+            "name": "index_photo_analyses_photo_id_analysis_type_model_name",
+            "unique": true,
+            "columnNames": [
+              "photo_id",
+              "analysis_type",
+              "model_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_photo_analyses_photo_id_analysis_type_model_name` ON `${TABLE_NAME}` (`photo_id`, `analysis_type`, `model_name`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "photos",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "photo_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       },
       {
         "tableName": "persons",
@@ -943,7 +1026,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e11b3278c52cfb22e47fa4b31e9b30e7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0880763d9959814486cbcd106d3fef61')"
     ]
   }
 }
