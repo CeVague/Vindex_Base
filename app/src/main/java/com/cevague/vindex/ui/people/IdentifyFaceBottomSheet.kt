@@ -74,6 +74,9 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
                     names
                 )
                 binding.editName.setAdapter(adapter)
+
+                // Mettre à jour les suggestions quand les données arrivent
+                updateSuggestionChips(persons)
             }
         }
 
@@ -95,32 +98,34 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun setupSuggestionChips() {
+        // Cette méthode est maintenant appelée depuis setupAutoComplete pour garantir que les données sont prêtes
+    }
+
+    private fun updateSuggestionChips(persons: List<Person>) {
         // Afficher les 5 personnes avec le plus de photos
-        lifecycleScope.launch {
-            val topPersons = allPersons
-                .filter { it.name != null }
-                .sortedByDescending { it.photoCount }
-                .take(5)
+        val topPersons = persons
+            .filter { it.name != null }
+            .sortedByDescending { it.photoCount }
+            .take(5)
 
-            binding.chipGroupSuggestions.removeAllViews()
+        binding.chipGroupSuggestions.removeAllViews()
 
-            if (topPersons.isEmpty()) {
-                binding.textSuggestionsLabel.visibility = View.GONE
-                binding.chipGroupSuggestions.visibility = View.GONE
-            } else {
-                binding.textSuggestionsLabel.visibility = View.VISIBLE
-                binding.chipGroupSuggestions.visibility = View.VISIBLE
+        if (topPersons.isEmpty()) {
+            binding.textSuggestionsLabel.visibility = View.GONE
+            binding.chipGroupSuggestions.visibility = View.GONE
+        } else {
+            binding.textSuggestionsLabel.visibility = View.VISIBLE
+            binding.chipGroupSuggestions.visibility = View.VISIBLE
 
-                topPersons.forEach { person ->
-                    val chip = Chip(requireContext()).apply {
-                        text = person.name
-                        isCheckable = true
-                        setOnClickListener {
-                            identifyCurrentFaceAs(person.name!!)
-                        }
+            topPersons.forEach { person ->
+                val chip = Chip(requireContext()).apply {
+                    text = person.name
+                    isCheckable = true
+                    setOnClickListener {
+                        identifyCurrentFaceAs(person.name!!)
                     }
-                    binding.chipGroupSuggestions.addView(chip)
                 }
+                binding.chipGroupSuggestions.addView(chip)
             }
         }
     }

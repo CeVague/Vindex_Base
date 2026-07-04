@@ -10,7 +10,9 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.PersonDao
@@ -68,25 +70,31 @@ class PeopleFragment : Fragment() {
 
         // Observer les personnes
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.allPeople.collect { people ->
-                binding.textEmpty.visibility = if (people.isEmpty()) View.VISIBLE else View.GONE
-                adapter.submitList(people)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.allPeople.collect { people ->
+                    binding.textEmpty.visibility = if (people.isEmpty()) View.VISIBLE else View.GONE
+                    adapter.submitList(people)
+                }
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.unidentifiedFaceCount.collect { count ->
-                binding.fabIdentify.apply {
-                    visibility = if (count > 0) View.VISIBLE else View.GONE
-                    text = resources.getQuantityString(
-                        R.plurals.people_to_identify_count,
-                        count,
-                        count
-                    )
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.unidentifiedFaceCount.collect { count ->
+                    binding.fabIdentify.apply {
+                        visibility = if (count > 0) View.VISIBLE else View.GONE
+                        if (count > 0) {
+                            text = resources.getQuantityString(
+                                R.plurals.people_to_identify_count,
+                                count,
+                                count
+                            )
+                        }
 
-                    setOnClickListener {
-                        // Ouvrir le BottomSheet d'identification
-                        IdentifyFaceBottomSheet().show(childFragmentManager, "identify")
+                        setOnClickListener {
+                            // Ouvrir le BottomSheet d'identification
+                            IdentifyFaceBottomSheet().show(childFragmentManager, "identify")
+                        }
                     }
                 }
             }

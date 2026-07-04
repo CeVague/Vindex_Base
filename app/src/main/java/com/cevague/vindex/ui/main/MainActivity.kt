@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
                 )
             )
 
-            else -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+            else -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
         }
     }
 
