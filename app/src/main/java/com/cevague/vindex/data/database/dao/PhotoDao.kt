@@ -25,6 +25,13 @@ data class PhotoSummary(
     @ColumnInfo(name = "is_favorite") val isFavorite: Boolean
 )
 
+/** Album-dossier virtuel : dérivé de `photos.relative_path`. */
+data class FolderSummary(
+    val folderPath: String,
+    val photoCount: Int,
+    val coverUri: String?
+)
+
 fun Photo.toSummary(): PhotoSummary {
     return PhotoSummary(
         id = this.id,
@@ -64,6 +71,12 @@ interface PhotoDao {
     @Query("SELECT * FROM photos WHERE relative_path = :relativePath ORDER BY date_taken DESC")
     fun getPhotosByRelativePath(relativePath: String): Flow<List<Photo>>
 
+    @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE relative_path = :folderPath AND is_hidden = 0 ORDER BY date_taken DESC")
+    fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoSummary>>
+
+    @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE relative_path = :folderPath AND is_hidden = 0 ORDER BY date_taken DESC")
+    suspend fun getPhotosSummaryByFolderOnce(folderPath: String): List<PhotoSummary>
+
     @Query("SELECT * FROM photos WHERE id = :id")
     fun getPhotoById(id: Long): Flow<Photo?>
 
@@ -81,6 +94,20 @@ interface PhotoDao {
 
     @Query("SELECT DISTINCT relative_path FROM photos WHERE relative_path IS NOT NULL ORDER BY relative_path")
     fun getAllFolders(): Flow<List<String>>
+
+    @Query(
+        """
+        SELECT relative_path AS folderPath, COUNT(*) AS photoCount,
+            (SELECT file_path FROM photos c
+             WHERE c.relative_path = p.relative_path AND c.is_hidden = 0
+             ORDER BY c.date_taken DESC LIMIT 1) AS coverUri
+        FROM photos p
+        WHERE relative_path IS NOT NULL AND is_hidden = 0
+        GROUP BY relative_path
+        ORDER BY photoCount DESC
+    """
+    )
+    fun getFolderAlbums(): Flow<List<FolderSummary>>
 
     @Query("SELECT * FROM photos WHERE is_metadata_extracted = 0")
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo>

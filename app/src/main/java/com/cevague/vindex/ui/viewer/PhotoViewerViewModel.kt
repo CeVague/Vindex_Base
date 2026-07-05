@@ -49,6 +49,7 @@ class PhotoViewerViewModel @Inject constructor(
                 is ViewerSource.Gallery -> loadGallery(source.startPhotoId)
                 is ViewerSource.Search -> loadSearch(source.sessionId, source.startPhotoId)
                 is ViewerSource.Album -> loadAlbum(source.albumId, source.startPhotoId)
+                is ViewerSource.Folder -> loadFolder(source.folderPath, source.startPhotoId)
             }
         }
     }
@@ -71,10 +72,17 @@ class PhotoViewerViewModel @Inject constructor(
     }
 
     private suspend fun loadAlbum(albumId: Long, startId: Long) {
-        val photos = albumRepository.getPhotosInAlbum(albumId).first()
+        val photos = albumRepository.getPhotosInAlbum(albumId).first().toSummaryList()
         val index = photos.indexOfFirst { it.id == startId }
-        _initialIndex.value = index
-        _currentPosition.value = index
+        _initialIndex.value = if (index >= 0) index else 0
+        _photos.value = photos
+    }
+
+    private suspend fun loadFolder(folderPath: String, startId: Long) {
+        val photos = photoRepository.getPhotosSummaryByFolderOnce(folderPath)
+        val index = photos.indexOfFirst { it.id == startId }
+        _initialIndex.value = if (index >= 0) index else 0
+        _photos.value = photos
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

@@ -8,15 +8,21 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
+import com.cevague.vindex.data.database.entity.Album
+import com.cevague.vindex.data.repository.AlbumRepository
+import com.cevague.vindex.data.repository.PhotoRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 
 @HiltWorker
 class AIAnalysisWorker @AssistedInject constructor(
     @Assisted appContext: Context,
-    @Assisted workerParams: WorkerParameters
+    @Assisted workerParams: WorkerParameters,
+    private val photoRepository: PhotoRepository,
+    private val albumRepository: AlbumRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -29,45 +35,16 @@ class AIAnalysisWorker @AssistedInject constructor(
                 )
             )
 
-            // Estimation d'un batch selon le nombre de coeurs
-            val cores = Runtime.getRuntime().availableProcessors()
-            val batchSize = (cores * 5).coerceIn(5, 50)
-
-            // Ajustement du batch pour les appareils Low RAM
-            val activityManager =
-                applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-            val isLowRamDevice = activityManager.isLowRamDevice
-            // Si c'est un appareil Low RAM, on divise le batch par 2
-            val finalBatchSize = if (isLowRamDevice) (batchSize / 2).coerceAtLeast(5) else batchSize
-
             if (BuildConfig.DEBUG) {
                 delay(1000)
+                generateFakeAutoAlbums()
 
                 setProgress(
                     workDataOf(
                         "WORK" to applicationContext.getString(R.string.progress_generic),
-                        "PROGRESS" to 36
+                        "PROGRESS" to 60
                     )
                 )
-
-                delay(1000)
-
-                setProgress(
-                    workDataOf(
-                        "WORK" to applicationContext.getString(R.string.progress_generic),
-                        "PROGRESS" to 58
-                    )
-                )
-
-                delay(1000)
-
-                setProgress(
-                    workDataOf(
-                        "WORK" to applicationContext.getString(R.string.progress_generic),
-                        "PROGRESS" to 89
-                    )
-                )
-
                 delay(1000)
             }
 
@@ -78,6 +55,35 @@ class AIAnalysisWorker @AssistedInject constructor(
             Result.failure()
         } catch (e: Exception) {
             Result.failure()
+        }
+    }
+
+    /**
+     * Stub debug : simule des albums « IA » en créant 1 à 2 albums auto avec des
+     * photos aléatoires. Remplace les albums auto précédents à chaque scan.
+     * Deviendra réel en phase 3+ (regroupement par événement/lieu).
+     */
+    private suspend fun generateFakeAutoAlbums() {
+        val photos = photoRepository.getAllPhotosSummary().first()
+        if (photos.size < 3) return
+
+        albumRepository.deleteByType(Album.TYPE_AUTO_EVENT)
+
+        val names = listOf(
+            "Vacances à la mer", "Week-end en famille", "Sortie nature",
+            "Soirée entre amis", "Balade en ville"
+        )
+        names.shuffled().take((1..2).random()).forEach { name ->
+            val albumPhotos = photos.shuffled().take((3..8).random().coerceAtMost(photos.size))
+            val albumId = albumRepository.insert(
+                Album(
+                    name = name,
+                    albumType = Album.TYPE_AUTO_EVENT,
+                    coverPhotoId = albumPhotos.first().id,
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+            albumRepository.addPhotosToAlbum(albumId, albumPhotos.map { it.id })
         }
     }
 }

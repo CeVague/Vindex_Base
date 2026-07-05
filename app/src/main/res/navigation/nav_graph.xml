@@ -12,7 +12,25 @@
     <fragment
         android:id="@+id/albumsFragment"
         android:name="com.cevague.vindex.ui.albums.AlbumsFragment"
-        android:label="@string/nav_albums" />
+        android:label="@string/nav_albums">
+        <action
+            android:id="@+id/action_albums_to_detail"
+            app:destination="@id/albumDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/albumDetailFragment"
+        android:name="com.cevague.vindex.ui.albums.AlbumDetailFragment"
+        android:label="@string/nav_albums">
+        <argument
+            android:name="folderPath"
+            app:argType="string"
+            android:defaultValue="" />
+        <argument
+            android:name="albumId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+    </fragment>
 
     <fragment
         android:id="@+id/searchFragment"

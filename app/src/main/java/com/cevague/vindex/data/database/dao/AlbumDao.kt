@@ -10,10 +10,29 @@ import com.cevague.vindex.data.database.entity.AlbumPhoto
 import com.cevague.vindex.data.database.entity.Photo
 import kotlinx.coroutines.flow.Flow
 
+/** Carte d'album matérialisé pour la grille : cover résolue + compteur. */
+data class AlbumCardSummary(
+    val albumId: Long,
+    val name: String,
+    val photoCount: Int,
+    val coverUri: String?
+)
+
 @Dao
 interface AlbumDao {
 
     // Album queries - reactive
+
+    @Query(
+        """
+        SELECT a.id AS albumId, a.name AS name, a.photo_count AS photoCount,
+            (SELECT file_path FROM photos WHERE id = a.cover_photo_id) AS coverUri
+        FROM albums a
+        WHERE a.album_type LIKE 'auto_%'
+        ORDER BY a.created_at DESC
+    """
+    )
+    fun getAutoAlbumCards(): Flow<List<AlbumCardSummary>>
 
     @Query("SELECT * FROM albums ORDER BY name ASC")
     fun getAllAlbums(): Flow<List<Album>>

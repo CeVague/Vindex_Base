@@ -1,5 +1,6 @@
 package com.cevague.vindex.data.repository
 
+import com.cevague.vindex.data.database.dao.AlbumCardSummary
 import com.cevague.vindex.data.database.dao.AlbumDao
 import com.cevague.vindex.data.database.entity.Album
 import com.cevague.vindex.data.database.entity.AlbumPhoto
@@ -22,6 +23,9 @@ class AlbumRepository @Inject constructor(private val albumDao: AlbumDao) {
     fun getManualAlbums(): Flow<List<Album>> = albumDao.getManualAlbums()
 
     fun getAutoAlbums(): Flow<List<Album>> = albumDao.getAutoAlbums()
+
+    /** Cartes des albums auto (cover résolue + compteur) pour la grille Albums. */
+    fun getAutoAlbumCards(): Flow<List<AlbumCardSummary>> = albumDao.getAutoAlbumCards()
 
     fun getAlbumById(id: Long): Flow<Album?> = albumDao.getAlbumById(id)
 

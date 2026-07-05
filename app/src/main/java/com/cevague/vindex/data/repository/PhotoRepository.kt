@@ -4,6 +4,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.cevague.vindex.data.database.dao.FilePathAndSize
+import com.cevague.vindex.data.database.dao.FolderSummary
 import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
 import com.cevague.vindex.data.database.dao.PhotoDao
 import com.cevague.vindex.data.database.dao.PhotoSummary
@@ -89,6 +90,15 @@ class PhotoRepository @Inject constructor(
     fun getVisiblePhotoCount(): Flow<Int> = photoDao.getVisiblePhotoCount()
     suspend fun getTotalStorageUsed(): Long = photoDao.getTotalStorageUsed()
     fun getAllFolders(): Flow<List<String>> = photoDao.getAllFolders()
+
+    /** Albums-dossier virtuels (dérivés de relative_path). */
+    fun getFolderAlbums(): Flow<List<FolderSummary>> = photoDao.getFolderAlbums()
+
+    fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoSummary>> =
+        photoDao.getPhotosSummaryByFolder(folderPath)
+
+    suspend fun getPhotosSummaryByFolderOnce(folderPath: String): List<PhotoSummary> =
+        photoDao.getPhotosSummaryByFolderOnce(folderPath)
 
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo> =
         photoDao.getPhotosNeedingMetadataExtraction()

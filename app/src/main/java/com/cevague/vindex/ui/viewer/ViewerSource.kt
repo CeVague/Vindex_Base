@@ -9,4 +9,5 @@ sealed class ViewerSource : Parcelable {
     data class Gallery(val startPhotoId: Long) : ViewerSource()
     data class Search(val sessionId: String, val startPhotoId: Long) : ViewerSource()
     data class Album(val albumId: Long, val startPhotoId: Long) : ViewerSource()
+    data class Folder(val folderPath: String, val startPhotoId: Long) : ViewerSource()
 }
