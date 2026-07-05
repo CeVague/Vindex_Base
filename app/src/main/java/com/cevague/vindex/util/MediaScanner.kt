@@ -19,6 +19,15 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Date effective d'une photo pour le tri et les en-têtes : la date de prise de
+ * vue EXIF si elle est exploitable, sinon la date de modification du fichier.
+ * MediaStore renvoie fréquemment `DATE_TAKEN` = 0 (et non null) pour les images
+ * sans EXIF (screenshots) : ce cas est traité comme absent.
+ */
+internal fun resolveDateTaken(rawDateTaken: Long?, fileModifiedMillis: Long): Long =
+    rawDateTaken?.takeIf { it > 0 } ?: fileModifiedMillis
+
 @Singleton
 class MediaScanner @Inject constructor(
     @ApplicationContext private val context: Context
@@ -207,7 +216,7 @@ class MediaScanner @Inject constructor(
             fileSize = fileSize,
             mimeType = mimeType,
             dateAdded = System.currentTimeMillis(),
-            dateTaken = dateTaken ?: dateModified,
+            dateTaken = resolveDateTaken(dateTaken, dateModified),
             fileLastModified = dateModified,
             width = width,
             height = height,
