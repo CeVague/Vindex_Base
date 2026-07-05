@@ -1,6 +1,6 @@
 package com.cevague.vindex.ui.gallery
 
-import android.content.Context
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -36,6 +36,7 @@ class GalleryFragment : Fragment() {
     @Inject
     lateinit var settingsCache: SettingsCache
     private lateinit var adapter: GalleryAdapter
+    private lateinit var gridLayoutManager: GridLayoutManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,24 +52,22 @@ class GalleryFragment : Fragment() {
 
         setupRecyclerView()
         observeViewModel()
+        observeGridColumns()
     }
 
     private fun setupRecyclerView() {
-        adapter = GalleryAdapter(getTargetSize(requireContext())) { photo, _ ->
+        adapter = GalleryAdapter(getTargetSize(settingsCache.gridColumns)) { photo, _ ->
             PhotoViewerActivity.start(
                 requireContext(),
                 ViewerSource.Gallery(startPhotoId = photo.id)
             )
         }
 
-        val spanCount = settingsCache.gridColumns
-
-        val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
+        gridLayoutManager = GridLayoutManager(requireContext(), settingsCache.gridColumns).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
-                    // Ici 'adapter' pointe bien vers le fragment car SpanSizeLookup n'en a pas
                     return if (adapter.getItemViewType(position) == GalleryAdapter.VIEW_TYPE_HEADER) {
-                        spanCount
+                        gridLayoutManager.spanCount
                     } else {
                         1
                     }
@@ -126,10 +125,25 @@ class GalleryFragment : Fragment() {
         }
     }
 
-    fun getTargetSize(context: Context): Int {
-        val spanCount = settingsCache.gridColumns
-        val screenWidth = context.resources.displayMetrics.widthPixels
+    private fun getTargetSize(spanCount: Int): Int {
+        val screenWidth = requireContext().resources.displayMetrics.widthPixels
         return screenWidth / spanCount
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun observeGridColumns() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsCache.gridColumnsFlow.collect { columns ->
+                    if (columns != gridLayoutManager.spanCount) {
+                        adapter.targetSize = getTargetSize(columns)
+                        gridLayoutManager.spanCount = columns
+                        gridLayoutManager.spanSizeLookup.invalidateSpanIndexCache()
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
     }
 
     private fun renderState(state: GalleryUiState) {

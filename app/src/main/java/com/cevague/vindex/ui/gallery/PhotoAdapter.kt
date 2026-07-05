@@ -14,9 +14,12 @@ import com.cevague.vindex.databinding.ItemGalleryHeaderBinding
 import com.cevague.vindex.databinding.ItemGalleryPhotoBinding
 
 class GalleryAdapter(
-    private val targetSize: Int,
+    targetSize: Int,
     private val onPhotoClick: (PhotoSummary, Int) -> Unit
 ) : PagingDataAdapter<GalleryItem, RecyclerView.ViewHolder>(GalleryDiffCallback()) {
+
+    /** Taille cible Glide ; modifiable à chaud quand le nombre de colonnes change. */
+    var targetSize: Int = targetSize
 
     companion object {
         const val VIEW_TYPE_HEADER = 0
@@ -34,8 +37,7 @@ class GalleryAdapter(
 
     class PhotoViewHolder(
         private val binding: ItemGalleryPhotoBinding,
-        private val onPhotoClick: (PhotoSummary, Int) -> Unit,
-        val targetSize: Int
+        private val onPhotoClick: (PhotoSummary, Int) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         private var currentPhoto: PhotoSummary? = null
@@ -48,7 +50,7 @@ class GalleryAdapter(
             }
         }
 
-        fun bind(item: GalleryItem.PhotoItem) {
+        fun bind(item: GalleryItem.PhotoItem, targetSize: Int) {
             currentPhoto = item.photo
 
             Glide.with(binding.imagePhoto)
@@ -84,7 +86,7 @@ class GalleryAdapter(
 
             VIEW_TYPE_PHOTO -> {
                 val binding = ItemGalleryPhotoBinding.inflate(inflater, parent, false)
-                PhotoViewHolder(binding, onPhotoClick, targetSize)
+                PhotoViewHolder(binding, onPhotoClick)
             }
 
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
@@ -95,7 +97,7 @@ class GalleryAdapter(
         val item = getItem(position) ?: return
         when (item) {
             is GalleryItem.Header -> (holder as HeaderViewHolder).bind(item)
-            is GalleryItem.PhotoItem -> (holder as PhotoViewHolder).bind(item)
+            is GalleryItem.PhotoItem -> (holder as PhotoViewHolder).bind(item, targetSize)
         }
     }
 

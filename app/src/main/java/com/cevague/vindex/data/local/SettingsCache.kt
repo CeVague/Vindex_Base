@@ -3,6 +3,10 @@ package com.cevague.vindex.data.local
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.cevague.vindex.data.database.entity.Setting
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,6 +58,16 @@ class SettingsCache @Inject constructor(
     var gridColumns: Int
         get() = prefs.getInt(Setting.KEY_GRID_COLUMNS, Setting.DEFAULT_GRID_COLUMNS)
         set(value) = prefs.edit { putInt(Setting.KEY_GRID_COLUMNS, value) }
+
+    /** Émet le nombre de colonnes courant puis chaque changement (grille réactive). */
+    val gridColumnsFlow: Flow<Int> = callbackFlow {
+        trySend(gridColumns)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == Setting.KEY_GRID_COLUMNS) trySend(gridColumns)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
 
     // ════════════════════════════════════════════════════════════════════════
     // IA & Reconnaissance faciale

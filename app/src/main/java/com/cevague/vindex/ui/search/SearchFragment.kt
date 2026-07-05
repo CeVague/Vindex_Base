@@ -1,6 +1,6 @@
 package com.cevague.vindex.ui.search
 
-import android.content.Context
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -41,6 +41,9 @@ class SearchFragment : Fragment() {
     @Inject
     lateinit var photoGrouper: PhotoGrouper
 
+    private lateinit var adapter: GalleryAdapter
+    private lateinit var gridLayoutManager: GridLayoutManager
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -53,7 +56,7 @@ class SearchFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val adapter = GalleryAdapter(getTargetSize(requireContext())) { photoSummary, position ->
+        adapter = GalleryAdapter(getTargetSize(settingsCache.gridColumns)) { photoSummary, position ->
             val photosOnly = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotosOnly()
 
             if (photosOnly.isNotEmpty()) {
@@ -68,13 +71,11 @@ class SearchFragment : Fragment() {
             }
         }
 
-        val spanCount = settingsCache.gridColumns
-
-        val gridLayoutManager = GridLayoutManager(requireContext(), spanCount).apply {
+        gridLayoutManager = GridLayoutManager(requireContext(), settingsCache.gridColumns).apply {
             spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
                     return when (adapter.getItemViewType(position)) {
-                        GalleryAdapter.VIEW_TYPE_HEADER -> spanCount
+                        GalleryAdapter.VIEW_TYPE_HEADER -> gridLayoutManager.spanCount
                         else -> 1
                     }
                 }
@@ -91,6 +92,8 @@ class SearchFragment : Fragment() {
             setHasFixedSize(true)
             setItemViewCacheSize(20)
         }
+
+        observeGridColumns()
 
         // 3. Écouter la saisie utilisateur
         binding.inputSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -134,10 +137,25 @@ class SearchFragment : Fragment() {
         }
     }
 
-    fun getTargetSize(context: Context): Int {
-        val spanCount = settingsCache.gridColumns
-        val screenWidth = context.resources.displayMetrics.widthPixels
+    private fun getTargetSize(spanCount: Int): Int {
+        val screenWidth = requireContext().resources.displayMetrics.widthPixels
         return screenWidth / (spanCount * 2)
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun observeGridColumns() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsCache.gridColumnsFlow.collect { columns ->
+                    if (columns != gridLayoutManager.spanCount) {
+                        adapter.targetSize = getTargetSize(columns)
+                        gridLayoutManager.spanCount = columns
+                        gridLayoutManager.spanSizeLookup.invalidateSpanIndexCache()
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
     }
 
     private fun updateUIState(photos: List<PhotoSummary>) {
