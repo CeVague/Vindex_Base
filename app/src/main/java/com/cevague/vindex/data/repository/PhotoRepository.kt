@@ -28,6 +28,15 @@ import javax.inject.Singleton
 internal fun String.escapeLikePattern(): String =
     replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
+/**
+ * Réordonne des PhotoSummary selon l'ordre exact de [ids] ; les ids sans photo
+ * correspondante (supprimée entre-temps) sont ignorés.
+ */
+internal fun reorderByIds(ids: List<Long>, summaries: List<PhotoSummary>): List<PhotoSummary> {
+    val byId = summaries.associateBy { it.id }
+    return ids.mapNotNull { byId[it] }
+}
+
 @Singleton
 class PhotoRepository @Inject constructor(
     private val photoDao: PhotoDao,
@@ -64,8 +73,17 @@ class PhotoRepository @Inject constructor(
     }
 
     fun getPhotoById(id: Long): Flow<Photo?> = photoDao.getPhotoById(id)
-    fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>> =
-        photoDao.getPhotosSummaryByIds(ids)
+
+    /**
+     * Charge des PhotoSummary par ids en **préservant l'ordre** de la liste fournie
+     * (SQLite `IN (...)` renvoie en ordre rowid, pas celui des ids) et en **chunkant**
+     * à [CHUNK_SIZE] pour respecter la limite de variables SQLite.
+     */
+    suspend fun getPhotosSummaryByIdsOrdered(ids: List<Long>): List<PhotoSummary> {
+        if (ids.isEmpty()) return emptyList()
+        val loaded = ids.chunked(CHUNK_SIZE).flatMap { photoDao.getPhotosSummaryByIds(it) }
+        return reorderByIds(ids, loaded)
+    }
 
     fun getPhotoCount(): Flow<Int> = photoDao.getPhotoCount()
     fun getVisiblePhotoCount(): Flow<Int> = photoDao.getVisiblePhotoCount()

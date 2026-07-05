@@ -7,6 +7,7 @@ import com.cevague.vindex.data.database.dao.toSummaryList
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.PhotoRepository
+import com.cevague.vindex.search.SearchSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PhotoViewerViewModel @Inject constructor(
     private val photoRepository: PhotoRepository,
-    private val albumRepository: AlbumRepository
+    private val albumRepository: AlbumRepository,
+    private val searchSessionRepository: SearchSessionRepository
 ) : ViewModel() {
 
     private val _photos = MutableStateFlow<List<PhotoSummary>>(emptyList())
@@ -45,7 +47,7 @@ class PhotoViewerViewModel @Inject constructor(
         viewModelScope.launch {
             when (source) {
                 is ViewerSource.Gallery -> loadGallery(source.startPhotoId)
-                is ViewerSource.Search -> loadSearch(source.photoIds, source.startPhotoId)
+                is ViewerSource.Search -> loadSearch(source.sessionId, source.startPhotoId)
                 is ViewerSource.Album -> loadAlbum(source.albumId, source.startPhotoId)
             }
         }
@@ -58,8 +60,11 @@ class PhotoViewerViewModel @Inject constructor(
         _photos.value = photos
     }
 
-    private suspend fun loadSearch(ids: List<Long>, startId: Long) {
-        val photos = photoRepository.getPhotosSummaryByIds(ids).first()
+    private suspend fun loadSearch(sessionId: String, startId: Long) {
+        // Session absente (évincée LRU ou process recréé à froid) : repli sur la
+        // seule photo tapée, dont l'id survit dans l'Intent.
+        val ids = searchSessionRepository.get(sessionId) ?: listOf(startId)
+        val photos = photoRepository.getPhotosSummaryByIdsOrdered(ids)
         val index = photos.indexOfFirst { it.id == startId }
         _initialIndex.value = if (index >= 0) index else 0
         _photos.value = photos

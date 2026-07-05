@@ -68,7 +68,7 @@ interface PhotoDao {
     fun getPhotoById(id: Long): Flow<Photo?>
 
     @Query("SELECT id, file_path, date_taken, file_name, date_added, is_favorite FROM photos WHERE id IN (:ids)")
-    fun getPhotosSummaryByIds(ids: List<Long>): Flow<List<PhotoSummary>>
+    suspend fun getPhotosSummaryByIds(ids: List<Long>): List<PhotoSummary>
 
     @Query("SELECT COUNT(*) FROM photos")
     fun getPhotoCount(): Flow<Int>

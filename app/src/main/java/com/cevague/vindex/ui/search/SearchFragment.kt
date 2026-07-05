@@ -12,14 +12,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.paging.PagingData
 import androidx.recyclerview.widget.GridLayoutManager
-import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentSearchBinding
-import com.cevague.vindex.ui.gallery.GalleryAdapter
-import com.cevague.vindex.ui.gallery.GalleryItem
-import com.cevague.vindex.ui.gallery.PhotoGrouper
+import com.cevague.vindex.search.SearchSessionRepository
 import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
 import com.cevague.vindex.ui.viewer.ViewerSource
@@ -39,9 +35,9 @@ class SearchFragment : Fragment() {
     lateinit var settingsCache: SettingsCache
 
     @Inject
-    lateinit var photoGrouper: PhotoGrouper
+    lateinit var searchSessionRepository: SearchSessionRepository
 
-    private lateinit var adapter: GalleryAdapter
+    private lateinit var adapter: SearchResultAdapter
     private lateinit var gridLayoutManager: GridLayoutManager
 
     override fun onCreateView(
@@ -56,46 +52,28 @@ class SearchFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = GalleryAdapter(getTargetSize(settingsCache.gridColumns)) { photoSummary, position ->
-            val photosOnly = (binding.recyclerSearch.adapter as GalleryAdapter).getPhotosOnly()
-
-            if (photosOnly.isNotEmpty()) {
-                val photoIds = photosOnly.map { it.id }
-
-                val source = ViewerSource.Search(
-                    photoIds = photoIds,
-                    startPhotoId = photoSummary.id
+        adapter = SearchResultAdapter(getTargetSize(settingsCache.gridColumns)) { photo ->
+            val ids = adapter.currentList.map { it.id }
+            if (ids.isNotEmpty()) {
+                val sessionId = searchSessionRepository.put(ids)
+                PhotoViewerActivity.start(
+                    requireContext(),
+                    ViewerSource.Search(sessionId = sessionId, startPhotoId = photo.id)
                 )
-
-                PhotoViewerActivity.start(requireContext(), source)
             }
         }
 
-        gridLayoutManager = GridLayoutManager(requireContext(), settingsCache.gridColumns).apply {
-            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(position: Int): Int {
-                    return when (adapter.getItemViewType(position)) {
-                        GalleryAdapter.VIEW_TYPE_HEADER -> gridLayoutManager.spanCount
-                        else -> 1
-                    }
-                }
-            }
-
-            spanSizeLookup.isSpanIndexCacheEnabled = true
-            spanSizeLookup.isSpanGroupIndexCacheEnabled = true
-        }
+        gridLayoutManager = GridLayoutManager(requireContext(), settingsCache.gridColumns)
 
         binding.recyclerSearch.apply {
-            this.adapter = adapter
+            this.adapter = this@SearchFragment.adapter
             this.layoutManager = gridLayoutManager
-
             setHasFixedSize(true)
             setItemViewCacheSize(20)
         }
 
         observeGridColumns()
 
-        // 3. Écouter la saisie utilisateur
         binding.inputSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 viewModel.performSearch(query ?: "")
@@ -103,25 +81,19 @@ class SearchFragment : Fragment() {
                 return true
             }
 
-            override fun onQueryTextChange(newText: String?): Boolean {
-                // Tu peux décommenter pour une recherche "live"
-                // viewModel.performSearch(newText ?: "")
-                return true
-            }
+            override fun onQueryTextChange(newText: String?): Boolean = true
         })
 
-        // 4. Observation réactive des résultats
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.searchResults.collect { photos ->
-                    val items = photos.map { GalleryItem.PhotoItem(it) }
-                    adapter.submitData(PagingData.from(items))
-                    updateUIState(photos)
+                    adapter.submitList(photos)
+                    updateUIState(photos.size)
                 }
             }
         }
 
-        // 5. Gestion de la recherche partagée (People -> Search)
+        // Recherche partagée (Personnes -> Recherche)
         val sharedViewModel: MainSharedViewModel by activityViewModels()
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -150,7 +122,6 @@ class SearchFragment : Fragment() {
                     if (columns != gridLayoutManager.spanCount) {
                         adapter.targetSize = getTargetSize(columns)
                         gridLayoutManager.spanCount = columns
-                        gridLayoutManager.spanSizeLookup.invalidateSpanIndexCache()
                         adapter.notifyDataSetChanged()
                     }
                 }
@@ -158,13 +129,10 @@ class SearchFragment : Fragment() {
         }
     }
 
-    private fun updateUIState(photos: List<PhotoSummary>) {
+    private fun updateUIState(resultCount: Int) {
         val query = binding.inputSearch.query.toString()
-        if (query.length < 2) {
-            binding.textEmpty.visibility = View.GONE
-        } else {
-            binding.textEmpty.visibility = if (photos.isEmpty()) View.VISIBLE else View.GONE
-        }
+        binding.textEmpty.visibility =
+            if (query.length >= 2 && resultCount == 0) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {
