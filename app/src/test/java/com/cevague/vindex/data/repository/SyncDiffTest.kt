@@ -20,7 +20,7 @@ class SyncDiffTest {
         fileLastModified: Long = 100L
     ) = Photo(
         id = id,
-        filePath = uri(id),
+        contentUri = uri(id),
         fileName = "IMG_$id.jpg",
         fileLastModified = fileLastModified,
         folderPath = "DCIM/Camera",

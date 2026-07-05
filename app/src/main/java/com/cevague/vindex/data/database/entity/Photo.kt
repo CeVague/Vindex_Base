@@ -21,8 +21,9 @@ data class Photo(
     @PrimaryKey
     val id: Long,
 
+    // URI content:// (identité = id MediaStore) ; nom de colonne SQL conservé.
     @ColumnInfo(name = "file_path")
-    val filePath: String,
+    val contentUri: String,
 
     @ColumnInfo(name = "file_name")
     val fileName: String,
@@ -86,12 +87,12 @@ data class Photo(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as Photo
-        return id == other.id && filePath == other.filePath
+        return id == other.id && contentUri == other.contentUri
     }
 
     override fun hashCode(): Int {
         var result = id.hashCode()
-        result = 31 * result + filePath.hashCode()
+        result = 31 * result + contentUri.hashCode()
         return result
     }
 

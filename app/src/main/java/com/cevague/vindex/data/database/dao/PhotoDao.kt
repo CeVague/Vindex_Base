@@ -28,7 +28,7 @@ data class PhotoSummary(
 fun Photo.toSummary(): PhotoSummary {
     return PhotoSummary(
         id = this.id,
-        filePath = this.filePath,
+        filePath = this.contentUri,
         fileName = this.fileName,
         dateAdded = this.dateAdded,
         dateTaken = this.dateTaken,
@@ -89,8 +89,8 @@ interface PhotoDao {
         """
     SELECT id, file_path, file_name, date_added, date_taken, is_favorite 
     FROM photos 
-    WHERE file_name LIKE '%' || :query || '%' 
-       OR relative_path LIKE '%' || :query || '%'
+    WHERE file_name LIKE '%' || :query || '%' ESCAPE '\'
+       OR relative_path LIKE '%' || :query || '%' ESCAPE '\'
     ORDER BY date_taken DESC
 """
     )

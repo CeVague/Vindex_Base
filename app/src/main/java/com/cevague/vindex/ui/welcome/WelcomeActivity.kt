@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.cevague.vindex.R
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
 import com.cevague.vindex.ui.main.MainActivity
@@ -85,8 +86,9 @@ class WelcomeActivity : AppCompatActivity() {
     }
 
     private fun showFolderPickerDialog() {
-        val folderNames =
-            availableFolders.map { "${it.relativePath} (${it.photoCount})" }.toTypedArray()
+        val folderNames = availableFolders.map {
+            getString(R.string.welcome_folder_item, it.relativePath, it.photoCount)
+        }.toTypedArray()
         val checkedItems = BooleanArray(availableFolders.size) {
             // Pré-sélectionner DCIM et Pictures
             availableFolders[it].relativePath.startsWith("DCIM") ||
@@ -99,7 +101,7 @@ class WelcomeActivity : AppCompatActivity() {
         }
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("Sélectionner les dossiers à scanner")
+            .setTitle(R.string.welcome_select_folders_title)
             .setMultiChoiceItems(folderNames, checkedItems) { _, which, isChecked ->
                 val folder = availableFolders[which].relativePath
                 if (isChecked) {
@@ -108,15 +110,15 @@ class WelcomeActivity : AppCompatActivity() {
                     selectedFolders.remove(folder)
                 }
             }
-            .setPositiveButton("Valider") { _, _ ->
+            .setPositiveButton(R.string.welcome_validate) { _, _ ->
                 if (selectedFolders.isNotEmpty()) {
                     saveAndContinue()
                 } else {
-                    Toast.makeText(this, "Sélectionnez au moins un dossier", Toast.LENGTH_SHORT)
+                    Toast.makeText(this, R.string.welcome_select_at_least_one, Toast.LENGTH_SHORT)
                         .show()
                 }
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.action_cancel, null)
             .show()
     }
 

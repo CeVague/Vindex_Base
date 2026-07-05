@@ -43,7 +43,7 @@ class PhotoDaoUpsertTest {
 
     private fun photo(id: Long, fileSize: Long) = Photo(
         id = id,
-        filePath = "content://media/external/images/media/$id",
+        contentUri = "content://media/external/images/media/$id",
         fileName = "IMG_$id.jpg",
         fileLastModified = 100L,
         folderPath = "DCIM/Camera",

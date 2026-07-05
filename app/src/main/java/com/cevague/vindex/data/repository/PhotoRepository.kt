@@ -21,6 +21,13 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Échappe les métacaractères LIKE (`%`, `_`, `\`) d'une saisie utilisateur.
+ * À utiliser avec la clause `ESCAPE '\'` des requêtes LIKE.
+ */
+internal fun String.escapeLikePattern(): String =
+    replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
 @Singleton
 class PhotoRepository @Inject constructor(
     private val photoDao: PhotoDao,
@@ -69,7 +76,7 @@ class PhotoRepository @Inject constructor(
         photoDao.getPhotosNeedingMetadataExtraction()
 
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>> =
-        photoDao.searchByFileNameSummary(query)
+        photoDao.searchByFileNameSummary(query.escapeLikePattern())
 
     suspend fun syncPhotos(onProgress: suspend (Int) -> Unit) {
         val lastSync = settingsCache.lastScanTimestamp

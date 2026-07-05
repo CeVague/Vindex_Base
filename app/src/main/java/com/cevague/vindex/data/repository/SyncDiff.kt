@@ -21,7 +21,7 @@ internal object SyncDiff {
         batch: List<Photo>,
         dbPhotosByUri: Map<String, FilePathAndSize>
     ): List<Photo> = batch.filter { scanned ->
-        val existing = dbPhotosByUri[scanned.filePath]
+        val existing = dbPhotosByUri[scanned.contentUri]
         existing == null ||
             existing.id != scanned.id ||
             existing.fileSize != scanned.fileSize ||

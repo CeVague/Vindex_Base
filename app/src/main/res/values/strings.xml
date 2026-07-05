@@ -46,6 +46,10 @@
     <string name="welcome_select_folder">Select folder</string>
     <string name="welcome_permission_needed">Storage permission is required to access your photos.</string>
     <string name="welcome_grant_permission">Grant permission</string>
+    <string name="welcome_select_folders_title">Select folders to scan</string>
+    <string name="welcome_folder_item">%1$s (%2$d)</string>
+    <string name="welcome_validate">Confirm</string>
+    <string name="welcome_select_at_least_one">Select at least one folder</string>
 
     <!-- Gallery -->
     <string name="gallery_title">Gallery</string>

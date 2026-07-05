@@ -34,10 +34,14 @@ class MediaScanner @Inject constructor(
 ) {
 
     companion object {
+        // LATITUDE/LONGITUDE expurgées par MediaStore depuis l'API 29 (toujours
+        // nulles) : les vraies coordonnées viennent de l'EXIF via MetadataWorker.
+        // IS_TRASHED inutile : MediaStore exclut la corbeille des requêtes par défaut.
         private val PROJECTION = arrayOf(
             MediaStore.Images.Media._ID,
             MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.DATE_ADDED,
             MediaStore.Images.Media.DATE_MODIFIED,
             MediaStore.Images.Media.SIZE,
             MediaStore.Images.Media.MIME_TYPE,
@@ -46,13 +50,7 @@ class MediaScanner @Inject constructor(
             MediaStore.Images.Media.ORIENTATION,
             MediaStore.Images.Media.RELATIVE_PATH,
             MediaStore.Images.Media.DATA,
-            MediaStore.Images.Media.IS_FAVORITE,
-            MediaStore.Images.Media.IS_TRASHED
-        )
-
-        private val PROJECTION_WITH_GPS = PROJECTION + arrayOf(
-            MediaStore.Images.Media.LATITUDE,
-            MediaStore.Images.Media.LONGITUDE
+            MediaStore.Images.Media.IS_FAVORITE
         )
     }
 
@@ -79,7 +77,7 @@ class MediaScanner @Inject constructor(
 
         context.contentResolver.query(
             collection,
-            PROJECTION_WITH_GPS,
+            PROJECTION,
             selection,
             selectionArgs,
             sortOrder
@@ -87,6 +85,7 @@ class MediaScanner @Inject constructor(
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
             val dateTakenColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATE_TAKEN)
+            val dateAddedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
             val dateModifiedColumn =
                 cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_MODIFIED)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
@@ -97,9 +96,6 @@ class MediaScanner @Inject constructor(
             val relativePathColumn = cursor.getColumnIndex(MediaStore.Images.Media.RELATIVE_PATH)
             val dataColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
             val isFavoriteColumn = cursor.getColumnIndex(MediaStore.Images.Media.IS_FAVORITE)
-            val isTrashedColumn = cursor.getColumnIndex(MediaStore.Images.Media.IS_TRASHED)
-            val latColumn = cursor.getColumnIndex(MediaStore.Images.Media.LATITUDE)
-            val lonColumn = cursor.getColumnIndex(MediaStore.Images.Media.LONGITUDE)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -111,6 +107,7 @@ class MediaScanner @Inject constructor(
                     contentUri = contentUri,
                     nameColumn = nameColumn,
                     dateTakenColumn = dateTakenColumn,
+                    dateAddedColumn = dateAddedColumn,
                     dateModifiedColumn = dateModifiedColumn,
                     sizeColumn = sizeColumn,
                     mimeColumn = mimeColumn,
@@ -119,10 +116,7 @@ class MediaScanner @Inject constructor(
                     orientationColumn = orientationColumn,
                     relativePathColumn = relativePathColumn,
                     dataColumn = dataColumn,
-                    isFavoriteColumn = isFavoriteColumn,
-                    isTrashedColumn = isTrashedColumn,
-                    latColumn = latColumn,
-                    lonColumn = lonColumn
+                    isFavoriteColumn = isFavoriteColumn
                 )
                 batch.add(photo)
                 if (batch.size >= 50) {
@@ -161,7 +155,13 @@ class MediaScanner @Inject constructor(
             args.add((lastScanTimestamp / 1000).toString())
         }
         includedFolders.forEach { folder ->
-            args.add("%$folder%")
+            // Matching ancré, pas "contains" : "DCIM/Camera" ne doit pas
+            // capturer "DCIM/CameraBackup".
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                args.add("$folder/%")      // RELATIVE_PATH : préfixe du dossier
+            } else {
+                args.add("%/$folder/%")    // DATA (absolu) : segment de chemin borné
+            }
         }
         return if (args.isEmpty()) null else args.toTypedArray()
     }
@@ -172,6 +172,7 @@ class MediaScanner @Inject constructor(
         contentUri: String,
         nameColumn: Int,
         dateTakenColumn: Int,
+        dateAddedColumn: Int,
         dateModifiedColumn: Int,
         sizeColumn: Int,
         mimeColumn: Int,
@@ -181,12 +182,10 @@ class MediaScanner @Inject constructor(
         relativePathColumn: Int,
         dataColumn: Int,
         isFavoriteColumn: Int,
-        isTrashedColumn: Int,
-        latColumn: Int,
-        lonColumn: Int,
     ): Photo {
         val fileName = cursor.getString(nameColumn)
         val dateModified = cursor.getLong(dateModifiedColumn) * 1000
+        val dateAdded = cursor.getLong(dateAddedColumn) * 1000
         val dateTaken = if (dateTakenColumn >= 0) cursor.getLongOrNull(dateTakenColumn) else null
         val fileSize = cursor.getLong(sizeColumn)
         val mimeType = cursor.getString(mimeColumn)
@@ -202,29 +201,23 @@ class MediaScanner @Inject constructor(
 
         val folderPath = relativePath ?: ""
         val isFavorite = cursor.getIntOrNull(isFavoriteColumn) == 1
-        val isTrashed = cursor.getIntOrNull(isTrashedColumn) == 1
-        val latitude = if (latColumn >= 0) cursor.getDoubleOrNull(latColumn) else null
-        val longitude = if (lonColumn >= 0) cursor.getDoubleOrNull(lonColumn) else null
         val mediaType = detectMediaType(fileName, folderPath, width, height, null, null)
 
         return Photo(
             id = id,
-            filePath = contentUri,
+            contentUri = contentUri,
             fileName = fileName,
             folderPath = folderPath,
             relativePath = relativePath,
             fileSize = fileSize,
             mimeType = mimeType,
-            dateAdded = System.currentTimeMillis(),
+            dateAdded = dateAdded,
             dateTaken = resolveDateTaken(dateTaken, dateModified),
             fileLastModified = dateModified,
             width = width,
             height = height,
             orientation = orientation,
             isFavorite = isFavorite,
-            isHidden = isTrashed,
-            latitude = latitude,
-            longitude = longitude,
             mediaType = mediaType,
             isMetadataExtracted = false
         )
@@ -234,7 +227,7 @@ class MediaScanner @Inject constructor(
      * Extraction approfondie via ExifInterface (GPS original garanti sur Android 10+).
      */
     fun extractMetadata(photo: Photo): Photo {
-        val uri = photo.filePath.toUri()
+        val uri = photo.contentUri.toUri()
         var latitude = photo.latitude
         var longitude = photo.longitude
         var cameraMake: String? = null
@@ -384,7 +377,4 @@ class MediaScanner @Inject constructor(
 
     private fun Cursor.getIntOrNull(columnIndex: Int): Int? =
         if (columnIndex >= 0 && !isNull(columnIndex)) getInt(columnIndex) else null
-
-    private fun Cursor.getDoubleOrNull(columnIndex: Int): Double? =
-        if (columnIndex >= 0 && !isNull(columnIndex)) getDouble(columnIndex).takeIf { it != 0.0 } else null
 }
