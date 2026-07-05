@@ -43,7 +43,7 @@ android {
         getByName("release") {
             // 1. Optimisation et Obfuscation (R8)
             // Indispensable pour la performance et réduire la taille de l'APK
-            isMinifyEnabled = false
+            isMinifyEnabled = true
 
             // 2. Nettoyage des ressources
             // Supprime les ressources XML/Images inutilisées (nécessite isMinifyEnabled)

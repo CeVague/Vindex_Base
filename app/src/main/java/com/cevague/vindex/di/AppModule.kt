@@ -41,7 +41,11 @@ object AppModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
-            .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // CRUCIAL
+            // TRUNCATE (pas WAL) : en WAL, les lectures du refreshRunnable de
+            // l'InvalidationTracker partent sur une connexion secondaire du pool
+            // dépourvue de la table temp room_table_modification_log → "no such
+            // table" sous charge concurrente (scan) → Flows Room muets, UI figée.
+            .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
             // Phase pré-release (dev solo) : migrations destructives assumées, le schéma v1
             // est modifié sur place sans bump de version (l'app est réinstallée à chaque
             // changement). À retirer à la première release : migrations + tests obligatoires.
