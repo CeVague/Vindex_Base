@@ -56,14 +56,15 @@ android {
             )
 
             // 3. Configuration pour F-Droid / Publication
-            // Pour la version finale, on retire généralement les suffixes
-            // pour que l'ID corresponde exactement au store
-            versionNameSuffix = "-release"   // À retirer pour la prod
+            // versionName = versionName brut (0.1.0), pas de suffixe en release.
 
             // Recommandé pour F-Droid : assure la reproductibilité du build
             vcsInfo.include = false
 
-            // Signature (à configurer quand tu auras ton keystore)
+            // Signature : le build F-Droid retire cette signature et resigne avec
+            // sa propre clé — la signature debug ici sert uniquement à produire un
+            // APK installable en local. Pour une distribution directe (APK/Play),
+            // remplacer par un vrai keystore release.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
