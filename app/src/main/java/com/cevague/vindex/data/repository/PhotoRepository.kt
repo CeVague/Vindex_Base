@@ -3,6 +3,7 @@ package com.cevague.vindex.data.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.cevague.vindex.data.database.dao.FilePathAndSize
 import com.cevague.vindex.data.database.dao.FolderSummary
 import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
@@ -105,6 +106,15 @@ class PhotoRepository @Inject constructor(
 
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>> =
         photoDao.searchByFileNameSummary(query.escapeLikePattern())
+
+    suspend fun getDistinctLocationNames(): List<String> =
+        photoDao.getDistinctLocationNames()
+
+    /** Filtres durs de la recherche (texte échappé par le builder). */
+    suspend fun searchFiltered(criteria: PhotoSearchCriteria): List<PhotoSummary> {
+        val (sql, args) = buildPhotoSearchQuery(criteria)
+        return photoDao.searchFilteredSummary(SimpleSQLiteQuery(sql, args.toTypedArray()))
+    }
 
     suspend fun syncPhotos(onProgress: suspend (Int) -> Unit) {
         val lastSync = settingsCache.lastScanTimestamp

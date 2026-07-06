@@ -174,8 +174,29 @@
     <!-- Settings - Category -->
     <string name="settings_category_stats">Library</string>
     <string name="settings_category_display">Display</string>
+    <string name="settings_category_ai">Artificial intelligence</string>
     <string name="settings_category_face">Face Recognition</string>
     <string name="settings_category_data">Data</string>
+
+    <!-- Settings - AI models -->
+    <string name="settings_models">Model management</string>
+    <string name="settings_models_summary">Import and activate on-device AI models</string>
+    <string name="models_title">AI models</string>
+    <string name="models_import">Import a model</string>
+    <string name="models_empty">No model imported.\n\nA model is a folder containing its ONNX files and a config.json file. Pick that folder to import it.</string>
+    <string name="models_activate">Activate this model</string>
+    <string name="models_import_success">Model “%1$s” imported</string>
+    <string name="models_delete_title">Delete this model?</string>
+    <string name="models_delete_message">“%1$s” and its files will be removed from the app storage. Analyses already computed with it are kept in the database.</string>
+    <string name="models_error_no_config">No config.json file found in the selected folder</string>
+    <string name="models_error_bad_config">Invalid config.json file</string>
+    <string name="models_error_missing_file">A file declared in config.json is missing</string>
+    <string name="models_error_invalid_model">Invalid ONNX model</string>
+    <string name="models_error_exists">A model with this name already exists</string>
+    <string name="models_error_io">Import failed (read/write error)</string>
+    <string name="models_type_clip">Image and text encoder (CLIP)</string>
+    <string name="models_type_translation">Query translation</string>
+    <string name="models_type_captioning">Image captioning</string>
 
     <!-- Settings - Stats -->
     <string name="settings_stat_photos">Photos</string>

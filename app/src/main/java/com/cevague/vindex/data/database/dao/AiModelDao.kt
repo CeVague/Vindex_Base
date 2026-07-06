@@ -27,6 +27,9 @@ interface AiModelDao {
     @Query("SELECT * FROM ai_models WHERE model_type = :type AND is_active = 1 LIMIT 1")
     suspend fun getActiveModelOnce(type: String): AiModel?
 
+    @Query("SELECT * FROM ai_models WHERE model_type = :type AND model_name = :name LIMIT 1")
+    suspend fun getByTypeAndName(type: String, name: String): AiModel?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(model: AiModel): Long
 

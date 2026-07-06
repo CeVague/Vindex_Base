@@ -18,6 +18,7 @@ import com.cevague.vindex.databinding.FragmentSearchBinding
 import com.cevague.vindex.search.SearchSessionRepository
 import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
+import com.google.android.material.chip.Chip
 import com.cevague.vindex.ui.viewer.ViewerSource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -86,9 +87,12 @@ class SearchFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.searchResults.collect { photos ->
-                    adapter.submitList(photos)
-                    updateUIState(photos.size)
+                viewModel.uiState.collect { state ->
+                    adapter.submitList(state.results)
+                    renderFilterChips(state)
+                    binding.textEmpty.visibility =
+                        if (state.hasSearched && !state.isLoading && state.results.isEmpty())
+                            View.VISIBLE else View.GONE
                 }
             }
         }
@@ -129,11 +133,34 @@ class SearchFragment : Fragment() {
         }
     }
 
-    private fun updateUIState(resultCount: Int) {
-        val query = binding.inputSearch.query.toString()
-        binding.textEmpty.visibility =
-            if (query.length >= 2 && resultCount == 0) View.VISIBLE else View.GONE
+    /** Chips retirables des filtres reconnus par le QueryParser (date, lieu). */
+    private fun renderFilterChips(state: SearchViewModel.UiState) {
+        binding.chipsFilters.removeAllViews()
+        state.dateChip?.let { label ->
+            binding.chipsFilters.addView(makeChip(label) { viewModel.removeDateFilter() })
+        }
+        state.geoChip?.let { label ->
+            binding.chipsFilters.addView(makeChip(label) { viewModel.removeGeoFilter() })
+        }
+        state.typeChip?.let { label ->
+            binding.chipsFilters.addView(makeChip(label) { viewModel.removeTypeFilter() })
+        }
+        state.personChips.forEach { person ->
+            binding.chipsFilters.addView(
+                makeChip(person.label) { viewModel.removePersonFilter(person.personId) }
+            )
+        }
+        binding.chipsFilters.visibility =
+            if (binding.chipsFilters.childCount > 0) View.VISIBLE else View.GONE
     }
+
+    private fun makeChip(label: String, onClose: () -> Unit): Chip =
+        Chip(requireContext()).apply {
+            text = label
+            isCloseIconVisible = true
+            isClickable = false
+            setOnCloseIconClickListener { onClose() }
+        }
 
     override fun onDestroyView() {
         super.onDestroyView()

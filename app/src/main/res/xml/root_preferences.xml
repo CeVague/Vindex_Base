@@ -87,6 +87,23 @@
     </PreferenceCategory>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- INTELLIGENCE ARTIFICIELLE                                            -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category_ai"
+        app:title="@string/settings_category_ai">
+
+        <Preference
+            app:icon="@drawable/vector_images_search"
+            app:key="manage_models"
+            app:summary="@string/settings_models_summary"
+            app:title="@string/settings_models" />
+
+    </PreferenceCategory>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <!-- RECONNAISSANCE FACIALE                                               -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
 

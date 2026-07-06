@@ -4,8 +4,10 @@ import androidx.paging.PagingSource
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Update
 import androidx.room.Upsert
+import androidx.sqlite.db.SupportSQLiteQuery
 import com.cevague.vindex.data.database.entity.Photo
 import kotlinx.coroutines.flow.Flow
 
@@ -122,6 +124,18 @@ interface PhotoDao {
 """
     )
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>>
+
+    /** Villes présentes dans la galerie (format « Nom, CC »), pour QueryParser. */
+    @Query("SELECT DISTINCT location_name FROM photos WHERE location_name IS NOT NULL AND is_hidden = 0")
+    suspend fun getDistinctLocationNames(): List<String>
+
+    /**
+     * Filtres durs du pipeline de recherche (ARCHITECTURE.md §6). La requête est
+     * construite par `buildPhotoSearchQuery` (filtres optionnels + négations +
+     * jointures personnes : trop combinatoire pour un @Query statique).
+     */
+    @RawQuery
+    suspend fun searchFilteredSummary(query: SupportSQLiteQuery): List<PhotoSummary>
 
     @Update
     suspend fun update(photo: Photo)

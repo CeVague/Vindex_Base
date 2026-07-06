@@ -193,8 +193,29 @@
     <!-- Settings - Category -->
     <string name="settings_category_stats">Bibliothèque</string>
     <string name="settings_category_display">Affichage</string>
+    <string name="settings_category_ai">Intelligence artificielle</string>
     <string name="settings_category_face">Reconnaissance faciale</string>
     <string name="settings_category_data">Données</string>
+
+    <!-- Settings - AI models -->
+    <string name="settings_models">Gestion des modèles</string>
+    <string name="settings_models_summary">Importer et activer les modèles d\'IA locaux</string>
+    <string name="models_title">Modèles d\'IA</string>
+    <string name="models_import">Importer un modèle</string>
+    <string name="models_empty">Aucun modèle importé.\n\nUn modèle est un dossier contenant ses fichiers ONNX et un fichier config.json. Sélectionnez ce dossier pour l\'importer.</string>
+    <string name="models_activate">Activer ce modèle</string>
+    <string name="models_import_success">Modèle « %1$s » importé</string>
+    <string name="models_delete_title">Supprimer ce modèle ?</string>
+    <string name="models_delete_message">« %1$s » et ses fichiers seront retirés du stockage de l\'application. Les analyses déjà calculées avec ce modèle restent en base.</string>
+    <string name="models_error_no_config">Aucun fichier config.json dans le dossier sélectionné</string>
+    <string name="models_error_bad_config">Fichier config.json invalide</string>
+    <string name="models_error_missing_file">Un fichier déclaré dans config.json est absent</string>
+    <string name="models_error_invalid_model">Modèle ONNX invalide</string>
+    <string name="models_error_exists">Un modèle de ce nom existe déjà</string>
+    <string name="models_error_io">Échec de l\'import (erreur de lecture/écriture)</string>
+    <string name="models_type_clip">Encodeur image et texte (CLIP)</string>
+    <string name="models_type_translation">Traduction des requêtes</string>
+    <string name="models_type_captioning">Description d\'images</string>
 
     <!-- Settings - Data -->
     <string name="settings_rescan">Rescanner la galerie</string>

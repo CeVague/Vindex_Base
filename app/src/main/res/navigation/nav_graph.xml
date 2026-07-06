@@ -51,6 +51,15 @@
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.cevague.vindex.ui.settings.SettingsFragment"
-        android:label="@string/nav_settings" />
+        android:label="@string/nav_settings">
+        <action
+            android:id="@+id/action_settings_to_models"
+            app:destination="@id/modelsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/modelsFragment"
+        android:name="com.cevague.vindex.ui.settings.ModelsFragment"
+        android:label="@string/models_title" />
 
 </navigation>

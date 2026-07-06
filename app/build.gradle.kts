@@ -144,6 +144,9 @@ dependencies {
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)
 
+    // ONNX Runtime (inférence CLIP et modèles importés, phase 2+)
+    implementation(libs.onnxruntime.android)
+
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

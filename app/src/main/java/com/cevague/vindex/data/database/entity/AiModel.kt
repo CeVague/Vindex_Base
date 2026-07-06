@@ -43,8 +43,12 @@ data class AiModel(
     val addedAt: Long
 ) {
     companion object {
+        // Un modèle CLIP = un dossier contenant les DEUX encodeurs (image et
+        // texte) = une seule entrée : même espace vectoriel garanti, activation
+        // exclusive simple. Remplace l'ancien TYPE_EMBEDDING, jamais utilisé.
+        const val TYPE_CLIP = "clip"
+        const val TYPE_TRANSLATION = "translation"
         const val TYPE_CAPTIONING = "captioning"
-        const val TYPE_EMBEDDING = "embedding"
         const val TYPE_TAGGING = "tagging"
         const val TYPE_FACE_DETECTION = "face_detection"
         const val TYPE_FACE_EMBEDDING = "face_embedding"

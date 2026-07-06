@@ -17,6 +17,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chipsFilters"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/inputSearch"
+        app:singleLine="true"
+        tools:visibility="visible" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerSearch"
         android:layout_width="0dp"
@@ -25,7 +37,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/inputSearch"
+        app:layout_constraintTop_toBottomOf="@id/chipsFilters"
         tools:listitem="@layout/item_photo" />
 
     <TextView

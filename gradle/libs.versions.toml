@@ -48,6 +48,9 @@ recyclerview = "1.3.2"
 hilt = "2.51.1"
 hiltWork = "1.2.0"
 
+# ONNX Runtime (inférence on-device, MIT, Maven Central)
+onnxruntime = "1.27.0"
+
 # KSP (for Room annotation processing)
 ksp = "2.0.21-1.0.27"  # Doit correspondre à la version Kotlin
 
@@ -117,6 +120,9 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
 hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
+
+# ONNX Runtime
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 
 # Tests
 junit = { group = "junit", name = "junit", version.ref = "junit" }

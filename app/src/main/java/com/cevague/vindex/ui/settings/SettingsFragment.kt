@@ -10,6 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceDataStore
@@ -63,7 +64,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupAiPreferences() {
-        // Géré par le DataStore
+        findPreference<Preference>("manage_models")?.setOnPreferenceClickListener {
+            findNavController().navigate(R.id.action_settings_to_models)
+            true
+        }
     }
 
     private fun setupDataPreferences() {
@@ -184,6 +188,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceScreen.removeAll()
         addPreferencesFromResource(R.xml.root_preferences)
         setupDisplayPreferences()
+        setupAiPreferences()
         setupDataPreferences()
         setupAboutPreferences()
 
