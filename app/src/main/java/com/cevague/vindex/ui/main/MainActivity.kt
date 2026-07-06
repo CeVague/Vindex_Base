@@ -2,18 +2,21 @@ package com.cevague.vindex.ui.main
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.cevague.vindex.R
-import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityMainBinding
 import com.cevague.vindex.databinding.LayoutSyncProgressBinding
@@ -30,12 +33,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var syncBinding: LayoutSyncProgressBinding? = null
 
+    private lateinit var navController: NavController
+    private lateinit var appBarConfiguration: AppBarConfiguration
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        applyAppTheme(settingsCache.themeMode)
-        applyAppLanguage(settingsCache.userLanguage)
-
+        // Thème appliqué par VindexApplication ; langue persistée par autoStoreLocales.
         if (!settingsCache.isConfigured) {
             startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
@@ -45,49 +49,62 @@ class MainActivity : AppCompatActivity() {
         setupUI()
     }
 
-    // Dans une fonction utilitaire ou MainActivity
-    fun applyAppTheme(theme: String) {
-        when (theme) {
-            Setting.THEME_LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            Setting.THEME_DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        }
-    }
-
-
-    fun applyAppLanguage(language: String) {
-        when (language) {
-            Setting.LANGUAGE_FRENCH -> AppCompatDelegate.setApplicationLocales(
-                LocaleListCompat.forLanguageTags(
-                    "fr"
-                )
-            )
-
-            Setting.LANGUAGE_ENGLISH -> AppCompatDelegate.setApplicationLocales(
-                LocaleListCompat.forLanguageTags(
-                    "en"
-                )
-            )
-
-            else -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-        }
-    }
-
     private fun setupUI() {
-        // On ne gonfle l'UI que si on est sûr de rester sur cette activité
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Configurer la navigation
+        setSupportActionBar(binding.toolbar)
+
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
-        val navController = navHostFragment.navController
+        navController = navHostFragment.navController
 
+        // Les 4 onglets sont les destinations « racine » (pas de flèche retour).
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.galleryFragment,
+                R.id.albumsFragment,
+                R.id.searchFragment,
+                R.id.peopleFragment
+            )
+        )
+        setupActionBarWithNavController(navController, appBarConfiguration)
         binding.bottomNav.setupWithNavController(navController)
 
-        observeNavigateToTab()
+        // Bottom nav + engrenage uniquement sur les destinations racine ; sur les
+        // écrans de détail et les Paramètres, seule la flèche retour est proposée.
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val topLevel = destination.id in appBarConfiguration.topLevelDestinations
+            binding.bottomNav.visibility = if (topLevel) View.VISIBLE else View.GONE
+            invalidateOptionsMenu()
+        }
 
+        observeNavigateToTab()
         observeSyncProgress()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.top_app_bar_menu, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        menu.findItem(R.id.action_settings)?.isVisible =
+            navController.currentDestination?.id in appBarConfiguration.topLevelDestinations
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return if (item.itemId == R.id.action_settings) {
+            navController.navigate(R.id.settingsFragment)
+            true
+        } else {
+            super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
     private fun observeSyncProgress() {
@@ -107,17 +124,13 @@ class MainActivity : AppCompatActivity() {
                     val workText =
                         workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
 
-                    // 1. Détecter si le marqueur %d est présent
                     val hasPlaceholder = workText.contains("%d")
-
-                    // 2. Remplacer de manière sécurisée (pas de crash possible avec replace)
                     val workTextFinal = if (hasPlaceholder) {
                         workText.replace("%d", progress.toString())
                     } else {
                         workText
                     }
 
-                    // 3. Gérer la visibilité de la roue
                     syncBinding?.circularProgressBar?.visibility =
                         if (hasPlaceholder) View.GONE else View.VISIBLE
 

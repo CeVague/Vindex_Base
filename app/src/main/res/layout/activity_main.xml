@@ -6,16 +6,28 @@
     android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
-    <!-- Conteneur de progression : Placé tout en haut -->
+    <!-- Top app bar : titre de l'écran + engrenage Paramètres -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:background="?attr/colorSurface"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Conteneur de progression : sous la barre du haut -->
     <ViewStub
         android:id="@+id/syncProgressStub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inflatedId="@+id/syncProgressStub"
         android:layout="@layout/layout_sync_progress"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/toolbar" />
 
-    <!-- Fragment de Navigation : Contraint SOUS la barre de progression -->
+    <!-- Fragment de Navigation -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/navHostFragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
@@ -34,6 +46,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurfaceContainer"
+        app:labelVisibilityMode="unlabeled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
