@@ -62,7 +62,7 @@ class AlbumDetailFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.photos.collect { photos ->
-                        adapter.submitList(photos)
+                        adapter.submitPhotos(photos)
                         binding.textEmpty.visibility =
                             if (photos.isEmpty()) View.VISIBLE else View.GONE
                     }

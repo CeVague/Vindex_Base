@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.data.database.entity.AiModel
 import com.cevague.vindex.data.repository.AiModelRepository
 import com.cevague.vindex.data.repository.ModelImportException
+import com.cevague.vindex.util.ScanManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,12 +21,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ModelsViewModel @Inject constructor(
-    private val repository: AiModelRepository
+    private val repository: AiModelRepository,
+    private val scanManager: ScanManager
 ) : ViewModel() {
 
     sealed class Event {
         data class ImportSuccess(val modelName: String) : Event()
         data class ImportFailure(val reason: ModelImportException.Reason, val detail: String?) : Event()
+        data class ConfirmReindex(val model: AiModel) : Event()
     }
 
     val models: StateFlow<List<AiModel>> = repository.getAllModels()
@@ -52,7 +55,26 @@ class ModelsViewModel @Inject constructor(
     }
 
     fun activate(model: AiModel) {
-        viewModelScope.launch { repository.activate(model) }
+        if (model.isActive) return // Déjà actif, rien à faire
+
+        viewModelScope.launch {
+            if (model.modelType == AiModel.TYPE_CLIP) {
+                // Pour CLIP, on demande confirmation AVANT de changer quoi que ce soit
+                _events.emit(Event.ConfirmReindex(model))
+            } else {
+                // Pour les autres types (traduction, etc.), on active directement
+                repository.activate(model)
+            }
+        }
+    }
+
+    fun requestReindex(model: AiModel) {
+        viewModelScope.launch {
+            // 1. Activer réellement le modèle
+            repository.activate(model)
+            // 2. Lancer la ré-indexation (qui supprimera les anciens vecteurs)
+            scanManager.startClipReindexing()
+        }
     }
 
     fun delete(model: AiModel) {

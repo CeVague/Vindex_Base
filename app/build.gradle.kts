@@ -149,6 +149,8 @@ dependencies {
 
     // Tests
     testImplementation(libs.junit)
+    // Banc de validation des modèles ONNX sur PC (jamais dans l'APK)
+    testImplementation("com.microsoft.onnxruntime:onnxruntime:1.20.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

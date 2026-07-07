@@ -10,6 +10,10 @@ Développement par phases : la phase 1 (socle) se termine, voir docs/BACKLOG.md.
 - docs/ARCHITECTURE.md — source de vérité technique ; §9 = plan de dette phase 1
 - docs/PHASE_RECHERCHE_SEMANTIQUE.md — spécification phase 2
 - docs/PHASE_ANALYSE_MULTI_IA.md — spécification phases 3-5
+- docs/EXPLICATION_RECHERCHE_IA.md — visite guidée du code recherche + IA (phase 2)
+- docs/GUIDE_MODELES.md — schéma config.json, import d'un modèle, ajout d'un type
+- docs/GUIDE_TRADUCTION_OFFLINE.md — chantier traduction mené par l'utilisateur (ne pas implémenter sans lui demander)
+- docs/GUIDE_DETECTION_VISAGES.md — chantier visages mené par l'utilisateur (idem)
 - docs/BACKLOG.md — état d'avancement courant, à mettre à jour en fin de tâche
 
 ## Commandes

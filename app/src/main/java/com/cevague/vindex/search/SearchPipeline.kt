@@ -1,6 +1,9 @@
 package com.cevague.vindex.search
 
+import com.cevague.vindex.ai.ClipEngine
+import com.cevague.vindex.data.database.dao.EmbeddingRow
 import com.cevague.vindex.data.database.dao.PhotoSummary
+import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.repository.CityRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
@@ -11,22 +14,26 @@ import kotlin.math.cos
 
 /**
  * Pipeline de recherche hybride (ARCHITECTURE.md §6) :
- * requête → QueryParser → filtres durs SQL → candidats → [scorers, phase 2+].
- * v1 : pas encore de scorer sémantique, le texte libre passe par le filtre
+ * requête → QueryParser → filtres durs SQL → candidats → scorer sémantique
+ * CLIP sur les candidats → top-K par score.
+ * Mode dégradé (aucun modèle CLIP actif) : le texte libre passe par un LIKE
  * nom de fichier / dossier et les candidats sont triés par date.
  */
 @Singleton
 class SearchPipeline @Inject constructor(
     private val photoRepository: PhotoRepository,
     private val cityRepository: CityRepository,
-    private val personRepository: PersonRepository
+    private val personRepository: PersonRepository,
+    private val clipEngine: ClipEngine
 ) {
 
     private val parser = QueryParser()
 
     data class Result(
         val parsed: ParsedQuery,
-        val photos: List<PhotoSummary>
+        val photos: List<PhotoSummary>,
+        /** Similarités CLIP par photo (vide hors chemin sémantique) ; mode debug. */
+        val scores: Map<Long, Float> = emptyMap()
     )
 
     /**
@@ -55,6 +62,13 @@ class SearchPipeline @Inject constructor(
             return Result(parsed, emptyList())
         }
 
+        // Chemin sémantique : texte libre scoré par CLIP sur les candidats des
+        // filtres durs (plus de LIKE ni de replis textuels dans ce mode).
+        if (parsed.freeText.isNotBlank()) {
+            val semantic = searchSemantic(parsed, hasFilters)
+            if (semantic != null) return semantic
+        }
+
         val photos = runFilters(parsed)
         if (photos.isNotEmpty()) return Result(parsed, photos)
 
@@ -80,6 +94,64 @@ class SearchPipeline @Inject constructor(
         }
 
         return Result(parsed, photos)
+    }
+
+    suspend fun preload() {
+        clipEngine.preload()
+    }
+
+    /**
+     * Scorer sémantique (phase 2 §4.7, §4.9) : encode le texte libre, produit
+     * scalaire par chunks sur les embeddings des candidats (ou de toute la
+     * galerie sans filtre dur), top-K borné au-dessus du seuil, résultats
+     * ordonnés par similarité. Renvoie null si aucun modèle CLIP actif
+     * (mode dégradé → chemin LIKE).
+     */
+    private suspend fun searchSemantic(parsed: ParsedQuery, hasFilters: Boolean): Result? {
+        val active = clipEngine.activeClip() ?: return null
+        val queryVector = clipEngine.encodeText(parsed.freeText) ?: return null
+
+        val candidateIds: List<Long>? = if (hasFilters) {
+            runFilters(parsed.copy(freeText = "")).map { it.id }
+        } else {
+            null // scan complet paginé
+        }
+
+        val topK = TopKCollector(MAX_SEMANTIC_RESULTS)
+        val type = PhotoAnalysis.TYPE_CLIP_EMBEDDING
+        val floor = active.similarityFloor ?: DEFAULT_SIMILARITY_FLOOR
+
+        fun score(rows: List<EmbeddingRow>) {
+            for (row in rows) {
+                if (row.embeddingDim != queryVector.size) continue
+                val similarity = dotProduct(queryVector, row.embedding.asFloatArray(row.embeddingDim))
+                // if (similarity >= floor)
+                topK.offer(row.photoId, similarity)
+            }
+        }
+
+        if (candidateIds != null) {
+            if (candidateIds.isEmpty()) return Result(parsed, emptyList())
+            score(photoRepository.getEmbeddingsForPhotos(type, active.modelName, candidateIds))
+        } else {
+            var afterPhotoId = 0L
+            while (true) {
+                val chunk = photoRepository.getEmbeddingsChunk(
+                    type, active.modelName, afterPhotoId, SCAN_CHUNK_SIZE
+                )
+                if (chunk.isEmpty()) break
+                score(chunk)
+                afterPhotoId = chunk.last().photoId
+            }
+        }
+
+        val ranked = topK.toSortedList()
+        val orderedIds = ranked.map { it.id }
+        return Result(
+            parsed,
+            photoRepository.getPhotosSummaryByIdsOrdered(orderedIds),
+            ranked.associate { it.id to it.score }
+        )
     }
 
     private suspend fun runFilters(parsed: ParsedQuery): List<PhotoSummary> {
@@ -137,5 +209,11 @@ class SearchPipeline @Inject constructor(
 
     private companion object {
         const val KM_PER_DEGREE_LAT = 111.0
+
+        // Seuil de pertinence par défaut quand le config.json du modèle n'en
+        // fixe pas (`similarity_floor`) — les échelles varient par modèle.
+        const val DEFAULT_SIMILARITY_FLOOR = 0.2f
+        const val MAX_SEMANTIC_RESULTS = 200
+        const val SCAN_CHUNK_SIZE = 2000
     }
 }

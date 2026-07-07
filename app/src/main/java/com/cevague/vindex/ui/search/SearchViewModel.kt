@@ -6,8 +6,11 @@ import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.search.SearchPipeline
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -22,6 +25,7 @@ class SearchViewModel @Inject constructor(
 
     data class UiState(
         val results: List<PhotoSummary> = emptyList(),
+        val scores: Map<Long, Float> = emptyMap(),
         val dateChip: String? = null,
         val geoChip: String? = null,
         val typeChip: String? = null,
@@ -32,6 +36,9 @@ class SearchViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    private val _searchCompletedEvent = MutableSharedFlow<Unit>()
+    val searchCompletedEvent: SharedFlow<Unit> = _searchCompletedEvent.asSharedFlow()
 
     private var rawQuery = ""
     private var useDateFilter = true
@@ -47,6 +54,14 @@ class SearchViewModel @Inject constructor(
         useTypeFilter = true
         removedPersonIds.clear()
         runSearch()
+    }
+
+    fun onSearchFocused() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            pipeline.preload()
+            _uiState.update { it.copy(isLoading = false) }
+        }
     }
 
     fun removeDateFilter() {
@@ -80,8 +95,12 @@ class SearchViewModel @Inject constructor(
             val result = pipeline.search(
                 rawQuery, useDateFilter, useGeoFilter, useTypeFilter, removedPersonIds
             )
+            // On émet l'événement AVANT de mettre à jour l'état pour que le Fragment soit prêt
+            _searchCompletedEvent.emit(Unit)
+
             _uiState.value = UiState(
                 results = result.photos,
+                scores = result.scores,
                 dateChip = result.parsed.dateRange?.sourceText,
                 geoChip = result.parsed.geoFilter?.sourceText,
                 typeChip = result.parsed.typeFilter?.sourceText,
@@ -91,6 +110,7 @@ class SearchViewModel @Inject constructor(
                 hasSearched = true,
                 isLoading = false
             )
+            _searchCompletedEvent.emit(Unit)
         }
     }
 }

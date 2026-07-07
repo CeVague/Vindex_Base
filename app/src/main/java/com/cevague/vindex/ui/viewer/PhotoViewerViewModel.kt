@@ -6,6 +6,7 @@ import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.dao.toSummaryList
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.repository.AlbumRepository
+import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.search.SearchSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ import javax.inject.Inject
 class PhotoViewerViewModel @Inject constructor(
     private val photoRepository: PhotoRepository,
     private val albumRepository: AlbumRepository,
+    private val personRepository: PersonRepository,
     private val searchSessionRepository: SearchSessionRepository
 ) : ViewModel() {
 
@@ -94,6 +96,18 @@ class PhotoViewerViewModel @Inject constructor(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
+    )
+
+    /** Personnes identifiées sur la photo affichée (fiche d'infos). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentPersons: StateFlow<List<String>> = combine(_currentPosition, _photos) { pos, list ->
+        list.getOrNull(pos)?.id
+    }.flatMapLatest { id ->
+        if (id != null) personRepository.getPersonNamesForPhoto(id) else flowOf(emptyList())
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
     )
 
     fun setPosition(position: Int) {

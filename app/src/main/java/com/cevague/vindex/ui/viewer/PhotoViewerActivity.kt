@@ -21,6 +21,7 @@ import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.databinding.ActivityPhotoViewerBinding
 import com.cevague.vindex.util.MediaTypeFormatter
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -120,6 +121,9 @@ class PhotoViewerActivity : AppCompatActivity() {
                         photo?.let { updateInfoPanel(it) }
                     }
                 }
+                launch {
+                    viewModel.currentPersons.collect { names -> updatePeopleChips(names) }
+                }
             }
         }
 
@@ -198,6 +202,20 @@ class PhotoViewerActivity : AppCompatActivity() {
 
         // Chemin du fichier
         binding.textPath.text = photo.fileName
+    }
+
+    /** Chips des personnes identifiées ; section masquée quand il n'y en a pas. */
+    private fun updatePeopleChips(names: List<String>) {
+        binding.chipGroupPeople.removeAllViews()
+        names.forEach { name ->
+            binding.chipGroupPeople.addView(
+                Chip(this).apply {
+                    text = name
+                    isClickable = false
+                }
+            )
+        }
+        binding.layoutPeople.visibility = if (names.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun hideSystemUI() {

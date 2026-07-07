@@ -99,8 +99,20 @@ class ModelsFragment : Fragment() {
                 }
                 event.detail?.let { "$reasonText ($it)" } ?: reasonText
             }
+
+            is ModelsViewModel.Event.ConfirmReindex -> {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.models_reindex_title)
+                    .setMessage(R.string.models_reindex_message)
+                    .setPositiveButton(R.string.models_reindex_action) { _, _ ->
+                        viewModel.requestReindex(event.model)
+                    }
+                    .setNegativeButton(R.string.action_cancel, null)
+                    .show()
+                null
+            }
         }
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+        message?.let { Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show() }
     }
 
     private fun confirmDelete(model: AiModel) {

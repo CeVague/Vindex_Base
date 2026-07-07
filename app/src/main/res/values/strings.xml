@@ -188,6 +188,9 @@
     <string name="models_import_success">Model “%1$s” imported</string>
     <string name="models_delete_title">Delete this model?</string>
     <string name="models_delete_message">“%1$s” and its files will be removed from the app storage. Analyses already computed with it are kept in the database.</string>
+    <string name="models_reindex_title">Model changed</string>
+    <string name="models_reindex_message">Do you want to re-index all your photos with the new model? This will delete old CLIP vectors and replace them with new ones.</string>
+    <string name="models_reindex_action">Re-index</string>
     <string name="models_error_no_config">No config.json file found in the selected folder</string>
     <string name="models_error_bad_config">Invalid config.json file</string>
     <string name="models_error_missing_file">A file declared in config.json is missing</string>

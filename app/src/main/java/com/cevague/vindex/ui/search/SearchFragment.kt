@@ -40,6 +40,7 @@ class SearchFragment : Fragment() {
 
     private lateinit var adapter: SearchResultAdapter
     private lateinit var gridLayoutManager: GridLayoutManager
+    private var pendingScrollToTop = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,7 +55,7 @@ class SearchFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = SearchResultAdapter(getTargetSize(settingsCache.gridColumns)) { photo ->
-            val ids = adapter.currentList.map { it.id }
+            val ids = adapter.photos.map { it.id }
             if (ids.isNotEmpty()) {
                 val sessionId = searchSessionRepository.put(ids)
                 PhotoViewerActivity.start(
@@ -71,6 +72,7 @@ class SearchFragment : Fragment() {
             this.layoutManager = gridLayoutManager
             setHasFixedSize(true)
             setItemViewCacheSize(20)
+            itemAnimator = null // Désactive les animations pour éviter que le scroll ne "suive" une vignette
         }
 
         observeGridColumns()
@@ -85,17 +87,41 @@ class SearchFragment : Fragment() {
             override fun onQueryTextChange(newText: String?): Boolean = true
         })
 
+        // Pre-load on focus
+        val searchEditText = binding.inputSearch.findViewById<View>(androidx.appcompat.R.id.search_src_text)
+        searchEditText?.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) viewModel.onSearchFocused()
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    adapter.submitList(state.results)
+                    adapter.submitPhotos(state.results, state.scores, settingsCache.showScores) {
+                        if (pendingScrollToTop) {
+                            binding.recyclerSearch.post {
+                                gridLayoutManager.scrollToPositionWithOffset(0, 0)
+                            }
+                            pendingScrollToTop = false
+                        }
+                    }
                     renderFilterChips(state)
                     binding.textEmpty.visibility =
                         if (state.hasSearched && !state.isLoading && state.results.isEmpty())
                             View.VISIBLE else View.GONE
+                    binding.progressSearch.visibility = if (state.isLoading) View.VISIBLE else View.GONE
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.searchCompletedEvent.collect {
+                    pendingScrollToTop = true
+                }
+            }
+        }
+
+        // On supprime l'observation de scrollToTop qui est maintenant gérée par le callback submitList
 
         // Recherche partagée (Personnes -> Recherche)
         val sharedViewModel: MainSharedViewModel by activityViewModels()

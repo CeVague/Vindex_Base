@@ -207,6 +207,9 @@
     <string name="models_import_success">Modèle « %1$s » importé</string>
     <string name="models_delete_title">Supprimer ce modèle ?</string>
     <string name="models_delete_message">« %1$s » et ses fichiers seront retirés du stockage de l\'application. Les analyses déjà calculées avec ce modèle restent en base.</string>
+    <string name="models_reindex_title">Changement de modèle</string>
+    <string name="models_reindex_message">Voulez-vous ré-indexer toutes les images ? Cela supprimera les anciens vecteurs CLIP et les remplacera par les nouveaux.</string>
+    <string name="models_reindex_action">Ré-indexer</string>
     <string name="models_error_no_config">Aucun fichier config.json dans le dossier sélectionné</string>
     <string name="models_error_bad_config">Fichier config.json invalide</string>
     <string name="models_error_missing_file">Un fichier déclaré dans config.json est absent</string>

@@ -101,6 +101,13 @@
             app:summary="@string/settings_models_summary"
             app:title="@string/settings_models" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/vector_percent"
+            app:key="show_scores"
+            app:summary="@string/settings_show_scores_summary"
+            app:title="@string/settings_show_scores" />
+
     </PreferenceCategory>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -111,13 +118,6 @@
         app:iconSpaceReserved="false"
         app:key="category_face_recognition"
         app:title="@string/settings_category_face">
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/vector_percent"
-            app:key="show_scores"
-            app:summary="@string/settings_show_scores_summary"
-            app:title="@string/settings_show_scores" />
 
         <EditTextPreference
             android:inputType="numberDecimal"

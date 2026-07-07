@@ -125,6 +125,36 @@ interface PhotoDao {
     )
     fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>>
 
+    /**
+     * File de travail de l'indexation IA (reprise incrémentale, ARCHITECTURE §4.2) :
+     * photos sans ligne photo_analyses pour (type, modèle). Une ligne à embedding
+     * NULL (échec enregistré) compte comme traitée.
+     */
+    @Query(
+        """
+        SELECT id, file_path, file_name, date_added, date_taken, is_favorite
+        FROM photos p
+        WHERE p.is_hidden = 0 AND NOT EXISTS (
+            SELECT 1 FROM photo_analyses a
+            WHERE a.photo_id = p.id AND a.analysis_type = :type AND a.model_name = :modelName
+        )
+        ORDER BY p.id
+        LIMIT :limit
+    """
+    )
+    suspend fun getPhotosMissingAnalysis(type: String, modelName: String, limit: Int): List<PhotoSummary>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM photos p
+        WHERE p.is_hidden = 0 AND NOT EXISTS (
+            SELECT 1 FROM photo_analyses a
+            WHERE a.photo_id = p.id AND a.analysis_type = :type AND a.model_name = :modelName
+        )
+    """
+    )
+    suspend fun countPhotosMissingAnalysis(type: String, modelName: String): Int
+
     /** Villes présentes dans la galerie (format « Nom, CC »), pour QueryParser. */
     @Query("SELECT DISTINCT location_name FROM photos WHERE location_name IS NOT NULL AND is_hidden = 0")
     suspend fun getDistinctLocationNames(): List<String>

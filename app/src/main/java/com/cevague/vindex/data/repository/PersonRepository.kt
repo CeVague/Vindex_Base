@@ -38,6 +38,9 @@ class PersonRepository @Inject constructor(
 
     fun getPersonById(id: Long): Flow<Person?> = personDao.getPersonById(id)
 
+    fun getPersonNamesForPhoto(photoId: Long): Flow<List<String>> =
+        personDao.getPersonNamesForPhoto(photoId)
+
     fun getPersonCount(): Flow<Int> = personDao.getPersonCount()
 
     fun getUnnamedPersonCount(): Flow<Int> = personDao.getUnnamedPersonCount()

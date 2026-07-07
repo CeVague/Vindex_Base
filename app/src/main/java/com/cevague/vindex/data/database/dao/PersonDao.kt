@@ -70,6 +70,17 @@ interface PersonDao {
     @Query("SELECT * FROM persons WHERE id = :id")
     fun getPersonById(id: Long): Flow<Person?>
 
+    /** Noms des personnes identifiées sur une photo (fiche du viewer). */
+    @Query(
+        """
+        SELECT DISTINCT p.name FROM persons p
+        JOIN faces f ON f.person_id = p.id
+        WHERE f.photo_id = :photoId AND p.name IS NOT NULL
+        ORDER BY p.name
+    """
+    )
+    fun getPersonNamesForPhoto(photoId: Long): Flow<List<String>>
+
     @Query("SELECT COUNT(*) FROM persons")
     fun getPersonCount(): Flow<Int>
 

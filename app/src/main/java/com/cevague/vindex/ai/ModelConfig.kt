@@ -60,6 +60,12 @@ data class ModelConfig(
     val contextLength: Int?,
     /** Langues comprises par l'encodeur texte (codes ISO 639-1). */
     val languages: List<String>,
+    /** Gabarit optionnel appliqué au texte libre (« a photo of {} »). */
+    val promptTemplate: String?,
+    /** Redimensionnement image : centre recadré (CLIP) ou écrasé en carré (SigLIP). */
+    val resizeMode: String,
+    /** Seuil de pertinence propre au modèle (les échelles varient : CLIP ≠ SigLIP). */
+    val similarityFloor: Float?,
     /** JSON d'origine, stocké verbatim dans ai_models.config_json. */
     val rawJson: String
 ) {
@@ -76,11 +82,15 @@ data class ModelConfig(
         const val FILE_TEXT_ENCODER = "text_encoder"
         const val FILE_TOKENIZER_VOCAB = "tokenizer_vocab"
         const val FILE_TOKENIZER_MERGES = "tokenizer_merges"
+        const val FILE_TOKENIZER_JSON = "tokenizer_json"
 
-        // Tokenizers déclarables ; seuls les implémentés sont acceptés à
-        // l'inférence, mais la config en accepte d'autres (universalité).
+        // Tokenizers implémentés
         const val TOKENIZER_CLIP_BPE = "clip_bpe"
         const val TOKENIZER_SENTENCEPIECE = "sentencepiece"
+
+        // Modes de redimensionnement image
+        const val RESIZE_CENTER_CROP = "center_crop"
+        const val RESIZE_SQUASH = "squash"
 
         /**
          * Parse et valide un config.json. Lance [IllegalArgumentException] avec
@@ -119,6 +129,11 @@ data class ModelConfig(
                 tokenizer = text?.optString("tokenizer")?.takeIf { it.isNotBlank() },
                 contextLength = text?.optInt("context_length")?.takeIf { it > 0 },
                 languages = text?.optJSONArray("languages")?.toStringList() ?: listOf("en"),
+                promptTemplate = text?.optString("prompt_template")?.takeIf { it.isNotBlank() },
+                resizeMode = image?.optString("resize")?.takeIf { it.isNotBlank() }
+                    ?: RESIZE_CENTER_CROP,
+                similarityFloor = root.optDouble("similarity_floor")
+                    .takeIf { !it.isNaN() }?.toFloat(),
                 rawJson = json
             )
             config.validate()
@@ -133,8 +148,19 @@ data class ModelConfig(
                 requireNotNull(inputSize) { "image.input_size manquant" }
                 require(mean?.size == 3) { "image.mean doit avoir 3 valeurs" }
                 require(std?.size == 3) { "image.std doit avoir 3 valeurs" }
-                requireNotNull(tokenizer) { "text.tokenizer manquant" }
                 requireNotNull(contextLength) { "text.context_length manquant" }
+                when (tokenizer) {
+                    TOKENIZER_CLIP_BPE -> {
+                        requireFile(FILE_TOKENIZER_VOCAB)
+                        requireFile(FILE_TOKENIZER_MERGES)
+                    }
+                    TOKENIZER_SENTENCEPIECE -> requireFile(FILE_TOKENIZER_JSON)
+                    null -> throw IllegalArgumentException("text.tokenizer manquant")
+                    else -> throw IllegalArgumentException("tokenizer inconnu : $tokenizer")
+                }
+                require(resizeMode == RESIZE_CENTER_CROP || resizeMode == RESIZE_SQUASH) {
+                    "image.resize inconnu : $resizeMode"
+                }
             }
         }
 

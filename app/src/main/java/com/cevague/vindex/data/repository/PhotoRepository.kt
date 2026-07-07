@@ -4,6 +4,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
+import com.cevague.vindex.data.database.dao.EmbeddingRow
 import com.cevague.vindex.data.database.dao.FilePathAndSize
 import com.cevague.vindex.data.database.dao.FolderSummary
 import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
@@ -152,9 +153,24 @@ class PhotoRepository @Inject constructor(
     fun getAnalysesForPhoto(photoId: Long): Flow<List<PhotoAnalysis>> =
         photoAnalysisDao.getAnalysesForPhoto(photoId)
 
+    suspend fun getPhotosMissingAnalysis(type: String, modelName: String, limit: Int): List<PhotoSummary> =
+        photoDao.getPhotosMissingAnalysis(type, modelName, limit)
+
+    suspend fun countPhotosMissingAnalysis(type: String, modelName: String): Int =
+        photoDao.countPhotosMissingAnalysis(type, modelName)
+
+    suspend fun getEmbeddingsForPhotos(type: String, modelName: String, photoIds: List<Long>): List<EmbeddingRow> =
+        photoIds.chunked(CHUNK_SIZE).flatMap { photoAnalysisDao.getEmbeddingsForPhotos(type, modelName, it) }
+
+    suspend fun getEmbeddingsChunk(type: String, modelName: String, afterPhotoId: Long, limit: Int): List<EmbeddingRow> =
+        photoAnalysisDao.getEmbeddingsChunk(type, modelName, afterPhotoId, limit)
+
     suspend fun upsertAnalysis(analysis: PhotoAnalysis) =
         photoAnalysisDao.upsertAnalysis(analysis)
 
     suspend fun upsertAnalyses(analyses: List<PhotoAnalysis>) =
         photoAnalysisDao.upsertAnalyses(analyses)
+
+    suspend fun deleteAnalysesByType(type: String) =
+        photoAnalysisDao.deleteAnalysesByType(type)
 }

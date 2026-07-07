@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.cevague.vindex.data.database.entity.PhotoAnalysis
+import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.worker.AIAnalysisWorker
 import com.cevague.vindex.worker.CityImportWorker
+import com.cevague.vindex.worker.ClipIndexWorker
 import com.cevague.vindex.worker.DiscoveryWorker
 import com.cevague.vindex.worker.FaceAnalysisWorker
 import com.cevague.vindex.worker.MetadataWorker
@@ -15,7 +18,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ScanManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val photoRepository: PhotoRepository
 ) {
     private val workManager = WorkManager.getInstance(context)
 
@@ -28,9 +32,14 @@ class ScanManager @Inject constructor(
             .addTag("SCAN_TAG")
             .build()
 
+        val clipReq = OneTimeWorkRequestBuilder<ClipIndexWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
         workManager
             .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(metadataReq)
+            .then(clipReq)
             .enqueue()
     }
 
@@ -47,6 +56,10 @@ class ScanManager @Inject constructor(
             .addTag("SCAN_TAG")
             .build()
 
+        val clipReq = OneTimeWorkRequestBuilder<ClipIndexWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
         val aiReq = OneTimeWorkRequestBuilder<AIAnalysisWorker>()
             .addTag("SCAN_TAG")
             .build()
@@ -59,6 +72,7 @@ class ScanManager @Inject constructor(
             .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(citiesReq)
             .then(metadataReq)
+            .then(clipReq)
             .then(aiReq)
             .then(faceReq)
             .enqueue()
@@ -66,5 +80,13 @@ class ScanManager @Inject constructor(
 
     fun cancelAllScans() {
         workManager.cancelAllWorkByTag("SCAN_TAG")
+    }
+
+    suspend fun startClipReindexing() {
+        photoRepository.deleteAnalysesByType(PhotoAnalysis.TYPE_CLIP_EMBEDDING)
+        val clipReq = OneTimeWorkRequestBuilder<ClipIndexWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+        workManager.enqueueUniqueWork("VINDEX_CLIP_INDEX", ExistingWorkPolicy.REPLACE, clipReq)
     }
 }

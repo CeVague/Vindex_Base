@@ -18,4 +18,20 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:src="@tools:sample/backgrounds/scenic" />
 
+    <!-- Score de similarité (mode debug « Afficher les scores ») -->
+    <TextView
+        android:id="@+id/textScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#99000000"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:textAppearance="?attr/textAppearanceLabelSmall"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/imagePhoto"
+        app:layout_constraintStart_toStartOf="@id/imagePhoto"
+        tools:text="0.31"
+        tools:visibility="visible" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
