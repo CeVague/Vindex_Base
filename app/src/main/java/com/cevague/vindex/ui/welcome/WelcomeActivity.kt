@@ -4,17 +4,15 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.cevague.vindex.R
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
+import com.cevague.vindex.ui.common.FolderPickerDialog
 import com.cevague.vindex.ui.main.MainActivity
 import com.cevague.vindex.util.MediaScanner
 import com.cevague.vindex.util.ScanManager
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,7 +22,6 @@ class WelcomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWelcomeBinding
     private var availableFolders: List<MediaScanner.FolderInfo> = emptyList()
-    private val selectedFolders = mutableSetOf<String>()
 
     @Inject
     lateinit var scanManager: ScanManager
@@ -86,47 +83,22 @@ class WelcomeActivity : AppCompatActivity() {
     }
 
     private fun showFolderPickerDialog() {
-        val folderNames = availableFolders.map {
-            getString(R.string.welcome_folder_item, it.relativePath, it.photoCount)
-        }.toTypedArray()
-        val checkedItems = BooleanArray(availableFolders.size) {
-            // Pré-sélectionner DCIM et Pictures
-            availableFolders[it].relativePath.startsWith("DCIM") ||
-                    availableFolders[it].relativePath.startsWith("Pictures")
-        }
-
-        // Initialiser selectedFolders avec les pré-sélectionnés
-        availableFolders.forEachIndexed { index, folder ->
-            if (checkedItems[index]) selectedFolders.add(folder.relativePath)
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.welcome_select_folders_title)
-            .setMultiChoiceItems(folderNames, checkedItems) { _, which, isChecked ->
-                val folder = availableFolders[which].relativePath
-                if (isChecked) {
-                    selectedFolders.add(folder)
-                } else {
-                    selectedFolders.remove(folder)
-                }
+        // Premier lancement : DCIM et Pictures pré-cochés par défaut.
+        val preChecked = availableFolders
+            .filter {
+                it.relativePath.startsWith("DCIM") || it.relativePath.startsWith("Pictures")
             }
-            .setPositiveButton(R.string.welcome_validate) { _, _ ->
-                if (selectedFolders.isNotEmpty()) {
-                    saveAndContinue()
-                } else {
-                    Toast.makeText(this, R.string.welcome_select_at_least_one, Toast.LENGTH_SHORT)
-                        .show()
-                }
-            }
-            .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .map { it.relativePath }
+            .toSet()
+
+        FolderPickerDialog.show(this, availableFolders, preChecked) { selected ->
+            saveAndContinue(selected)
+        }
     }
 
-    private fun saveAndContinue() {
-
+    private fun saveAndContinue(selected: Set<String>) {
         lifecycleScope.launch {
-            // Sauvegarder les dossiers sélectionnés
-            settingsCache.includedFolders = selectedFolders
+            settingsCache.includedFolders = selected
             settingsCache.isConfigured = true
 
             startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))

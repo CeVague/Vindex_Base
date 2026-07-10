@@ -18,6 +18,8 @@ import androidx.preference.PreferenceFragmentCompat
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
+import com.cevague.vindex.ui.common.FolderPickerDialog
+import com.cevague.vindex.util.MediaScanner
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -71,6 +73,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupDataPreferences() {
+        findPreference<Preference>("source_folders")?.setOnPreferenceClickListener {
+            editSourceFolders()
+            true
+        }
+
         findPreference<Preference>("rescan_gallery")?.setOnPreferenceClickListener {
             Toast.makeText(requireContext(), R.string.gallery_scanning, Toast.LENGTH_SHORT).show()
             viewModel.startFullScan()
@@ -102,8 +109,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     viewModel.libraryStats.collect { stats -> updateStatsSummaries(stats) }
                 }
                 launch {
-                    viewModel.storageUsed.collect { bytes ->
-                        findPreference<Preference>("stat_storage")?.summary = bytes.formatFileSize()
+                    viewModel.storage.collect { s ->
+                        findPreference<Preference>("stat_storage")?.summary = getString(
+                            R.string.settings_storage_summary,
+                            s.totalBytes.formatFileSize(),
+                            s.modelsBytes.formatFileSize(),
+                            s.databaseBytes.formatFileSize()
+                        )
                     }
                 }
             }
@@ -153,6 +165,45 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 language
             )
         AppCompatDelegate.setApplicationLocales(localeList)
+    }
+
+    private fun editSourceFolders() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val folders = viewModel.availableFolders()
+            if (folders.isEmpty()) {
+                Toast.makeText(requireContext(), R.string.error_generic, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val current = settingsCache.includedFolders
+            FolderPickerDialog.show(requireContext(), folders, current) { selected ->
+                val removed = current - selected
+                when {
+                    selected == current -> Unit // rien changé
+                    removed.isNotEmpty() -> confirmFolderRemoval(removed, folders, selected)
+                    else -> applyFolders(selected)
+                }
+            }
+        }
+    }
+
+    private fun confirmFolderRemoval(
+        removed: Set<String>,
+        folders: List<MediaScanner.FolderInfo>,
+        selected: Set<String>
+    ) {
+        val affected = folders.filter { it.relativePath in removed }.sumOf { it.photoCount }
+        val list = removed.sorted().joinToString("\n") { "•  $it" }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.settings_folders_remove_title)
+            .setMessage(getString(R.string.settings_folders_remove_message, list, affected))
+            .setPositiveButton(R.string.action_remove) { _, _ -> applyFolders(selected) }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun applyFolders(selected: Set<String>) {
+        viewModel.applyIncludedFolders(selected)
+        Toast.makeText(requireContext(), R.string.gallery_scanning, Toast.LENGTH_SHORT).show()
     }
 
     private fun showResetDatabaseDialog() {

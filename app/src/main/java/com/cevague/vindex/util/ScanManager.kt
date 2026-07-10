@@ -8,6 +8,7 @@ import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.worker.AIAnalysisWorker
 import com.cevague.vindex.worker.CityImportWorker
+import com.cevague.vindex.worker.CleanupWorker
 import com.cevague.vindex.worker.ClipIndexWorker
 import com.cevague.vindex.worker.DiscoveryWorker
 import com.cevague.vindex.worker.FaceAnalysisWorker
@@ -36,10 +37,15 @@ class ScanManager @Inject constructor(
             .addTag("SCAN_TAG")
             .build()
 
+        val cleanupReq = OneTimeWorkRequestBuilder<CleanupWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
         workManager
             .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(metadataReq)
             .then(clipReq)
+            .then(cleanupReq)
             .enqueue()
     }
 
@@ -68,6 +74,10 @@ class ScanManager @Inject constructor(
             .addTag("SCAN_TAG")
             .build()
 
+        val cleanupReq = OneTimeWorkRequestBuilder<CleanupWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
         workManager
             .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(citiesReq)
@@ -75,6 +85,7 @@ class ScanManager @Inject constructor(
             .then(clipReq)
             .then(aiReq)
             .then(faceReq)
+            .then(cleanupReq)
             .enqueue()
     }
 

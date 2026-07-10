@@ -38,6 +38,9 @@ class PeopleAdapter(
 
 
         fun bind(person: PersonWithCover) {
+            // Personne nommée sans photo (dossier retiré) : conservée mais grisée.
+            binding.root.alpha = if (person.photoCount == 0) 0.4f else 1f
+
             binding.textName.text =
                 person.name ?: binding.root.context.getString(R.string.people_unknown)
 

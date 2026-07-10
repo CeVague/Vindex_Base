@@ -8,6 +8,7 @@
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
     <string name="action_later">Later</string>
+    <string name="action_remove">Remove</string>
     <string name="action_edit">Edit</string>
     <string name="action_share">Share</string>
     <string name="action_select">Select</string>
@@ -164,6 +165,8 @@
     <string name="settings_source_folder">Source folder</string>
     <string name="settings_source_folder_summary">Select the folder containing your photos</string>
     <string name="settings_source_folder_none">No folder selected</string>
+    <string name="settings_folders_remove_title">Remove folders?</string>
+    <string name="settings_folders_remove_message">These folders and all their photos will be removed from Vindex (index and analyses). Your files on the device are NOT deleted.\n\n%1$s\n\nPhotos affected: %2$d</string>
     <string name="settings_grid_columns">Grid columns</string>
     <string name="settings_grid_columns_summary">Number of columns in the gallery grid</string>
     <string name="settings_theme">Theme</string>
@@ -211,7 +214,8 @@
     <string name="settings_stat_people">People</string>
     <string name="settings_stat_faces">Faces to identify</string>
     <string name="settings_stat_albums">Albums</string>
-    <string name="settings_stat_storage">Storage used</string>
+    <string name="settings_stat_storage">Space used by Vindex</string>
+    <string name="settings_storage_summary">%1$s total\nModels: %2$s · Database (analyses, faces, cities…): %3$s</string>
 
     <string name="settings_stat_hidden">hidden</string>
     <string name="settings_stat_named">named</string>

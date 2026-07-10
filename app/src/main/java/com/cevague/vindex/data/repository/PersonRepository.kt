@@ -109,6 +109,12 @@ class PersonRepository @Inject constructor(
 
     suspend fun deleteEmpty() = personDao.deleteEmpty()
 
+    /** Recalcule les compteurs dénormalisés (après suppression de photos). */
+    suspend fun recalculatePhotoCounts() = personDao.recalculateAllPhotoCounts()
+
+    /** Supprime les personnes vides non nommées (garde les nommées). */
+    suspend fun deleteEmptyUnnamed() = personDao.deleteEmptyUnnamed()
+
     // Face queries - reactive
 
     fun getFacesByPhoto(photoId: Long): Flow<List<Face>> = faceDao.getFacesByPhoto(photoId)

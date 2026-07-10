@@ -8,8 +8,11 @@ import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
+import com.cevague.vindex.data.repository.StorageRepository
+import com.cevague.vindex.util.MediaScanner
 import com.cevague.vindex.util.ScanManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 import javax.inject.Inject
@@ -35,7 +39,9 @@ class SettingsViewModel @Inject constructor(
     private val personRepository: PersonRepository,
     private val albumRepository: AlbumRepository,
     val settingsCache: SettingsCache, // Gardé public pour le DataStore du Fragment
-    private val scanManager: ScanManager
+    private val scanManager: ScanManager,
+    private val mediaScanner: MediaScanner,
+    private val storageRepository: StorageRepository
 ) : ViewModel() {
 
     // ════════════════════════════════════════════════════════════════════════
@@ -64,8 +70,8 @@ class SettingsViewModel @Inject constructor(
         initialValue = LibraryStats()
     )
 
-    private val _storageUsed = MutableStateFlow<Long>(0L)
-    val storageUsed: StateFlow<Long> = _storageUsed.asStateFlow()
+    private val _storage = MutableStateFlow(StorageBreakdown())
+    val storage: StateFlow<StorageBreakdown> = _storage.asStateFlow()
 
     // ════════════════════════════════════════════════════════════════════════
     // App Info
@@ -75,12 +81,18 @@ class SettingsViewModel @Inject constructor(
     val appVersionCode: Int = BuildConfig.VERSION_CODE
 
     init {
-        loadStorageUsed()
+        loadStorage()
     }
 
-    private fun loadStorageUsed() {
+    /** Empreinte disque de Vindex (modèles + base), calculée hors thread principal. */
+    private fun loadStorage() {
         viewModelScope.launch {
-            _storageUsed.value = photoRepository.getTotalStorageUsed()
+            _storage.value = withContext(Dispatchers.IO) {
+                StorageBreakdown(
+                    modelsBytes = storageRepository.modelsSize(),
+                    databaseBytes = storageRepository.databaseSize()
+                )
+            }
         }
     }
 
@@ -89,6 +101,21 @@ class SettingsViewModel @Inject constructor(
     // ════════════════════════════════════════════════════════════════════════
 
     fun startFullScan() {
+        scanManager.startFullScan()
+    }
+
+    /** Dossiers d'images disponibles (pour l'édition des dossiers indexés). */
+    suspend fun availableFolders(): List<MediaScanner.FolderInfo> =
+        withContext(Dispatchers.IO) { mediaScanner.listImageFolders() }
+
+    /**
+     * Applique une nouvelle sélection de dossiers puis relance un scan complet :
+     * les photos des dossiers retirés sont supprimées (cascade FK sur embeddings/
+     * visages/albums), les nouvelles indexées (workers incrémentaux), et le
+     * CleanupWorker recale les personnes.
+     */
+    fun applyIncludedFolders(folders: Set<String>) {
+        settingsCache.includedFolders = folders
         scanManager.startFullScan()
     }
 
@@ -154,6 +181,14 @@ class SettingsViewModel @Inject constructor(
     ) {
         val hiddenPhotos: Int get() = totalPhotos - visiblePhotos
         val namedPeople: Int get() = totalPeople - unnamedPeople
+    }
+
+    /** Empreinte disque propre à Vindex (hors photos). */
+    data class StorageBreakdown(
+        val modelsBytes: Long = 0L,
+        val databaseBytes: Long = 0L
+    ) {
+        val totalBytes: Long get() = modelsBytes + databaseBytes
     }
 }
 
