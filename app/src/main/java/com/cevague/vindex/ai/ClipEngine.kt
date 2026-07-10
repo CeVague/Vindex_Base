@@ -107,20 +107,7 @@ class ClipEngine @Inject constructor(
                     inputs[maskName] = intTensor(session, maskName, encoded.attentionMask)
                 }
 
-                // GESTION MODÈLE MERGED : on injecte des pixels vides si le modèle les attend
-                session.inputName("pixel_values")?.let { pixelName ->
-                    if (!inputs.containsKey(pixelName)) {
-                        val size = loaded.config.inputSize ?: 224
-                        val shape = longArrayOf(1, 3, size.toLong(), size.toLong())
-                        // On utilise un buffer direct et on s'assure qu'il est bien à zéro
-                        val buffer = FloatBuffer.allocate(1 * 3 * size * size)
-                        inputs[pixelName] = OnnxTensor.createTensor(env, buffer, shape)
-                    }
-                }
-
                 session.run(inputs).use { result ->
-                    // Si le modèle est merged, il peut fournir les logits directs (produit scalaire pré-calculé)
-                    // Mais ici on veut l'embedding pour le stockage/recherche.
                     extractEmbedding(result, loaded.config.embeddingDim, isText = true)
                 }
             } finally {
@@ -143,30 +130,12 @@ class ClipEngine @Inject constructor(
                 .also { loaded.imageSession = it }
 
             val tensor = bitmapToTensor(loaded, bitmap, size)
-            val inputs = mutableMapOf<String, OnnxTensor>()
             try {
                 val inputName = session.inputName("pixel_values") ?: session.inputInfo.keys.first()
-                inputs[inputName] = tensor
-                
-                // GESTION MODÈLE MERGED : on injecte des IDs vides si le modèle les attend
-                session.inputName("input_ids")?.let { idsName ->
-                    if (!inputs.containsKey(idsName)) {
-                        val len = loaded.config.contextLength ?: 64
-                        inputs[idsName] = intTensor(session, idsName, LongArray(len))
-                    }
-                }
-                session.inputName("attention_mask")?.let { maskName ->
-                    if (!inputs.containsKey(maskName)) {
-                        val len = loaded.config.contextLength ?: 64
-                        inputs[maskName] = intTensor(session, maskName, LongArray(len) { 1L })
-                    }
-                }
-
-                session.run(inputs).use { result ->
+                session.run(mapOf(inputName to tensor)).use { result ->
                     extractEmbedding(result, loaded.config.embeddingDim, isText = false)
                 }
             } finally {
-                inputs.values.forEach { if (it != tensor) it.close() }
                 tensor.close()
             }
         }
