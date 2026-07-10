@@ -22,6 +22,12 @@ class QueryParserTest {
         KnownCity("New York", 40.7128, -74.0060)
     )
 
+    private val countries = listOf(
+        KnownCountry("FR", listOf("France")),
+        KnownCountry("DE", listOf("Allemagne", "Germany")),
+        KnownCountry("US", listOf("États-Unis", "United States"))
+    )
+
     private fun startOf(y: Int, m: Int, d: Int): Long =
         LocalDate.of(y, m, d).atStartOfDay(zone).toInstant().toEpochMilli()
 
@@ -180,6 +186,44 @@ class QueryParserTest {
     fun `sans liste de villes aucun filtre geo`() {
         val parsed = parser.parse("chien à Paris")
         assertNull(parsed.geoFilter)
+    }
+
+    // ------------------------------------------------------------------ pays
+
+    @Test
+    fun `pays reconnu avec preposition consommee`() {
+        val parsed = parser.parse("plage en France", cities, emptyList(), countries)
+        assertEquals("FR", parsed.countryFilter?.countryCode)
+        assertEquals("en France", parsed.countryFilter?.sourceText)
+        assertEquals("plage", parsed.freeText)
+    }
+
+    @Test
+    fun `pays multi-mots et multilingue`() {
+        val parsed = parser.parse("united states 2024", cities, emptyList(), countries)
+        assertEquals("US", parsed.countryFilter?.countryCode)
+        assertRange(parsed.dateRange, 2024, 1, 1, 2024, 12, 31)
+        assertEquals("", parsed.freeText)
+    }
+
+    @Test
+    fun `pays nie`() {
+        val parsed = parser.parse("pas en France", cities, emptyList(), countries)
+        assertEquals("FR", parsed.countryFilter?.countryCode)
+        assertEquals(true, parsed.countryFilter?.negated)
+    }
+
+    @Test
+    fun `pays inconnu reste dans le texte`() {
+        val parsed = parser.parse("photos en Espagne", cities, emptyList(), countries)
+        assertNull(parsed.countryFilter)
+        assertEquals("photos en Espagne", parsed.freeText)
+    }
+
+    @Test
+    fun `sans liste de pays aucun filtre pays`() {
+        val parsed = parser.parse("plage en France", cities)
+        assertNull(parsed.countryFilter)
     }
 
     // ---------------------------------------------------------- type de média

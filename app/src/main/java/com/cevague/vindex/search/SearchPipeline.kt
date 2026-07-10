@@ -9,6 +9,7 @@ import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.PhotoSearchCriteria
 import com.cevague.vindex.data.local.SettingsCache
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.cos
@@ -48,18 +49,21 @@ class SearchPipeline @Inject constructor(
         useDateFilter: Boolean = true,
         useGeoFilter: Boolean = true,
         useTypeFilter: Boolean = true,
-        removedPersonIds: Set<Long> = emptySet()
+        removedPersonIds: Set<Long> = emptySet(),
+        useCountryFilter: Boolean = true
     ): Result {
-        val fullParsed = parser.parse(rawQuery, knownCities(), knownPersons())
+        val fullParsed = parser.parse(rawQuery, knownCities(), knownPersons(), knownCountries())
         val parsed = fullParsed.copy(
             dateRange = fullParsed.dateRange?.takeIf { useDateFilter },
             geoFilter = fullParsed.geoFilter?.takeIf { useGeoFilter },
             typeFilter = fullParsed.typeFilter?.takeIf { useTypeFilter },
-            persons = fullParsed.persons.filterNot { it.personId in removedPersonIds }
+            persons = fullParsed.persons.filterNot { it.personId in removedPersonIds },
+            countryFilter = fullParsed.countryFilter?.takeIf { useCountryFilter }
         )
 
         val hasFilters = parsed.dateRange != null || parsed.geoFilter != null ||
-            parsed.typeFilter != null || parsed.persons.isNotEmpty()
+            parsed.typeFilter != null || parsed.persons.isNotEmpty() ||
+            parsed.countryFilter != null
         if (!hasFilters && parsed.freeText.trim().length < 2) {
             return Result(parsed, emptyList())
         }
@@ -80,6 +84,16 @@ class SearchPipeline @Inject constructor(
             val fallback = parsed.copy(
                 freeText = "${parsed.freeText} ${parsed.geoFilter.sourceText}".trim(),
                 geoFilter = null
+            )
+            val fallbackPhotos = runFilters(fallback)
+            if (fallbackPhotos.isNotEmpty()) return Result(fallback, fallbackPhotos)
+        }
+
+        // Même repli pour un pays qui vide les résultats (mot ambigu rendu au texte).
+        if (parsed.countryFilter != null && !parsed.countryFilter.negated) {
+            val fallback = parsed.copy(
+                freeText = "${parsed.freeText} ${parsed.countryFilter.sourceText}".trim(),
+                countryFilter = null
             )
             val fallbackPhotos = runFilters(fallback)
             if (fallbackPhotos.isNotEmpty()) return Result(fallback, fallbackPhotos)
@@ -178,6 +192,8 @@ class SearchPipeline @Inject constructor(
                 minLon = box?.minLon,
                 maxLon = box?.maxLon,
                 geoNegated = parsed.geoFilter?.negated ?: false,
+                countryCode = parsed.countryFilter?.countryCode,
+                countryNegated = parsed.countryFilter?.negated ?: false,
                 persons = parsed.persons.map {
                     PhotoSearchCriteria.PersonCriterion(it.personId, it.negated)
                 }
@@ -197,6 +213,28 @@ class SearchPipeline @Inject constructor(
             cityRepository.getCityByNameAndCountry(name, countryCode)
                 ?.let { KnownCity(it.name, it.latitude, it.longitude) }
         }.distinct()
+
+    /**
+     * Pays de la galerie pour le parser : codes présents dans location_name
+     * (« Nom, CC »), résolus en noms fr+en via java.util.Locale (multilingue,
+     * zéro asset). Restreint aux pays réellement présents → pas de faux positifs.
+     */
+    private suspend fun knownCountries(): List<KnownCountry> {
+        val displayLocales = listOf(Locale.FRENCH, Locale.ENGLISH)
+        return photoRepository.getDistinctLocationNames()
+            .mapNotNull { it.substringAfterLast(',', "").trim().takeIf { cc -> cc.length == 2 } }
+            .distinct()
+            .mapNotNull { code ->
+                val countryLocale = runCatching {
+                    Locale.Builder().setRegion(code).build()
+                }.getOrNull() ?: return@mapNotNull null
+                val names = displayLocales
+                    .map { countryLocale.getDisplayCountry(it) }
+                    .filter { it.isNotBlank() && !it.equals(code, ignoreCase = true) }
+                    .distinct()
+                if (names.isEmpty()) null else KnownCountry(code.uppercase(), names)
+            }
+    }
 
     /** Personnes nommées de la galerie pour le parser. */
     private suspend fun knownPersons(): List<KnownPerson> =

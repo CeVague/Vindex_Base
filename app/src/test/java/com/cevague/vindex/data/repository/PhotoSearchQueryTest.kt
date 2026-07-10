@@ -48,6 +48,18 @@ class PhotoSearchQueryTest {
     }
 
     @Test
+    fun `filtre pays - suffixe location_name, nie inclut sans lieu`() {
+        val positive = buildPhotoSearchQuery(PhotoSearchCriteria(countryCode = "FR"))
+        assertTrue(positive.first.contains("location_name IS NOT NULL AND location_name LIKE ?"))
+        assertEquals(listOf<Any>("%, FR"), positive.second)
+
+        val negated = buildPhotoSearchQuery(
+            PhotoSearchCriteria(countryCode = "FR", countryNegated = true)
+        )
+        assertTrue(negated.first.contains("AND NOT (location_name IS NOT NULL"))
+    }
+
+    @Test
     fun `personnes - EXISTS par personne, negation en NOT EXISTS`() {
         val (sql, args) = buildPhotoSearchQuery(
             PhotoSearchCriteria(

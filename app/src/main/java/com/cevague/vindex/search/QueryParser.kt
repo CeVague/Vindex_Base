@@ -48,16 +48,26 @@ data class PersonFilter(
     val sourceText: String
 )
 
+data class CountryFilter(
+    val countryCode: String,
+    val negated: Boolean,
+    val sourceText: String
+)
+
 data class KnownCity(val name: String, val latitude: Double, val longitude: Double)
 
 data class KnownPerson(val id: Long, val name: String)
+
+/** Pays présent dans la galerie : code ISO (« FR ») + noms par langue pour le matching. */
+data class KnownCountry(val code: String, val names: List<String>)
 
 data class ParsedQuery(
     val freeText: String,
     val dateRange: DateRange? = null,
     val geoFilter: GeoFilter? = null,
     val typeFilter: TypeFilter? = null,
-    val persons: List<PersonFilter> = emptyList()
+    val persons: List<PersonFilter> = emptyList(),
+    val countryFilter: CountryFilter? = null
 )
 
 class QueryParser(
@@ -68,7 +78,8 @@ class QueryParser(
     fun parse(
         query: String,
         knownCities: List<KnownCity> = emptyList(),
-        knownPersons: List<KnownPerson> = emptyList()
+        knownPersons: List<KnownPerson> = emptyList(),
+        knownCountries: List<KnownCountry> = emptyList()
     ): ParsedQuery {
         val tokens = tokenize(query).toMutableList()
         if (tokens.isEmpty()) return ParsedQuery("")
@@ -76,10 +87,12 @@ class QueryParser(
         val dateRange = extractDate(tokens)
         val typeFilter = extractType(tokens)
         val persons = extractPersons(tokens, knownPersons)
+        // Ville (dérivée de la galerie) avant pays : plus spécifique.
         val geoFilter = extractCity(tokens, knownCities)
+        val countryFilter = extractCountry(tokens, knownCountries)
         val freeText = tokens.joinToString(" ") { it.original }
 
-        return ParsedQuery(freeText, dateRange, geoFilter, typeFilter, persons)
+        return ParsedQuery(freeText, dateRange, geoFilter, typeFilter, persons, countryFilter)
     }
 
     // ------------------------------------------------------------------ dates
@@ -215,6 +228,34 @@ class QueryParser(
                     city.latitude, city.longitude, DEFAULT_RADIUS_KM,
                     city.name, match.negated, match.source
                 )
+            }
+        }
+        return null
+    }
+
+    // ------------------------------------------------------------------ pays
+
+    /**
+     * Pays de la galerie (« photos en France ») → filtre sur le code pays.
+     * Comme les villes, la liste vient de l'appelant (codes présents dans les
+     * photos, résolus en noms par langue) : le parser reste pur et le matching
+     * est ancré sur des tokens entiers.
+     */
+    private fun extractCountry(
+        tokens: MutableList<Token>,
+        countries: List<KnownCountry>
+    ): CountryFilter? {
+        if (countries.isEmpty()) return null
+        val indexed = countries
+            .flatMap { country -> country.names.map { country.code to tokenize(it).map(Token::normalized) } }
+            .filter { it.second.isNotEmpty() }
+            .sortedByDescending { it.second.size }
+
+        for ((code, nameTokens) in indexed) {
+            val start = indexOfPhrase(tokens, nameTokens)
+            if (start >= 0) {
+                val match = consume(tokens, start, nameTokens.size)
+                return CountryFilter(code, match.negated, match.source)
             }
         }
         return null

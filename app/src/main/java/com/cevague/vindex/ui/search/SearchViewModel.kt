@@ -28,6 +28,7 @@ class SearchViewModel @Inject constructor(
         val scores: Map<Long, Float> = emptyMap(),
         val dateChip: String? = null,
         val geoChip: String? = null,
+        val countryChip: String? = null,
         val typeChip: String? = null,
         val personChips: List<PersonChip> = emptyList(),
         val hasSearched: Boolean = false,
@@ -43,6 +44,7 @@ class SearchViewModel @Inject constructor(
     private var rawQuery = ""
     private var useDateFilter = true
     private var useGeoFilter = true
+    private var useCountryFilter = true
     private var useTypeFilter = true
     private val removedPersonIds = mutableSetOf<Long>()
     private var searchJob: Job? = null
@@ -52,6 +54,7 @@ class SearchViewModel @Inject constructor(
         rawQuery = query
         useDateFilter = true
         useGeoFilter = true
+        useCountryFilter = true
         useTypeFilter = true
         removedPersonIds.clear()
         runSearch()
@@ -72,6 +75,11 @@ class SearchViewModel @Inject constructor(
 
     fun removeGeoFilter() {
         useGeoFilter = false
+        runSearch()
+    }
+
+    fun removeCountryFilter() {
+        useCountryFilter = false
         runSearch()
     }
 
@@ -98,13 +106,15 @@ class SearchViewModel @Inject constructor(
             // remonte qu'à la fin, sur l'émission finale ci-dessous).
             _uiState.update { it.copy(loading = Loading.SEARCH, generation = gen) }
             val result = pipeline.search(
-                rawQuery, useDateFilter, useGeoFilter, useTypeFilter, removedPersonIds
+                rawQuery, useDateFilter, useGeoFilter, useTypeFilter, removedPersonIds,
+                useCountryFilter
             )
             _uiState.value = UiState(
                 results = result.photos,
                 scores = result.scores,
                 dateChip = result.parsed.dateRange?.sourceText,
                 geoChip = result.parsed.geoFilter?.sourceText,
+                countryChip = result.parsed.countryFilter?.sourceText,
                 typeChip = result.parsed.typeFilter?.sourceText,
                 personChips = result.parsed.persons.map {
                     PersonChip(it.personId, it.sourceText)

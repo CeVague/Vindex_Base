@@ -168,6 +168,9 @@ class SearchFragment : Fragment() {
         state.geoChip?.let { label ->
             binding.chipsFilters.addView(makeChip(label) { viewModel.removeGeoFilter() })
         }
+        state.countryChip?.let { label ->
+            binding.chipsFilters.addView(makeChip(label) { viewModel.removeCountryFilter() })
+        }
         state.typeChip?.let { label ->
             binding.chipsFilters.addView(makeChip(label) { viewModel.removeTypeFilter() })
         }

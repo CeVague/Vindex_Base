@@ -17,6 +17,9 @@ data class PhotoSearchCriteria(
     val minLon: Double? = null,
     val maxLon: Double? = null,
     val geoNegated: Boolean = false,
+    /** Code pays ISO (« FR ») ; matché sur le suffixe de location_name (« Nom, CC »). */
+    val countryCode: String? = null,
+    val countryNegated: Boolean = false,
     val persons: List<PersonCriterion> = emptyList()
 ) {
     data class PersonCriterion(val personId: Long, val negated: Boolean)
@@ -58,6 +61,14 @@ internal fun buildPhotoSearchQuery(criteria: PhotoSearchCriteria): Pair<String, 
         args += criteria.maxLat
         args += criteria.minLon
         args += criteria.maxLon
+    }
+
+    if (criteria.countryCode != null) {
+        // location_name = « Nom, CC » (format contrôlé au géocodage) → suffixe fiable.
+        // Nié : une photo sans lieu connu est incluse dans « pas en France ».
+        val inCountry = "(location_name IS NOT NULL AND location_name LIKE ?)"
+        sql.append(if (criteria.countryNegated) " AND NOT $inCountry" else " AND $inCountry")
+        args += "%, ${criteria.countryCode}"
     }
 
     for (person in criteria.persons) {
