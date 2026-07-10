@@ -8,7 +8,6 @@ import ai.onnxruntime.TensorInfo
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -97,16 +96,11 @@ class ClipEngine @Inject constructor(
 
             val prompt = loaded.config.promptTemplate?.replace("{}", text) ?: text
             val encoded = tokenizer.encode(prompt)
-            
-            // LOG DE DIAGNOSTIC TEXTE
-            Log.d("ClipEngine", "DEBUG TOKENIZER: text='$text', prompt='$prompt'")
-            Log.d("ClipEngine", "DEBUG IDS: ${encoded.ids.take(16).joinToString(", ")} ... last=${encoded.ids.last()}")
-            
+
             val inputs = mutableMapOf<String, OnnxTensor>()
             try {
                 val idsName = session.inputName("input_ids")
                     ?: session.inputInfo.keys.first()
-                Log.d("ClipEngine", "Model Inputs: ${session.inputInfo.keys.joinToString(", ")}")
 
                 inputs[idsName] = intTensor(session, idsName, encoded.ids)
                 session.inputName("attention_mask")?.let { maskName ->
@@ -240,18 +234,7 @@ class ClipEngine @Inject constructor(
         val options = OrtSession.SessionOptions().apply {
             setIntraOpNumThreads(min(4, Runtime.getRuntime().availableProcessors()))
         }
-        val session = env.createSession(file.absolutePath, options)
-        
-        // INSPECTEUR DE MODÈLE
-        Log.d("ClipEngine", "MODEL INFO ($fileRole):")
-        session.inputInfo.entries.forEach { entry: Map.Entry<String, ai.onnxruntime.NodeInfo> ->
-            Log.d("ClipEngine", "  Input: ${entry.key}, Shape: ${entry.value.info}")
-        }
-        session.outputInfo.entries.forEach { entry: Map.Entry<String, ai.onnxruntime.NodeInfo> ->
-            Log.d("ClipEngine", "  Output: ${entry.key}, Shape: ${entry.value.info}")
-        }
-        
-        return session
+        return env.createSession(file.absolutePath, options)
     }
 
     private fun OrtSession.inputName(fragment: String): String? =
@@ -287,8 +270,11 @@ class ClipEngine @Inject constructor(
             return request.centerCrop().submit(size, size).get()
         }
         
-        // Squash strict : Glide charge l'image, puis on force l'étirement.
-        val raw = request.submit().get()
+        // Squash : décodage borné à ~size (Glide sous-échantillonne en gardant
+        // le ratio — jamais la pleine résolution en mémoire), puis étirement
+        // final en carré. fitCenter garantit un bitmap ≤ size × size.
+        val raw = request.fitCenter().submit(size, size).get()
+        if (raw.width == size && raw.height == size) return raw
         return Bitmap.createScaledBitmap(raw, size, size, true)
     }
 
@@ -305,9 +291,6 @@ class ClipEngine @Inject constructor(
         val config = loaded.config
         val mean = config.mean ?: error("image.mean manquant")
         val std = config.std ?: error("image.std manquant")
-        
-        // LOG DE DIAGNOSTIC IMAGE (premier pixel uniquement)
-        Log.d("ClipEngine", "DEBUG IMAGE: resize=${config.resizeMode}, mean=${mean.take(3)}, std=${std.take(3)}")
 
         val m0 = mean[0].toFloat(); val m1 = mean[1].toFloat(); val m2 = mean[2].toFloat()
         val s0 = std[0].toFloat(); val s1 = std[1].toFloat(); val s2 = std[2].toFloat()
@@ -317,10 +300,6 @@ class ClipEngine @Inject constructor(
             val r = (p shr 16 and 0xFF) / 255f
             val g = (p shr 8 and 0xFF) / 255f
             val b = (p and 0xFF) / 255f
-            
-            if (i == 0) {
-                Log.d("ClipEngine", "DEBUG PIXEL 0: RGB=($r,$g,$b) -> NORM=(${(r-m0)/s0},${(g-m1)/s1},${(b-m2)/s2})")
-            }
 
             floats[i] = (r - m0) / s0
             floats[area + i] = (g - m1) / s1

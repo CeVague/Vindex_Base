@@ -3,6 +3,12 @@ package com.cevague.vindex.ai
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+/**
+ * Conventions validées empiriquement par le banc PC (SiglipBenchPc) contre les
+ * exports SigLIP 2 réels : pas de <bos>, pas de minuscules, pas de dummy
+ * prefix, <eos> collé aux tokens puis padding <pad>, masque tout à 1.
+ * (La variante bos+minuscules+prefix a été mesurée moins discriminante.)
+ */
 class SentencePieceBpeTokenizerTest {
 
     // Mini-vocabulaire de test ; ▁ = frontière de mot SentencePiece.
@@ -17,47 +23,45 @@ class SentencePieceBpeTokenizerTest {
     private fun tokenizer(context: Int = 8) = SentencePieceBpeTokenizer(vocab, merges, context)
 
     @Test
-    fun `normalisation avec dummy prefix et minuscules`() {
-        // "CAT" -> "▁cat" -> [bos, ▁cat, eos, pad, ...]
-        val encoded = tokenizer().encode("CAT")
-        assertEquals(listOf(2L, 10L, 1L, 0L, 0L, 0L, 0L, 0L), encoded.ids.toList())
+    fun `fusions sur la sequence entiere avec frontiere de mot`() {
+        // "cat cat" → "cat▁cat" → [cat][▁cat] + eos, pad 0 — pas de bos.
+        val encoded = tokenizer().encode("cat cat")
+        assertEquals(listOf(9L, 10L, 1L, 0L, 0L, 0L, 0L, 0L), encoded.ids.toList())
     }
 
     @Test
-    fun `fusions sur la sequence entiere avec dummy prefix`() {
-        // "cat cat" -> "▁cat▁cat" -> [bos, ▁cat, ▁cat, eos, pad, ...]
-        val encoded = tokenizer().encode("cat cat")
-        assertEquals(listOf(2L, 10L, 10L, 1L, 0L, 0L, 0L, 0L), encoded.ids.toList())
+    fun `casse conservee - pas de minuscules`() {
+        // "CAT" : aucun caractère majuscule dans le mini-vocab ni en byte
+        // fallback → seuls eos+pads sortent. Si un lowercase se glissait dans
+        // la normalisation, on obtiendrait [cat] comme pour "cat".
+        val encoded = tokenizer().encode("CAT")
+        assertEquals(1L, encoded.ids[0])
     }
 
     @Test
     fun `masque tout a 1 padding compris (convention SigLIP)`() {
         val encoded = tokenizer().encode("cat")
-        // Masque de 1 pour [bos, ▁cat, eos] et 0 pour le reste
-        assertEquals(listOf(1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L), encoded.attentionMask.toList())
+        assertEquals(List(8) { 1L }, encoded.attentionMask.toList())
     }
 
     @Test
     fun `byte fallback pour caractere hors vocabulaire`() {
-        // "é" (U+00E9) absent du vocab -> octets UTF-8 C3 A9
-        // Normalisé en "▁é". "▁" a l'ID 4.
+        // "é" (U+00E9) absent du vocab → octets UTF-8 C3 A9, sans préfixe ▁.
         val encoded = tokenizer().encode("é")
-        // [bos, ▁, <0xC3>, <0xA9>, eos, pad, ...]
-        assertEquals(listOf(2L, 4L, 11L, 12L, 1L, 0L, 0L, 0L), encoded.ids.toList())
+        assertEquals(listOf(11L, 12L, 1L), encoded.ids.take(3))
     }
 
     @Test
-    fun `troncature en gardant bos et eos final`() {
-        // context = 4. [bos, ▁cat, ▁cat, eos]
+    fun `troncature en gardant eos final`() {
         val encoded = tokenizer(4).encode("cat cat cat cat")
-        assertEquals(listOf(2L, 10L, 10L, 1L), encoded.ids.toList())
+        assertEquals(listOf(9L, 10L, 10L, 1L), encoded.ids.toList())
     }
 
     @Test
-    fun `sticky eos padding`() {
-        val encoded = tokenizer(6).encode("cat")
-        // [bos, ▁cat, eos, pad, pad, pad]
-        assertEquals(listOf(2L, 10L, 1L, 0L, 0L, 0L), encoded.ids.toList())
+    fun `chaine vide`() {
+        val encoded = tokenizer().encode("  ")
+        assertEquals(1L, encoded.ids[0]) // <eos> seul
+        assertEquals(0L, encoded.ids[1]) // padding <pad>
     }
 
     // ------------------------------------------------ parseurs tokenizer.json
