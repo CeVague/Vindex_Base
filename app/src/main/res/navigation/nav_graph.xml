@@ -46,7 +46,21 @@
     <fragment
         android:id="@+id/peopleFragment"
         android:name="com.cevague.vindex.ui.people.PeopleFragment"
-        android:label="@string/nav_people" />
+        android:label="@string/nav_people">
+        <action
+            android:id="@+id/action_people_to_personDetail"
+            app:destination="@id/personDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/personDetailFragment"
+        android:name="com.cevague.vindex.ui.people.PersonDetailFragment"
+        android:label="@string/nav_people">
+        <argument
+            android:name="personId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+    </fragment>
 
     <fragment
         android:id="@+id/settingsFragment"

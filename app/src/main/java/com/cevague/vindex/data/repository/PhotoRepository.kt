@@ -102,6 +102,9 @@ class PhotoRepository @Inject constructor(
     suspend fun getPhotosSummaryByFolderOnce(folderPath: String): List<PhotoSummary> =
         photoDao.getPhotosSummaryByFolderOnce(folderPath)
 
+    fun getPhotosSummaryByPerson(personId: Long): Flow<List<PhotoSummary>> =
+        photoDao.getPhotosSummaryByPerson(personId)
+
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo> =
         photoDao.getPhotosNeedingMetadataExtraction()
 

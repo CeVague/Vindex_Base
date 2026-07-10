@@ -79,6 +79,13 @@ interface PhotoDao {
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE relative_path = :folderPath AND is_hidden = 0 ORDER BY date_taken DESC")
     suspend fun getPhotosSummaryByFolderOnce(folderPath: String): List<PhotoSummary>
 
+    @Query(
+        "SELECT DISTINCT p.id, p.file_path, p.file_name, p.date_added, p.date_taken, p.is_favorite " +
+            "FROM photos p JOIN faces f ON f.photo_id = p.id " +
+            "WHERE f.person_id = :personId AND p.is_hidden = 0 ORDER BY p.date_taken DESC"
+    )
+    fun getPhotosSummaryByPerson(personId: Long): Flow<List<PhotoSummary>>
+
     @Query("SELECT * FROM photos WHERE id = :id")
     fun getPhotoById(id: Long): Flow<Photo?>
 

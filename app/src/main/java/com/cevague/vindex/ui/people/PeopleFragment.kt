@@ -7,12 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.PersonDao
@@ -20,7 +21,6 @@ import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.FragmentPeopleBinding
-import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -53,7 +53,10 @@ class PeopleFragment : Fragment() {
         val adapter = PeopleAdapter(
             settingsCache = settingsCache,
             onPersonClick = { person ->
-                navigateToSearchWithPerson(person)
+                findNavController().navigate(
+                    R.id.action_people_to_personDetail,
+                    bundleOf(PersonDetailFragment.ARG_PERSON_ID to person.id)
+                )
             },
             onPersonLongClick = { person, anchorView ->
                 showPersonOptionsMenu(person, anchorView)
@@ -99,14 +102,6 @@ class PeopleFragment : Fragment() {
                 }
             }
         }
-    }
-
-    private fun navigateToSearchWithPerson(person: PersonDao.PersonWithCover) {
-        val query = "name:\"${person.name}\""
-        val sharedViewModel: MainSharedViewModel by activityViewModels()
-
-        sharedViewModel.triggerSearch(query)
-        sharedViewModel.selectTab(R.id.searchFragment)
     }
 
     private fun showPersonOptionsMenu(person: PersonDao.PersonWithCover, anchorView: View) {
