@@ -149,9 +149,6 @@ interface PersonDao {
     @Query("DELETE FROM persons WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("DELETE FROM persons WHERE photo_count = 0")
-    suspend fun deleteEmpty()
-
     /** Supprime les personnes vides **non nommées** ; les nommées sont conservées
      *  (fausse manip, futur lien contact/notes). */
     @Query("DELETE FROM persons WHERE photo_count = 0 AND name IS NULL")

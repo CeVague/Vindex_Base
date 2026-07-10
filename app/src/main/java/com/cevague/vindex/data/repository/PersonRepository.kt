@@ -107,8 +107,6 @@ class PersonRepository @Inject constructor(
 
     suspend fun deleteById(id: Long) = personDao.deleteById(id)
 
-    suspend fun deleteEmpty() = personDao.deleteEmpty()
-
     /** Recalcule les compteurs dénormalisés (après suppression de photos). */
     suspend fun recalculatePhotoCounts() = personDao.recalculateAllPhotoCounts()
 

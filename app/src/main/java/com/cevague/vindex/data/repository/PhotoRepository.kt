@@ -1,11 +1,11 @@
 package com.cevague.vindex.data.repository
 
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.cevague.vindex.data.database.dao.EmbeddingRow
-import com.cevague.vindex.data.database.dao.FilePathAndSize
 import com.cevague.vindex.data.database.dao.FolderSummary
 import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
 import com.cevague.vindex.data.database.dao.PhotoDao
@@ -13,14 +13,9 @@ import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.local.SettingsCache
-import com.cevague.vindex.di.ApplicationScope
 import com.cevague.vindex.util.MediaScanner
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,19 +40,12 @@ class PhotoRepository @Inject constructor(
     private val photoDao: PhotoDao,
     private val photoAnalysisDao: PhotoAnalysisDao,
     private val settingsCache: SettingsCache,
-    private val mediaScanner: MediaScanner,
-    @ApplicationScope private val externalScope: CoroutineScope
+    private val mediaScanner: MediaScanner
 ) {
     private companion object {
         const val CHUNK_SIZE = 900
+        const val TAG = "PhotoRepository"
     }
-
-    val dbPhotosMetadata: StateFlow<List<FilePathAndSize>> = photoDao.getAllPathsAndSizes()
-        .stateIn(
-            scope = externalScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
 
     fun getAllPhotos(): Flow<List<Photo>> = photoDao.getAllPhotos()
     fun getAllPhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getAllPhotosSummary()
@@ -90,7 +78,6 @@ class PhotoRepository @Inject constructor(
 
     fun getPhotoCount(): Flow<Int> = photoDao.getPhotoCount()
     fun getVisiblePhotoCount(): Flow<Int> = photoDao.getVisiblePhotoCount()
-    suspend fun getTotalStorageUsed(): Long = photoDao.getTotalStorageUsed()
     fun getAllFolders(): Flow<List<String>> = photoDao.getAllFolders()
 
     /** Albums-dossier virtuels (dérivés de relative_path). */
@@ -136,10 +123,16 @@ class PhotoRepository @Inject constructor(
             onProgress(totalProcessed)
         }
 
-        mediaScanner.queryManagedUris(includedFolders)?.let { liveUris ->
+        val liveUris = mediaScanner.queryManagedUris(includedFolders)
+        if (liveUris != null) {
             SyncDiff.urisToDelete(dbPhotosMap.keys, liveUris)
                 .chunked(CHUNK_SIZE)
                 .forEach { photoDao.deleteByContentUris(it) }
+        } else {
+            // Requête MediaStore indisponible : on NE supprime rien (sans liste
+            // autoritative des URIs vivantes, on risquerait d'effacer des photos
+            // valides). L'état périmé est rattrapé au prochain scan réussi.
+            Log.w(TAG, "queryManagedUris a renvoyé null — suppression sautée ce cycle")
         }
 
         settingsCache.lastScanTimestamp = newSync
