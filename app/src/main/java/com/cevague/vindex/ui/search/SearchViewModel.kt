@@ -6,11 +6,8 @@ import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.search.SearchPipeline
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,6 +20,9 @@ class SearchViewModel @Inject constructor(
 
     data class PersonChip(val personId: Long, val label: String)
 
+    /** Nature du chargement en cours (barre de progression du haut). */
+    enum class Loading { MODEL, SEARCH }
+
     data class UiState(
         val results: List<PhotoSummary> = emptyList(),
         val scores: Map<Long, Float> = emptyMap(),
@@ -31,14 +31,14 @@ class SearchViewModel @Inject constructor(
         val typeChip: String? = null,
         val personChips: List<PersonChip> = emptyList(),
         val hasSearched: Boolean = false,
-        val isLoading: Boolean = false
+        val loading: Loading? = null,
+        /** Incrémenté à chaque nouvelle recherche : signale un jeu de résultats
+         *  frais qui doit ramener la grille en haut (comparé côté fragment). */
+        val generation: Int = 0
     )
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
-
-    private val _searchCompletedEvent = MutableSharedFlow<Unit>()
-    val searchCompletedEvent: SharedFlow<Unit> = _searchCompletedEvent.asSharedFlow()
 
     private var rawQuery = ""
     private var useDateFilter = true
@@ -46,6 +46,7 @@ class SearchViewModel @Inject constructor(
     private var useTypeFilter = true
     private val removedPersonIds = mutableSetOf<Long>()
     private var searchJob: Job? = null
+    private var generation = 0
 
     fun performSearch(query: String) {
         rawQuery = query
@@ -58,9 +59,9 @@ class SearchViewModel @Inject constructor(
 
     fun onSearchFocused() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(loading = Loading.MODEL) }
             pipeline.preload()
-            _uiState.update { it.copy(isLoading = false) }
+            _uiState.update { it.copy(loading = null) }
         }
     }
 
@@ -86,18 +87,19 @@ class SearchViewModel @Inject constructor(
 
     private fun runSearch() {
         searchJob?.cancel()
+        generation++
+        val gen = generation
         if (rawQuery.isBlank()) {
-            _uiState.value = UiState()
+            _uiState.value = UiState(generation = gen)
             return
         }
         searchJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            // On garde les résultats courants pendant le chargement (la grille ne
+            // remonte qu'à la fin, sur l'émission finale ci-dessous).
+            _uiState.update { it.copy(loading = Loading.SEARCH, generation = gen) }
             val result = pipeline.search(
                 rawQuery, useDateFilter, useGeoFilter, useTypeFilter, removedPersonIds
             )
-            // On émet l'événement AVANT de mettre à jour l'état pour que le Fragment soit prêt
-            _searchCompletedEvent.emit(Unit)
-
             _uiState.value = UiState(
                 results = result.photos,
                 scores = result.scores,
@@ -108,9 +110,9 @@ class SearchViewModel @Inject constructor(
                     PersonChip(it.personId, it.sourceText)
                 },
                 hasSearched = true,
-                isLoading = false
+                loading = null,
+                generation = gen
             )
-            _searchCompletedEvent.emit(Unit)
         }
     }
 }

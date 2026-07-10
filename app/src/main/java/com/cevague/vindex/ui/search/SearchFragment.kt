@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import com.cevague.vindex.R
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.FragmentSearchBinding
 import com.cevague.vindex.search.SearchSessionRepository
@@ -38,9 +39,11 @@ class SearchFragment : Fragment() {
     @Inject
     lateinit var searchSessionRepository: SearchSessionRepository
 
+    private val sharedViewModel: MainSharedViewModel by activityViewModels()
+
     private lateinit var adapter: SearchResultAdapter
     private lateinit var gridLayoutManager: GridLayoutManager
-    private var pendingScrollToTop = false
+    private var lastScrolledGeneration = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -97,34 +100,25 @@ class SearchFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     adapter.submitPhotos(state.results, state.scores, settingsCache.showScores) {
-                        if (pendingScrollToTop) {
-                            binding.recyclerSearch.post {
-                                gridLayoutManager.scrollToPositionWithOffset(0, 0)
-                            }
-                            pendingScrollToTop = false
+                        // Retour en haut le plus tard possible : une fois la liste
+                        // commitée, et seulement sur un jeu de résultats frais (fin de
+                        // recherche, pas les émissions de chargement). Sans animation
+                        // (itemAnimator désactivé).
+                        if (state.loading == null && state.generation != lastScrolledGeneration) {
+                            lastScrolledGeneration = state.generation
+                            gridLayoutManager.scrollToPositionWithOffset(0, 0)
                         }
                     }
                     renderFilterChips(state)
                     binding.textEmpty.visibility =
-                        if (state.hasSearched && !state.isLoading && state.results.isEmpty())
+                        if (state.hasSearched && state.loading == null && state.results.isEmpty())
                             View.VISIBLE else View.GONE
-                    binding.progressSearch.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+                    sharedViewModel.setTransientLoading(loadingLabel(state.loading))
                 }
             }
         }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.searchCompletedEvent.collect {
-                    pendingScrollToTop = true
-                }
-            }
-        }
-
-        // On supprime l'observation de scrollToTop qui est maintenant gérée par le callback submitList
 
         // Recherche partagée (Personnes -> Recherche)
-        val sharedViewModel: MainSharedViewModel by activityViewModels()
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sharedViewModel.searchQuery.collect { query ->
@@ -142,6 +136,12 @@ class SearchFragment : Fragment() {
     private fun getTargetSize(spanCount: Int): Int {
         val screenWidth = requireContext().resources.displayMetrics.widthPixels
         return screenWidth / (spanCount * 2)
+    }
+
+    private fun loadingLabel(loading: SearchViewModel.Loading?): String? = when (loading) {
+        SearchViewModel.Loading.MODEL -> getString(R.string.search_loading_model)
+        SearchViewModel.Loading.SEARCH -> getString(R.string.search_ongoing)
+        null -> null
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -190,6 +190,9 @@ class SearchFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // La barre du haut appartient à l'activité : ne pas laisser un libellé actif
+        // en quittant l'onglet Recherche.
+        sharedViewModel.setTransientLoading(null)
         _binding = null
     }
 }

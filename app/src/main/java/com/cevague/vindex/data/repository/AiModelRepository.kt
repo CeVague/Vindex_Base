@@ -110,8 +110,11 @@ class AiModelRepository @Inject constructor(
             )
             val id = aiModelDao.insert(model)
             val inserted = model.copy(id = id)
-            if (aiModelDao.getActiveModelOnce(config.modelType) == null) activate(inserted)
-            inserted
+            val autoActivated = aiModelDao.getActiveModelOnce(config.modelType) == null
+            if (autoActivated) activate(inserted)
+            // isActive reflète la base : l'UI sait si ce modèle vient d'être activé
+            // (premier de son type) pour proposer l'indexation initiale.
+            inserted.copy(isActive = autoActivated)
         } catch (e: Exception) {
             destDir.deleteRecursively()
             when (e) {

@@ -85,8 +85,14 @@ class ModelsFragment : Fragment() {
 
     private fun showEvent(event: ModelsViewModel.Event) {
         val message = when (event) {
-            is ModelsViewModel.Event.ImportSuccess ->
-                getString(R.string.models_import_success, event.modelName)
+            is ModelsViewModel.Event.ImportSuccess -> {
+                val model = event.model
+                // Premier modèle CLIP (auto-activé) : proposer l'indexation, reportable.
+                if (model.modelType == AiModel.TYPE_CLIP && model.isActive) {
+                    confirmInitialIndexing(model)
+                }
+                getString(R.string.models_import_success, model.modelName)
+            }
 
             is ModelsViewModel.Event.ImportFailure -> {
                 val reasonText = when (event.reason) {
@@ -113,6 +119,17 @@ class ModelsFragment : Fragment() {
             }
         }
         message?.let { Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show() }
+    }
+
+    private fun confirmInitialIndexing(model: AiModel) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.models_index_now_title)
+            .setMessage(getString(R.string.models_index_now_message, model.modelName))
+            .setPositiveButton(R.string.models_index_now_action) { _, _ ->
+                viewModel.startInitialIndexing()
+            }
+            .setNegativeButton(R.string.action_later, null)
+            .show()
     }
 
     private fun confirmDelete(model: AiModel) {

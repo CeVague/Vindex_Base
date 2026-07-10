@@ -8,6 +8,7 @@ import com.cevague.vindex.data.repository.CityRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.PhotoSearchCriteria
+import com.cevague.vindex.data.local.SettingsCache
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.cos
@@ -24,7 +25,8 @@ class SearchPipeline @Inject constructor(
     private val photoRepository: PhotoRepository,
     private val cityRepository: CityRepository,
     private val personRepository: PersonRepository,
-    private val clipEngine: ClipEngine
+    private val clipEngine: ClipEngine,
+    private val settingsCache: SettingsCache
 ) {
 
     private val parser = QueryParser()
@@ -119,14 +121,21 @@ class SearchPipeline @Inject constructor(
 
         val topK = TopKCollector(MAX_SEMANTIC_RESULTS)
         val type = PhotoAnalysis.TYPE_CLIP_EMBEDDING
-        val floor = active.similarityFloor ?: DEFAULT_SIMILARITY_FLOOR
+        // Seuil : ignoré en mode debug (« Afficher les scores » = tout voir),
+        // sinon override manuel (Paramètres › IA), sinon le seuil du config.json
+        // du modèle actif — les échelles varient par modèle (CLIP ~0.2, SigLIP ~0.06).
+        val floor = when {
+            settingsCache.showScores -> Float.NEGATIVE_INFINITY
+            else -> settingsCache.searchThresholdOverride
+                ?: active.similarityFloor
+                ?: DEFAULT_SIMILARITY_FLOOR
+        }
 
         fun score(rows: List<EmbeddingRow>) {
             for (row in rows) {
                 if (row.embeddingDim != queryVector.size) continue
                 val similarity = dotProduct(queryVector, row.embedding.asFloatArray(row.embeddingDim))
-                // if (similarity >= floor)
-                topK.offer(row.photoId, similarity)
+                if (similarity >= floor) topK.offer(row.photoId, similarity)
             }
         }
 
@@ -210,8 +219,8 @@ class SearchPipeline @Inject constructor(
     private companion object {
         const val KM_PER_DEGREE_LAT = 111.0
 
-        // Seuil de pertinence par défaut quand le config.json du modèle n'en
-        // fixe pas (`similarity_floor`) — les échelles varient par modèle.
+        // Repli quand ni l'utilisateur ni le config.json du modèle ne fixent
+        // de seuil (`similarity_floor`).
         const val DEFAULT_SIMILARITY_FLOOR = 0.2f
         const val MAX_SEMANTIC_RESULTS = 200
         const val SCAN_CHUNK_SIZE = 2000

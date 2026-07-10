@@ -29,11 +29,13 @@ class ModelsAdapter(
         fun bind(model: AiModel) {
             binding.textModelName.text = model.modelName
             binding.textModelInfo.text = buildInfoLine(model)
-            // setChecked déclencherait le listener du binding précédent
-            binding.radioActive.setOnCheckedChangeListener(null)
+            // Le radio n'est qu'un indicateur : il reflète toujours isActive.
+            // L'activation (potentiellement différée par une confirmation) part
+            // du clic sur la ligne, jamais d'un toggle optimiste du widget — sans
+            // quoi un refus laisserait deux modèles cochés (la liste ne re-émet pas).
             binding.radioActive.isChecked = model.isActive
-            binding.radioActive.setOnCheckedChangeListener { _, checked ->
-                if (checked && !model.isActive) onActivate(model)
+            binding.root.setOnClickListener {
+                if (!model.isActive) onActivate(model)
             }
             binding.buttonDelete.setOnClickListener { onDelete(model) }
         }

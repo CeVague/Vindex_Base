@@ -7,6 +7,7 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
+    <string name="action_later">Later</string>
     <string name="action_edit">Edit</string>
     <string name="action_share">Share</string>
     <string name="action_select">Select</string>
@@ -114,6 +115,7 @@
     <string name="search_title">Search</string>
     <string name="search_hint">Search photos…</string>
     <string name="search_ongoing">Searching…</string>
+    <string name="search_loading_model">Loading model…</string>
     <string name="search_empty">No photos match your search</string>
     <string name="search_start">Search for photos by name, date, or content</string>
     <plurals name="search_results">
@@ -191,6 +193,9 @@
     <string name="models_reindex_title">Model changed</string>
     <string name="models_reindex_message">Do you want to re-index all your photos with the new model? This will delete old CLIP vectors and replace them with new ones.</string>
     <string name="models_reindex_action">Re-index</string>
+    <string name="models_index_now_title">Index your photos?</string>
+    <string name="models_index_now_message">Model “%1$s” is now active but no photo has been indexed yet. Start indexing now? You can also do it later.</string>
+    <string name="models_index_now_action">Index now</string>
     <string name="models_error_no_config">No config.json file found in the selected folder</string>
     <string name="models_error_bad_config">Invalid config.json file</string>
     <string name="models_error_missing_file">A file declared in config.json is missing</string>
@@ -252,6 +257,8 @@
     <string name="settings_face_threshold_summary">Lower = more matches, higher = fewer false positives</string>
     <string name="settings_show_scores">Show similarity scores</string>
     <string name="settings_show_scores_summary">Display confidence scores in search results</string>
+    <string name="settings_search_threshold">Match threshold</string>
+    <string name="settings_search_threshold_summary">Minimum similarity to keep a result. Leave empty to use the active model\'s own threshold. Ignored while “Show scores” is on (debug: see everything).</string>
     <string name="settings_reset">Reset settings</string>
     <string name="settings_reset_summary">Restore default settings</string>
     <string name="settings_reset_confirm">Are you sure you want to reset all settings?</string>

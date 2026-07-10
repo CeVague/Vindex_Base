@@ -89,4 +89,16 @@ class ScanManager @Inject constructor(
             .build()
         workManager.enqueueUniqueWork("VINDEX_CLIP_INDEX", ExistingWorkPolicy.REPLACE, clipReq)
     }
+
+    /**
+     * Indexation initiale (premier modèle) : indexe les photos manquantes sans
+     * rien supprimer. La file du worker est « photos sans vecteur du modèle actif »,
+     * donc seuls les nouveaux éléments sont calculés.
+     */
+    fun startClipIndexing() {
+        val clipReq = OneTimeWorkRequestBuilder<ClipIndexWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+        workManager.enqueueUniqueWork("VINDEX_CLIP_INDEX", ExistingWorkPolicy.KEEP, clipReq)
+    }
 }

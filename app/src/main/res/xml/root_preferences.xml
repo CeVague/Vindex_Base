@@ -108,6 +108,14 @@
             app:summary="@string/settings_show_scores_summary"
             app:title="@string/settings_show_scores" />
 
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            app:defaultValue=""
+            app:icon="@drawable/vector_verified"
+            app:key="search_threshold"
+            app:summary="@string/settings_search_threshold_summary"
+            app:title="@string/settings_search_threshold" />
+
     </PreferenceCategory>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->

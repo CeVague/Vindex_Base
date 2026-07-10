@@ -26,7 +26,7 @@ class ModelsViewModel @Inject constructor(
 ) : ViewModel() {
 
     sealed class Event {
-        data class ImportSuccess(val modelName: String) : Event()
+        data class ImportSuccess(val model: AiModel) : Event()
         data class ImportFailure(val reason: ModelImportException.Reason, val detail: String?) : Event()
         data class ConfirmReindex(val model: AiModel) : Event()
     }
@@ -45,7 +45,7 @@ class ModelsViewModel @Inject constructor(
             _isImporting.value = true
             try {
                 val model = repository.importFromFolder(folderUri)
-                _events.emit(Event.ImportSuccess(model.modelName))
+                _events.emit(Event.ImportSuccess(model))
             } catch (e: ModelImportException) {
                 _events.emit(Event.ImportFailure(e.reason, e.detail))
             } finally {
@@ -75,6 +75,11 @@ class ModelsViewModel @Inject constructor(
             // 2. Lancer la ré-indexation (qui supprimera les anciens vecteurs)
             scanManager.startClipReindexing()
         }
+    }
+
+    /** Indexation initiale après le premier modèle CLIP (sans suppression). */
+    fun startInitialIndexing() {
+        viewModelScope.launch { scanManager.startClipIndexing() }
     }
 
     fun delete(model: AiModel) {

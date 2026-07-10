@@ -16,6 +16,7 @@ object Setting {
     const val KEY_THEME = "theme"
     const val KEY_LANGUAGE = "language"
     const val KEY_SHOW_SCORES = "show_scores"
+    const val KEY_SEARCH_THRESHOLD = "search_threshold"
     const val KEY_FACE_THRESHOLD_HIGH = "face_threshold_high"
     const val KEY_FACE_THRESHOLD_MEDIUM = "face_threshold_medium"
     const val KEY_FACE_THRESHOLD_NEW = "face_threshold_new"

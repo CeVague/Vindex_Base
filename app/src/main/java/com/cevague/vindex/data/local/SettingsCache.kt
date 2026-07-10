@@ -77,6 +77,14 @@ class SettingsCache @Inject constructor(
         get() = prefs.getBoolean(Setting.KEY_SHOW_SCORES, DEFAULT_SHOW_SCORES)
         set(value) = prefs.edit { putBoolean(Setting.KEY_SHOW_SCORES, value) }
 
+    /**
+     * Override manuel du seuil de similarité de la recherche sémantique.
+     * Stocké en String (EditTextPreference) ; vide ou invalide = null = mode
+     * auto (le seuil vient du config.json du modèle actif, `similarity_floor`).
+     */
+    val searchThresholdOverride: Float?
+        get() = prefs.getString(Setting.KEY_SEARCH_THRESHOLD, null)?.toFloatOrNull()
+
     var faceThresholdHigh: Float
         get() = prefs.getFloat(Setting.KEY_FACE_THRESHOLD_HIGH, DEFAULT_FACE_THRESHOLD_HIGH)
         set(value) = prefs.edit { putFloat(Setting.KEY_FACE_THRESHOLD_HIGH, value) }
@@ -102,6 +110,7 @@ class SettingsCache @Inject constructor(
             putString(Setting.KEY_LANGUAGE, Setting.LANGUAGE_SYSTEM)
             putInt(Setting.KEY_GRID_COLUMNS, Setting.DEFAULT_GRID_COLUMNS)
             putBoolean(Setting.KEY_SHOW_SCORES, DEFAULT_SHOW_SCORES)
+            putString(Setting.KEY_SEARCH_THRESHOLD, "")
             putFloat(Setting.KEY_FACE_THRESHOLD_HIGH, DEFAULT_FACE_THRESHOLD_HIGH)
             putFloat(Setting.KEY_FACE_THRESHOLD_MEDIUM, DEFAULT_FACE_THRESHOLD_MEDIUM)
             putFloat(Setting.KEY_FACE_THRESHOLD_NEW, DEFAULT_FACE_THRESHOLD_NEW)

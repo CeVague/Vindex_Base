@@ -7,6 +7,7 @@
     <string name="action_cancel">Annuler</string>
     <string name="action_save">Enregistrer</string>
     <string name="action_delete">Supprimer</string>
+    <string name="action_later">Plus tard</string>
     <string name="action_edit">Modifier</string>
     <string name="action_share">Partager</string>
     <string name="action_select">Sélectionner</string>
@@ -117,6 +118,7 @@
     <string name="search_title">Recherche</string>
     <string name="search_hint">Rechercher des photos…</string>
     <string name="search_ongoing">Recherche en cours…</string>
+    <string name="search_loading_model">Chargement du modèle…</string>
     <string name="search_empty">Aucune photo ne correspond à votre recherche</string>
     <string name="search_start">Recherchez des photos par nom, date ou contenu</string>
     <plurals name="search_results">
@@ -210,6 +212,9 @@
     <string name="models_reindex_title">Changement de modèle</string>
     <string name="models_reindex_message">Voulez-vous ré-indexer toutes les images ? Cela supprimera les anciens vecteurs CLIP et les remplacera par les nouveaux.</string>
     <string name="models_reindex_action">Ré-indexer</string>
+    <string name="models_index_now_title">Indexer vos photos ?</string>
+    <string name="models_index_now_message">Le modèle « %1$s » est maintenant actif mais aucune photo n\'est encore indexée. Lancer l\'indexation maintenant ? Vous pourrez aussi le faire plus tard.</string>
+    <string name="models_index_now_action">Indexer maintenant</string>
     <string name="models_error_no_config">Aucun fichier config.json dans le dossier sélectionné</string>
     <string name="models_error_bad_config">Fichier config.json invalide</string>
     <string name="models_error_missing_file">Un fichier déclaré dans config.json est absent</string>
@@ -258,6 +263,8 @@
     <string name="settings_face_threshold_summary">Plus bas = plus de correspondances, plus haut = moins de faux positifs</string>
     <string name="settings_show_scores">Afficher les scores de similarité</string>
     <string name="settings_show_scores_summary">Afficher les scores de confiance dans les résultats</string>
+    <string name="settings_search_threshold">Seuil de correspondance</string>
+    <string name="settings_search_threshold_summary">Similarité minimale pour conserver un résultat. Laisser vide pour utiliser le seuil propre au modèle actif. Ignoré quand « Afficher les scores » est actif (debug : tout voir).</string>
     <string name="settings_reset">Réinitialiser les paramètres</string>
     <string name="settings_reset_summary">Restaurer les paramètres par défaut</string>
     <string name="settings_reset_confirm">Voulez-vous vraiment réinitialiser tous les paramètres ?</string>

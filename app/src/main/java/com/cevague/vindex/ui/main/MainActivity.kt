@@ -107,39 +107,60 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
+    private var runningScan: WorkInfo? = null
+    private var transientLoadingLabel: String? = null
+
     private fun observeSyncProgress() {
         WorkManager.getInstance(applicationContext)
             .getWorkInfosByTagLiveData("SCAN_TAG")
             .observe(this) { workInfos ->
-                val workInfo = workInfos?.firstOrNull { it.state == WorkInfo.State.RUNNING }
-
-                if (workInfo != null) {
-                    if (syncBinding == null) {
-                        val view = binding.syncProgressStub.inflate()
-                        syncBinding = LayoutSyncProgressBinding.bind(view)
-                    }
-                    syncBinding?.root?.visibility = View.VISIBLE
-
-                    val progress = workInfo.progress.getInt("PROGRESS", 0)
-                    val workText =
-                        workInfo.progress.getString("WORK") ?: getString(R.string.progress_generic)
-
-                    val hasPlaceholder = workText.contains("%d")
-                    val workTextFinal = if (hasPlaceholder) {
-                        workText.replace("%d", progress.toString())
-                    } else {
-                        workText
-                    }
-
-                    syncBinding?.circularProgressBar?.visibility =
-                        if (hasPlaceholder) View.GONE else View.VISIBLE
-
-                    syncBinding?.textProgressBar?.text = workTextFinal
-                    syncBinding?.syncProgressBar?.progress = progress
-                } else {
-                    syncBinding?.root?.visibility = View.GONE
-                }
+                runningScan = workInfos?.firstOrNull { it.state == WorkInfo.State.RUNNING }
+                renderProgress()
             }
+
+        val sharedViewModel: MainSharedViewModel by viewModels()
+        lifecycleScope.launch {
+            sharedViewModel.transientLoading.collect { label ->
+                transientLoadingLabel = label
+                renderProgress()
+            }
+        }
+    }
+
+    private fun ensureSyncBinding(): LayoutSyncProgressBinding =
+        syncBinding ?: LayoutSyncProgressBinding.bind(binding.syncProgressStub.inflate())
+            .also { syncBinding = it }
+
+    /**
+     * Un seul rendu pour deux sources : l'avancement des scans (déterminé,
+     * WorkManager) a priorité ; sinon un chargement transitoire (indéterminé,
+     * spinner + libellé) réutilise la même barre du haut ; sinon on masque.
+     */
+    private fun renderProgress() {
+        val scan = runningScan
+        when {
+            scan != null -> {
+                val b = ensureSyncBinding()
+                val progress = scan.progress.getInt("PROGRESS", 0)
+                val workText =
+                    scan.progress.getString("WORK") ?: getString(R.string.progress_generic)
+                val hasPlaceholder = workText.contains("%d")
+                b.syncProgressBar.visibility = View.VISIBLE
+                b.syncProgressBar.progress = progress
+                b.circularProgressBar.visibility = if (hasPlaceholder) View.GONE else View.VISIBLE
+                b.textProgressBar.text =
+                    if (hasPlaceholder) workText.replace("%d", progress.toString()) else workText
+                b.root.visibility = View.VISIBLE
+            }
+            transientLoadingLabel != null -> {
+                val b = ensureSyncBinding()
+                b.syncProgressBar.visibility = View.GONE
+                b.circularProgressBar.visibility = View.VISIBLE
+                b.textProgressBar.text = transientLoadingLabel
+                b.root.visibility = View.VISIBLE
+            }
+            else -> syncBinding?.root?.visibility = View.GONE
+        }
     }
 
     private fun observeNavigateToTab() {
