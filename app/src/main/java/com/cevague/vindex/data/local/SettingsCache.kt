@@ -30,6 +30,19 @@ class SettingsCache @Inject constructor(
         get() = prefs.getBoolean(Setting.KEY_CITIES_LOADED, false)
         set(value) = prefs.edit { putBoolean(Setting.KEY_CITIES_LOADED, value) }
 
+    /**
+     * Asset de villes déjà importé, pour détecter qu'il a changé.
+     *
+     * `isCitiesLoaded` ne suffit pas : les SharedPreferences **survivent** à une
+     * migration destructive de Room. Après un changement d'asset, le drapeau resterait
+     * donc à `true` sur une base vidée — l'import serait sauté et la table `cities`
+     * resterait vide, sans que rien ne le dise, avec pour seul symptôme une recherche
+     * géographique qui ne trouve plus rien.
+     */
+    var citiesAssetLoaded: String
+        get() = prefs.getString(Setting.KEY_CITIES_ASSET, "") ?: ""
+        set(value) = prefs.edit { putString(Setting.KEY_CITIES_ASSET, value) }
+
     // ════════════════════════════════════════════════════════════════════════
     // Dossiers source
     // ════════════════════════════════════════════════════════════════════════

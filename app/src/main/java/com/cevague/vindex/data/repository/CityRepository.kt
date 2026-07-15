@@ -30,6 +30,8 @@ class CityRepository @Inject constructor(
     suspend fun getCityByNameAndCountry(name: String, countryCode: String): City? =
         cityDao.getCityByNameAndCountry(name, countryCode)
 
+    suspend fun getAliasesForCity(cityId: Long): List<String> = cityDao.getAliasesForCity(cityId)
+
     suspend fun findNearestCity(lat: Double, lon: Double): City? =
         cityDao.findNearestCity(lat, lon)
 

@@ -15,6 +15,10 @@ interface CityDao {
     @Query("SELECT * FROM cities WHERE name = :name AND country_code = :countryCode LIMIT 1")
     suspend fun getCityByNameAndCountry(name: String, countryCode: String): City?
 
+    /** Exonymes d'une ville (« Munich » pour München), pour le matching des requêtes. */
+    @Query("SELECT alias FROM city_aliases WHERE city_id = :cityId")
+    suspend fun getAliasesForCity(cityId: Long): List<String>
+
 
     suspend fun findNearestCity(lat: Double, lon: Double): City? {
         // Deltas progressifs : ~1km, ~10km, ~100km, ~1000km

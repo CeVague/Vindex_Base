@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d9fea2b79a6787d584de174fb4460494",
+    "identityHash": "7d8923a5db46529912f0ef2cf7e0ab93",
     "entities": [
       {
         "tableName": "photos",
@@ -15,7 +15,7 @@
             "notNull": true
           },
           {
-            "fieldPath": "filePath",
+            "fieldPath": "contentUri",
             "columnName": "file_path",
             "affinity": "TEXT",
             "notNull": true
@@ -880,6 +880,55 @@
         "foreignKeys": []
       },
       {
+        "tableName": "city_aliases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`city_id` INTEGER NOT NULL, `alias` TEXT NOT NULL, PRIMARY KEY(`city_id`, `alias`), FOREIGN KEY(`city_id`) REFERENCES `cities`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "cityId",
+            "columnName": "city_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "city_id",
+            "alias"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_city_aliases_city_id",
+            "unique": false,
+            "columnNames": [
+              "city_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_city_aliases_city_id` ON `${TABLE_NAME}` (`city_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cities",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "city_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
         "tableName": "analysis_log",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `photo_id` INTEGER NOT NULL, `analysis_type` TEXT NOT NULL, `model_used` TEXT, `started_at` INTEGER NOT NULL, `completed_at` INTEGER, `success` INTEGER, `error_message` TEXT, FOREIGN KEY(`photo_id`) REFERENCES `photos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
@@ -967,7 +1016,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd9fea2b79a6787d584de174fb4460494')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7d8923a5db46529912f0ef2cf7e0ab93')"
     ]
   }
 }

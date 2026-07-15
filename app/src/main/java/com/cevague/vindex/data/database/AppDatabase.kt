@@ -16,6 +16,7 @@ import com.cevague.vindex.data.database.entity.Album
 import com.cevague.vindex.data.database.entity.AlbumPhoto
 import com.cevague.vindex.data.database.entity.AnalysisLog
 import com.cevague.vindex.data.database.entity.City
+import com.cevague.vindex.data.database.entity.CityAlias
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.database.entity.Photo
@@ -33,6 +34,7 @@ import com.cevague.vindex.data.database.entity.PhotoHash
         AiModel::class,
         PhotoHash::class,
         City::class,
+        CityAlias::class,
         AnalysisLog::class
     ],
     version = 1,

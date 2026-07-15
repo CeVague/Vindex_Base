@@ -54,7 +54,20 @@ data class CountryFilter(
     val sourceText: String
 )
 
-data class KnownCity(val name: String, val latitude: Double, val longitude: Double)
+/**
+ * Ville présente dans la galerie. [name] est la forme **canonique** de GeoNames,
+ * c'est-à-dire le nom international — « Vienna », pas « Wien » : c'est elle qui
+ * étiquette le filtre. [aliases] sont ses **autres formes anglaises** en cours
+ * (« Bombay » pour Mumbai, « Saigon » pour Ho Chi Minh City), qu'une requête
+ * traduite peut tout aussi bien employer. Le matching porte sur les deux,
+ * l'affichage sur le nom seul.
+ */
+data class KnownCity(
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val aliases: List<String> = emptyList()
+)
 
 data class KnownPerson(val id: Long, val name: String)
 
@@ -212,11 +225,13 @@ class QueryParser(
 
     private fun extractCity(tokens: MutableList<Token>, cities: List<KnownCity>): GeoFilter? {
         if (cities.isEmpty()) return null
-        // Villes indexées par leurs tokens normalisés, plus longues d'abord
-        // (« new york » avant « york ») : le matching est ancré sur des tokens
-        // entiers, jamais un préfixe de mot.
+        // Chaque ville est indexée par son nom ET ses exonymes, tokens normalisés,
+        // les plus longs d'abord (« new york » avant « york ») : le matching est
+        // ancré sur des tokens entiers, jamais un préfixe de mot. Trier par longueur
+        // toutes formes confondues évite qu'un alias court d'une ville masque le nom
+        // long d'une autre.
         val indexed = cities
-            .map { it to tokenize(it.name).map(Token::normalized) }
+            .flatMap { city -> (listOf(city.name) + city.aliases).map { city to tokenize(it).map(Token::normalized) } }
             .filter { it.second.isNotEmpty() }
             .sortedByDescending { it.second.size }
 

@@ -1,6 +1,7 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -11,9 +12,18 @@ import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.CityRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import java.io.File
 import java.io.FileOutputStream
 
+/**
+ * Recopie l'asset des villes (GeoNames, construit par `tools/build_cities_db.py`)
+ * dans Room au premier lancement : villes pour le reverse geocoding, exonymes pour
+ * le matching des requêtes.
+ *
+ * L'asset reste dans l'APK après la copie — la donnée existe donc en double, sur
+ * disque et dans l'APK. C'est le prix d'une base pré-calculée sans téléchargement.
+ */
 @HiltWorker
 class CityImportWorker @AssistedInject constructor(
     @Assisted appContext: Context,
@@ -25,59 +35,74 @@ class CityImportWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            // Vérifier si déjà importé via SharedPreferences pour plus de rapidité
-            if (settingsCache.isCitiesLoaded) {
+            // Comparé à une version explicite et non à un simple booléen : cf.
+            // SettingsCache.citiesAssetLoaded — les préférences survivent à une
+            // migration destructive, un booléen ferait sauter l'import à jamais.
+            if (settingsCache.citiesAssetLoaded == CITIES_VERSION && settingsCache.isCitiesLoaded) {
                 return Result.success()
             }
 
-            // Supprimer les anciennes données
             cityRepository.deleteAll()
+            reportProgress(0)
 
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_loading_cities),
-                    "PROGRESS" to 0
-                )
-            )
-
-            // 1. Copier le fichier DB des assets vers un fichier temporaire
             val tempDbFile = File(applicationContext.cacheDir, "temp_cities.db")
-            applicationContext.assets.open("cities15000.db").use { input ->
-                FileOutputStream(tempDbFile).use { output ->
-                    input.copyTo(output)
-                }
+            applicationContext.assets.open(CITIES_ASSET).use { input ->
+                FileOutputStream(tempDbFile).use { output -> input.copyTo(output) }
             }
 
-            // 2. Ouvrir la base de données temporaire
             val db = database.openHelper.writableDatabase
-
-            // On connecte le fichier temporaire
             db.execSQL("ATTACH DATABASE '${tempDbFile.absolutePath}' AS ext_db")
-
             try {
-                // On copie tout d'un coup (C'est ici que le "streaming" se passe)
                 db.execSQL(
                     "INSERT INTO cities (id, name, country_code, latitude, longitude, population) " +
-                            "SELECT id, name, country_code, latitude, longitude, population FROM ext_db.cities15000"
+                            "SELECT id, name, country_code, latitude, longitude, population FROM ext_db.cities"
+                )
+                // Après les villes : la FK des alias pointe dessus.
+                db.execSQL(
+                    "INSERT INTO city_aliases (city_id, alias) " +
+                            "SELECT city_id, alias FROM ext_db.city_aliases"
                 )
             } finally {
-                // On libère le fichier quoi qu'il arrive
                 db.execSQL("DETACH DATABASE ext_db")
             }
 
             tempDbFile.delete()
 
             settingsCache.isCitiesLoaded = true
-            setProgress(
-                workDataOf(
-                    "WORK" to applicationContext.getString(R.string.progress_loading_cities),
-                    "PROGRESS" to 100
-                )
-            )
+            settingsCache.citiesAssetLoaded = CITIES_VERSION
+            reportProgress(100)
             Result.success()
-
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Result.failure()
+            Log.e(TAG, "Import des villes échoué", e)
+            if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
+    }
+
+    private suspend fun reportProgress(percent: Int) {
+        setProgress(
+            workDataOf(
+                "WORK" to applicationContext.getString(R.string.progress_loading_cities),
+                "PROGRESS" to percent
+            )
+        )
+    }
+
+    private companion object {
+        const val TAG = "CityImportWorker"
+
+        /** Nom volontairement générique : la base peut changer de densité sans renommage. */
+        const val CITIES_ASSET = "cities.db"
+
+        /**
+         * Version du contenu de l'asset, à incrémenter **à chaque régénération**.
+         *
+         * Le nom du fichier étant générique, il ne peut plus servir de marqueur : sans
+         * cette constante, remplacer l'asset laisserait les installations existantes
+         * sur l'ancienne table, en silence. Décrit ce qui a été construit — densité,
+         * langue des alias — pour que la valeur se relise.
+         */
+        const val CITIES_VERSION = "cities5000-en-v1"
     }
 }

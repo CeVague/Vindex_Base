@@ -4,6 +4,7 @@ import com.cevague.vindex.data.database.entity.Photo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
@@ -180,6 +181,85 @@ class QueryParserTest {
         val parsed = parser.parse("plage à Biarritz", cities)
         assertNull(parsed.geoFilter)
         assertEquals("plage à Biarritz", parsed.freeText)
+    }
+
+    // ---------------------------------------------- variantes anglaises (alias)
+
+    /**
+     * Cas **réels** du dump GeoNames (vérifiés le 2026-07-15) : `name` est le nom
+     * international, et une seule forme anglaise y est canonique alors que
+     * plusieurs ont cours. La requête arrivant traduite en anglais, le traducteur
+     * peut sortir « Bombay » aussi bien que « Mumbai ».
+     */
+    private val variantes = listOf(
+        KnownCity("Mumbai", 19.0760, 72.8777, aliases = listOf("Bombay")),
+        KnownCity("Kolkata", 22.5726, 88.3639, aliases = listOf("Calcutta")),
+        KnownCity("Ho Chi Minh City", 10.8231, 106.6297, aliases = listOf("Saigon"))
+    )
+
+    @Test
+    fun `une variante trouve la ville`() {
+        val parsed = parser.parse("beach in Bombay", variantes)
+
+        assertEquals(19.0760, parsed.geoFilter!!.latitude, 0.001)
+        assertEquals("beach", parsed.freeText)
+    }
+
+    /** L'étiquette reste le nom canonique : c'est la ville, pas le mot tapé. */
+    @Test
+    fun `la variante filtre mais le nom canonique etiquette`() {
+        val parsed = parser.parse("Saigon", variantes)
+
+        assertEquals("Ho Chi Minh City", parsed.geoFilter?.cityName)
+    }
+
+    /** Le nom canonique continue évidemment de marcher. */
+    @Test
+    fun `le nom canonique marche toujours`() {
+        val parsed = parser.parse("Mumbai", variantes)
+
+        assertEquals("Mumbai", parsed.geoFilter?.cityName)
+        assertEquals("", parsed.freeText)
+    }
+
+    /**
+     * Le nom canonique fait ici **trois** tokens et la variante un seul : le tri par
+     * longueur, toutes formes confondues, doit garder « Ho Chi Minh City » entier.
+     */
+    @Test
+    fun `nom canonique multi-mots face a une variante courte`() {
+        val parsed = parser.parse("Ho Chi Minh City 2024", variantes)
+
+        assertEquals("Ho Chi Minh City", parsed.geoFilter?.cityName)
+        assertRange(parsed.dateRange, 2024, 1, 1, 2024, 12, 31)
+        assertEquals("", parsed.freeText)
+    }
+
+    /** Une variante se normalise comme le reste : casse indifférente. */
+    @Test
+    fun `variante insensible a la casse`() {
+        val parsed = parser.parse("CALCUTTA", variantes)
+
+        assertEquals("Kolkata", parsed.geoFilter?.cityName)
+    }
+
+    /** Ancré sur des tokens entiers, comme les noms : « Bombayite » n'est pas Bombay. */
+    @Test
+    fun `variante ancree - pas de prefixe de mot`() {
+        val parsed = parser.parse("bombayite", variantes)
+
+        assertNull(parsed.geoFilter)
+        assertEquals("bombayite", parsed.freeText)
+    }
+
+    /** Négation et préposition se consomment devant une variante comme devant un nom. */
+    @Test
+    fun `variante negative`() {
+        val parsed = parser.parse("dog not in Bombay", variantes)
+
+        assertEquals("Mumbai", parsed.geoFilter?.cityName)
+        assertTrue(parsed.geoFilter!!.negated)
+        assertEquals("dog", parsed.freeText)
     }
 
     @Test

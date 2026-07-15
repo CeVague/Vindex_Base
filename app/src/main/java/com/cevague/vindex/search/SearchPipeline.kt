@@ -211,8 +211,15 @@ class SearchPipeline @Inject constructor(
             val name = location.substringBefore(',').trim()
             val countryCode = location.substringAfter(',', "").trim()
             if (name.isEmpty() || countryCode.isEmpty()) return@mapNotNull null
-            cityRepository.getCityByNameAndCountry(name, countryCode)
-                ?.let { KnownCity(it.name, it.latitude, it.longitude) }
+            cityRepository.getCityByNameAndCountry(name, countryCode)?.let { city ->
+                // Les variantes suivent la ville : « Bombay » doit trouver Mumbai.
+                KnownCity(
+                    name = city.name,
+                    latitude = city.latitude,
+                    longitude = city.longitude,
+                    aliases = cityRepository.getAliasesForCity(city.id)
+                )
+            }
         }.distinct()
 
     /**
