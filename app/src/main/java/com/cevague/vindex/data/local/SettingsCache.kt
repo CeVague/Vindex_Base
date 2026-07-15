@@ -146,15 +146,24 @@ class SettingsCache @Inject constructor(
         // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
         // la recherche : plus haut = plus proche.
         //
-        // Calibrés le 2026-07-15 sur la galerie de test (21 visages, ~9 personnes) :
-        // les premières apparitions plafonnaient à 0,353, les ré-apparitions
-        // démarraient à 0,453 — la frontière est dans ce trou. Échantillon minuscule,
-        // à revoir sur une vraie galerie.
+        // Re-mesurés le 2026-07-15 après le crop à résolution dynamique (51 visages,
+        // log CALIBRATION) : la distribution est franchement bimodale — 36 valeurs
+        // sous 0,354, UNE seule à 0,410, puis 14 à partir de 0,502. La bande
+        // [0,42 ; 0,50] est vide, et c'est le plus grand trou de la distribution.
         //
-        // NEW n'est pas sur le même axe : il servira à proposer la fusion de deux
-        // groupes (décision groupe↔groupe), pas à placer un visage. Inutilisé à ce jour.
+        // Le crop a élargi ce trou : les ré-apparitions démarraient à 0,453 avant, à
+        // 0,502 après, à plafond de bruit inchangé (0,353 → 0,354). Des visages nets
+        // plutôt qu'agrandis se reconnaissent plus franchement.
+        //
+        // HIGH au milieu de la bande vide. MEDIUM à 0,40 et non 0,35 : à 0,35 il
+        // passait SOUS le plafond du bruit (0,3526 et 0,3536 le dépassaient de deux
+        // millièmes), donc il posait des questions sur des inconnus.
+        //
+        // NEW n'est pas sur le même axe : il sert à proposer la fusion de deux groupes
+        // (décision groupe↔groupe), pas à placer un visage — jamais calibré, cf. la
+        // carte de proposition en mode debug.
         const val DEFAULT_FACE_THRESHOLD_HIGH = 0.45f
-        const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.35f
+        const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.40f
         const val DEFAULT_FACE_THRESHOLD_NEW = 0.40f
     }
 }
