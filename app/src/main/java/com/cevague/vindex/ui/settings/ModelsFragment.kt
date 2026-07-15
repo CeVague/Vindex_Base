@@ -64,7 +64,7 @@ class ModelsFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.models.collect { models ->
-                        adapter.submitList(models)
+                        adapter.submitList(sectioned(models))
                         binding.textModelsEmpty.visibility =
                             if (models.isEmpty()) View.VISIBLE else View.GONE
                     }
@@ -80,6 +80,25 @@ class ModelsFragment : Fragment() {
                     viewModel.events.collect { event -> showEvent(event) }
                 }
             }
+        }
+    }
+
+    /**
+     * Groupe les modèles par type, dans l'ordre de [ModelsAdapter.TYPE_ORDER] : une
+     * section n'apparaît que si un modèle l'habite, et un type inattendu (venu d'un
+     * config.json) atterrit en fin de liste plutôt que de disparaître.
+     */
+    private fun sectioned(models: List<AiModel>): List<ModelListItem> {
+        val byType = models.groupBy { it.modelType }
+        val known = ModelsAdapter.TYPE_ORDER.filter { byType.containsKey(it) }
+        val unknown = byType.keys.filterNot { it in ModelsAdapter.TYPE_ORDER }.sorted()
+
+        return (known + unknown).flatMap { type ->
+            val header = ModelListItem.Header(getString(ModelsAdapter.sectionLabelOf(type)))
+            val entries = byType.getValue(type)
+                .sortedBy { it.modelName }
+                .map { ModelListItem.Model(it) }
+            listOf(header) + entries
         }
     }
 
@@ -112,6 +131,18 @@ class ModelsFragment : Fragment() {
                     .setMessage(R.string.models_reindex_message)
                     .setPositiveButton(R.string.models_reindex_action) { _, _ ->
                         viewModel.requestReindex(event.model)
+                    }
+                    .setNegativeButton(R.string.action_cancel, null)
+                    .show()
+                null
+            }
+
+            is ModelsViewModel.Event.ConfirmFaceReanalysis -> {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.models_reindex_faces_title)
+                    .setMessage(R.string.models_reindex_faces_message)
+                    .setPositiveButton(R.string.models_reindex_faces_action) { _, _ ->
+                        viewModel.requestFaceReanalysis(event.model)
                     }
                     .setNegativeButton(R.string.action_cancel, null)
                     .show()

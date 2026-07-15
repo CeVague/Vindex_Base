@@ -31,6 +31,9 @@ class ModelsViewModel @Inject constructor(
             Event()
 
         data class ConfirmReindex(val model: AiModel) : Event()
+
+        /** Détecteur ou embedder : les deux invalident tous les visages. */
+        data class ConfirmFaceReanalysis(val model: AiModel) : Event()
     }
 
     val models: StateFlow<List<AiModel>> = repository.getAllModels()
@@ -56,16 +59,22 @@ class ModelsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Un modèle dont dépend un travail déjà calculé ne s'active jamais en silence :
+     * on demande **avant** de toucher à quoi que ce soit. Les autres (traduction…)
+     * ne périment rien et s'activent directement.
+     */
     fun activate(model: AiModel) {
         if (model.isActive) return // Déjà actif, rien à faire
 
         viewModelScope.launch {
-            if (model.modelType == AiModel.TYPE_CLIP) {
-                // Pour CLIP, on demande confirmation AVANT de changer quoi que ce soit
-                _events.emit(Event.ConfirmReindex(model))
-            } else {
-                // Pour les autres types (traduction, etc.), on active directement
-                repository.activate(model)
+            when (model.modelType) {
+                AiModel.TYPE_CLIP -> _events.emit(Event.ConfirmReindex(model))
+
+                AiModel.TYPE_FACE_DETECTION, AiModel.TYPE_FACE_EMBEDDING ->
+                    _events.emit(Event.ConfirmFaceReanalysis(model))
+
+                else -> repository.activate(model)
             }
         }
     }
@@ -76,6 +85,13 @@ class ModelsViewModel @Inject constructor(
             repository.activate(model)
             // 2. Lancer la ré-indexation (qui supprimera les anciens vecteurs)
             scanManager.startClipReindexing()
+        }
+    }
+
+    fun requestFaceReanalysis(model: AiModel) {
+        viewModelScope.launch {
+            repository.activate(model)
+            scanManager.startFaceReanalysis()
         }
     }
 
