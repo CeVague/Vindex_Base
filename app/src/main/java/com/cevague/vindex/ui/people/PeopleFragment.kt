@@ -17,7 +17,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
@@ -149,10 +148,12 @@ class PeopleFragment : Fragment() {
     }
 
     private fun loadFaceCrop(view: ImageView, face: FaceDao.FaceWithPhoto) {
+        val output = view.layoutParams.width
         Glide.with(view)
             .load(face.filePath)
             .signature(ObjectKey(face.id))
-            .transform(FaceCropTransformation(face), CircleCrop())
+            .override(FaceCropTransformation.sourceSizeFor(face, output))
+            .transform(FaceCropTransformation(face, output))
             .placeholder(R.drawable.vector_peoples)
             .error(R.drawable.vector_peoples)
             .into(view)

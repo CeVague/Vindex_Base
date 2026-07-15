@@ -9,7 +9,6 @@ import android.widget.ArrayAdapter
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
@@ -168,10 +167,12 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
 
 
     private fun displayFace(face: FaceDao.FaceWithPhoto) {
+        val output = binding.imageFace.layoutParams.width
         Glide.with(this)
             .load(face.filePath)
             .diskCacheStrategy(DiskCacheStrategy.NONE)
-            .transform(FaceCropTransformation(face), CircleCrop())
+            .override(FaceCropTransformation.sourceSizeFor(face, output))
+            .transform(FaceCropTransformation(face, output))
             .transition(DrawableTransitionOptions.withCrossFade())
             .into(binding.imageFace)
 

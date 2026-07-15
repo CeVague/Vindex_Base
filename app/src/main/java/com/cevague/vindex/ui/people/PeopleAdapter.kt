@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
@@ -74,23 +73,21 @@ class PeopleAdapter(
                     boxBottom = person.boxBottom ?: 0f
                 )
 
-                val spanCount = settingsCache.gridColumns
-                val screenWidth = binding.root.context.resources.displayMetrics.widthPixels
-                val targetSize = screenWidth / spanCount
-
+                // La vignette fait 88dp quel que soit le nombre de colonnes : c'est
+                // elle qui dicte la taille, pas la largeur de la cellule.
+                val output = binding.imagePerson.layoutParams.width
                 Glide.with(binding.imagePerson)
                     .load(coverPath)
                     .signature(ObjectKey(person.id.toString() + person.photoCount))
                     .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                    .override(targetSize)
+                    .override(FaceCropTransformation.sourceSizeFor(faceData, output))
                     .placeholder(R.drawable.vector_peoples)
                     .error(R.drawable.vector_peoples)
-                    .transform(FaceCropTransformation(faceData), CircleCrop())
+                    .transform(FaceCropTransformation(faceData, output))
                     .into(binding.imagePerson)
             } else {
                 Glide.with(binding.imagePerson)
                     .load(R.drawable.vector_peoples)
-                    .transform(CircleCrop())
                     .into(binding.imagePerson)
             }
 
