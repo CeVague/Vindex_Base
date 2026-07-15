@@ -11,7 +11,6 @@ import com.cevague.vindex.ai.Assignment
 import com.cevague.vindex.ai.FaceEngine
 import com.cevague.vindex.ai.PersonCentroid
 import com.cevague.vindex.ai.assignFace
-import com.cevague.vindex.ai.weightedCentroid
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.local.SettingsCache
@@ -196,25 +195,6 @@ class FaceAnalysisWorker @AssistedInject constructor(
             }
         }
 
-        touched.forEach { recomputeCentroid(it, dim) }
-    }
-
-    /**
-     * Recalcule le centroïde d'une personne depuis ses visages, plutôt que de
-     * l'incrémenter : la moyenne est **pondérée** et le schéma ne stocke pas la
-     * somme des poids. Seuls `auto` et `manual` y entrent.
-     */
-    private suspend fun recomputeCentroid(personId: Long, dim: Int) {
-        val faces = personRepository.getFacesByPersonOnce(personId).filter {
-            it.embedding != null &&
-                    (it.assignmentType == Face.ASSIGNMENT_AUTO || it.assignmentType == Face.ASSIGNMENT_MANUAL)
-        }
-        if (faces.isEmpty()) return
-
-        val centroid = weightedCentroid(
-            faces.map { it.embedding!!.asFloatArray(dim) },
-            faces.map { it.weight }
-        )
-        personRepository.updateCentroid(personId, centroid.toEmbeddingBlob())
+        touched.forEach { personRepository.recomputeCentroid(it) }
     }
 }

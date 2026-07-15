@@ -141,9 +141,27 @@ interface FaceDao {
     )
     suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceWithPhoto?
 
-    // Pour marquer comme "ignored"
+    // Pour marquer comme "ignored" (Face.ASSIGNMENT_IGNORED — @Query n'accepte pas de const)
     @Query("UPDATE faces SET assignment_type = 'ignored', assigned_at = :timestamp WHERE id = :id")
     suspend fun markAsIgnored(id: Long, timestamp: Long = System.currentTimeMillis())
+
+    /**
+     * Écarte d'un coup tous les visages d'un groupe (« ce n'est pas une personne »).
+     * `person_id` est remis à NULL ici même : le groupe est supprimé juste après, et
+     * les visages ne doivent appartenir à personne — pas plus qu'ils ne doivent
+     * retomber dans la file d'identification, d'où `ignored` plutôt que `pending`.
+     */
+    @Query(
+        """
+        UPDATE faces SET
+            assignment_type = 'ignored',
+            person_id = NULL,
+            assignment_confidence = NULL,
+            assigned_at = :timestamp
+        WHERE person_id = :personId
+    """
+    )
+    suspend fun markAllAsIgnoredForPerson(personId: Long, timestamp: Long = System.currentTimeMillis())
 
     // Insert
 

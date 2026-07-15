@@ -16,6 +16,7 @@ import com.cevague.vindex.data.database.dao.PersonDao.PersonWithCover
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ItemPersonBinding
 import kotlinx.coroutines.Job
+import java.util.Locale
 
 class PeopleAdapter(
     private val settingsCache: SettingsCache,
@@ -49,6 +50,17 @@ class PeopleAdapter(
                 person.photoCount,
                 person.photoCount
             )
+
+            // Debug : meilleur score de détection du groupe (pas celui de la vignette
+            // — cf. PersonWithCover.bestScore). C'est le nombre qui a servi à mesurer
+            // la frontière animaux/humains sans re-détecter quoi que ce soit : monter
+            // un seuil ne fait qu'enlever des visages, la base les contient donc déjà
+            // tous. C'est aussi lui qui relègue les groupes douteux en fin de liste.
+            val score = person.bestScore.takeIf { settingsCache.showScores }
+            binding.textScore.visibility = if (score != null) View.VISIBLE else View.GONE
+            if (score != null) {
+                binding.textScore.text = String.format(Locale.US, "%.2f", score)
+            }
 
             val coverPath = person.coverPath
 

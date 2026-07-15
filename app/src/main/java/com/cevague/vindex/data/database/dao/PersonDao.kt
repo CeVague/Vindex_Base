@@ -27,29 +27,56 @@ interface PersonDao {
         val boxLeft: Float?,
         val boxTop: Float?,
         val boxRight: Float?,
-        val boxBottom: Float?
+        val boxBottom: Float?,
+        /**
+         * **Meilleur** score de détection du groupe, et non celui du visage affiché :
+         * c'est lui qui dit si le groupe est douteux. Un groupe dont même le meilleur
+         * visage est faible est probablement un animal ou une statue ; un groupe dont
+         * la vignette est faible mais qui a par ailleurs un visage net est une vraie
+         * personne. Pour un groupe-poubelle (un seul visage), les deux coïncident.
+         */
+        val bestScore: Float?
     )
 
     // Queries - reactive
 
+    /**
+     * [suspectBelow] : sous ce **meilleur** score de détection, un groupe anonyme est
+     * relégué en fin de liste. C'est un tri, pas un filtre — rien n'est caché, et
+     * aucune re-détection n'est nécessaire (contrairement à un durcissement du
+     * `score_threshold` de YuNet). Les groupes **nommés** ne sont jamais relégués :
+     * une personne nommée n'est pas un faux positif, et leur ordre alphabétique doit
+     * rester stable.
+     */
     @Query(
         """
-    SELECT p.id, p.name, p.photo_count as photoCount, ph.file_path as coverPath, f.box_left as boxLeft, f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom
+    SELECT p.id, p.name, p.photo_count as photoCount, ph.file_path as coverPath, f.box_left as boxLeft, f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom,
+           (SELECT MAX(confidence) FROM faces WHERE person_id = p.id) as bestScore
     FROM persons p
     LEFT JOIN faces f ON f.id = (
-        SELECT id FROM faces 
-        WHERE person_id = p.id 
-        ORDER BY is_primary DESC, id ASC 
+        SELECT id FROM faces
+        WHERE person_id = p.id
+        ORDER BY is_primary DESC, id ASC
         LIMIT 1
     )
     LEFT JOIN photos ph ON f.photo_id = ph.id
     ORDER BY (p.name IS NULL),     -- les personnes nommées d'abord
              (p.photo_count = 0),  -- les vides en fin de leur groupe
+             -- anonymes douteux en fin : score inconnu = non jugé, donc non relégué
+             (p.name IS NULL AND bestScore IS NOT NULL AND bestScore < :suspectBelow),
              p.name ASC,           -- nommées : ordre alphabétique
              p.photo_count DESC    -- anonymes : les plus gros groupes d'abord
 """
     )
-    fun getPeopleForTrombinoscope(): Flow<List<PersonWithCover>>
+    fun getPeopleForTrombinoscope(suspectBelow: Float): Flow<List<PersonWithCover>>
+
+    /**
+     * Un centroïde n'a de sens que dans l'espace vectoriel qui l'a produit : changer
+     * de modèle d'embedding les rend tous ininterprétables, sans qu'ils cessent pour
+     * autant de ressembler à des vecteurs valides. À vider avant toute ré-analyse.
+     */
+    @Query("UPDATE persons SET centroid_embedding = NULL, centroid_updated_at = NULL")
+    suspend fun clearAllCentroids()
 
     @Query("SELECT * FROM persons ORDER BY name ASC")
     fun getAllPersons(): Flow<List<Person>>

@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageView
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -15,7 +16,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
+import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.local.SettingsCache
@@ -24,6 +29,7 @@ import com.cevague.vindex.databinding.FragmentPeopleBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -83,6 +89,12 @@ class PeopleFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.mergeSuggestion.collect { renderMergeSuggestion(it) }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.unidentifiedFaceCount.collect { count ->
                     binding.fabIdentify.apply {
                         visibility = if (count > 0) View.VISIBLE else View.GONE
@@ -104,6 +116,48 @@ class PeopleFragment : Fragment() {
         }
     }
 
+    /**
+     * Une seule proposition à la fois, la meilleure : répondre à celle-ci fait
+     * apparaître la suivante (la liste ré-émet). Le score n'est affiché qu'en mode
+     * debug, comme partout ailleurs.
+     */
+    private fun renderMergeSuggestion(suggestion: MergeSuggestion?) {
+        binding.cardMerge.visibility = if (suggestion == null) View.GONE else View.VISIBLE
+        if (suggestion == null) return
+
+        loadFaceCrop(binding.imageMergeKeep, suggestion.keepFace)
+        loadFaceCrop(binding.imageMergeOther, suggestion.mergeFace)
+
+        val unknown = getString(R.string.people_unknown)
+        val names = getString(
+            R.string.people_merge_suggest_names,
+            suggestion.keepName ?: unknown,
+            suggestion.mergeName ?: unknown
+        )
+        binding.textMergeDetail.text = if (settingsCache.showScores) {
+            getString(
+                R.string.people_merge_suggest_detail,
+                names,
+                String.format(Locale.US, "%.2f", suggestion.proposal.similarity)
+            )
+        } else {
+            names
+        }
+
+        binding.buttonMergeConfirm.setOnClickListener { viewModel.acceptMerge(suggestion) }
+        binding.buttonMergeDismiss.setOnClickListener { viewModel.dismissMerge(suggestion) }
+    }
+
+    private fun loadFaceCrop(view: ImageView, face: FaceDao.FaceWithPhoto) {
+        Glide.with(view)
+            .load(face.filePath)
+            .signature(ObjectKey(face.id))
+            .transform(FaceCropTransformation(face), CircleCrop())
+            .placeholder(R.drawable.vector_peoples)
+            .error(R.drawable.vector_peoples)
+            .into(view)
+    }
+
     private fun showPersonOptionsMenu(person: PersonDao.PersonWithCover, anchorView: View) {
         val popup = PopupMenu(requireContext(), anchorView)
         popup.menuInflater.inflate(R.menu.menu_person_options, popup.menu)
@@ -117,6 +171,11 @@ class PeopleFragment : Fragment() {
 
                 R.id.action_delete -> {
                     showDeleteConfirmation(person)
+                    true
+                }
+
+                R.id.action_not_a_person -> {
+                    showNotAPersonConfirmation(person)
                     true
                 }
 
@@ -184,6 +243,31 @@ class PeopleFragment : Fragment() {
                 }
             }
             .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    /**
+     * Confirmation demandée bien que l'action soit anodine à décrire : elle est
+     * **sans retour**. Aucun écran ne ré-affiche un visage écarté, et le clustering
+     * ne repassera pas dessus (une photo déjà analysée n'est jamais ré-analysée) —
+     * un clic long malheureux sur une vraie personne coûterait tous ses visages.
+     */
+    private fun showNotAPersonConfirmation(person: PersonDao.PersonWithCover) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.people_not_a_person_title)
+            .setMessage(
+                resources.getQuantityString(
+                    R.plurals.people_not_a_person_message,
+                    person.photoCount,
+                    person.photoCount
+                )
+            )
+            .setPositiveButton(R.string.people_not_a_person_confirm) { _, _ ->
+                lifecycleScope.launch {
+                    personRepository.ignorePersonAsNotAPerson(person.id)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 

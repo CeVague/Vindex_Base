@@ -1,10 +1,13 @@
 package com.cevague.vindex.data.repository
 
 import androidx.room.Transaction
+import com.cevague.vindex.ai.weightedCentroid
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
+import com.cevague.vindex.search.asFloatArray
+import com.cevague.vindex.search.toEmbeddingBlob
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +28,7 @@ class PersonRepository @Inject constructor(
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
     fun getPeopleForTrombinoscope(): Flow<List<PersonDao.PersonWithCover>> =
-        personDao.getPeopleForTrombinoscope()
+        personDao.getPeopleForTrombinoscope(SUSPECT_SCORE_BELOW)
 
 
     fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
@@ -101,9 +104,45 @@ class PersonRepository @Inject constructor(
         personDao.deleteById(personId)
     }
 
+    /**
+     * « Ce n'est pas une personne » sur un groupe entier : ses visages passent en
+     * `ignored` et le groupe disparaît.
+     *
+     * L'ordre compte. Marquer d'abord, supprimer ensuite : la FK `person_id` est en
+     * `SET_NULL`, donc supprimer la personne en premier effacerait le lien qui sert
+     * justement à retrouver ses visages.
+     *
+     * Sans ça, écarter un chat imposait de supprimer le groupe puis d'écarter ses
+     * visages un par un dans la file d'identification.
+     */
+    @Transaction
+    suspend fun ignorePersonAsNotAPerson(personId: Long) {
+        faceDao.markAllAsIgnoredForPerson(personId)
+        personDao.deleteById(personId)
+    }
+
     suspend fun deleteAllPersons() = personDao.deleteAll()
 
     suspend fun deleteAllFaces() = faceDao.deleteAll()
+
+    /**
+     * Ardoise vierge avant une ré-analyse des visages (changement de détecteur ou
+     * d'embedder).
+     *
+     * Les centroïdes doivent partir **avec** les visages : ils sont exprimés dans
+     * l'espace vectoriel de l'ancien modèle, et rien dans `assignFace` ne peut le
+     * deviner — il comparerait les nouveaux embeddings à d'anciens repères, et
+     * distribuerait les visages n'importe où en ayant l'air de fonctionner.
+     *
+     * Les personnes elles-mêmes survivent : les non nommées seront balayées par le
+     * `CleanupWorker` en fin de chaîne, les nommées restent (vides) — leur nom est
+     * la seule chose qu'un changement de modèle ne périme pas.
+     */
+    @Transaction
+    suspend fun resetFaceData() {
+        faceDao.deleteAll()
+        personDao.clearAllCentroids()
+    }
 
     suspend fun deleteById(id: Long) = personDao.deleteById(id)
 
@@ -203,6 +242,46 @@ class PersonRepository @Inject constructor(
         faceDao.reassignAllFaces(oldPersonId = mergeId, newPersonId = keepId)
         personDao.recalculatePhotoCount(keepId)
         personDao.deleteById(mergeId)
+        // Sans ça, la personne fusionnée garderait le centroïde de sa seule moitié
+        // d'origine : elle continuerait d'attirer — et de rater — comme avant.
+        recomputeCentroid(keepId)
+    }
+
+    /**
+     * Recalcule le centroïde d'une personne depuis ses visages, plutôt que de
+     * l'incrémenter : la moyenne est **pondérée** et le schéma ne stocke pas la
+     * somme des poids. Seuls `auto` et `manual` y entrent — un `pending` est une
+     * question, pas une réponse.
+     *
+     * La dimension se déduit du BLOB lui-même (float32) : inutile de la faire
+     * descendre depuis le modèle actif.
+     */
+    suspend fun recomputeCentroid(personId: Long) {
+        val faces = faceDao.getFacesByPersonOnce(personId).filter {
+            it.embedding != null &&
+                    (it.assignmentType == Face.ASSIGNMENT_AUTO || it.assignmentType == Face.ASSIGNMENT_MANUAL)
+        }
+        if (faces.isEmpty()) return
+
+        val centroid = weightedCentroid(
+            faces.map { face ->
+                val blob = face.embedding!!
+                blob.asFloatArray(blob.size / Float.SIZE_BYTES)
+            },
+            faces.map { it.weight }
+        )
+        updateCentroid(personId, centroid.toEmbeddingBlob())
+    }
+
+    companion object {
+        /**
+         * Un groupe anonyme dont même le meilleur visage est détecté sous ce score
+         * part en fin de trombinoscope : c'est là que se trouvent les animaux, les
+         * statues et les portraits. Frontière **mesurée** sur la galerie de test
+         * (2026-07-15) — mais un vrai visage, net, y traînait à 0,68, d'où un simple
+         * tri plutôt qu'un seuil de détection : rien n'est perdu, tout est relu.
+         */
+        const val SUSPECT_SCORE_BELOW = 0.70f
     }
 
     private fun formatName(name: String?): String? {

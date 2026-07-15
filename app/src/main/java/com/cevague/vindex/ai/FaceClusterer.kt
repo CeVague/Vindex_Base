@@ -7,7 +7,9 @@ data class PersonCentroid(
     val personId: Long,
     val centroid: FloatArray,
     /** Seule une personne nommée peut faire l'objet d'une question à l'utilisateur. */
-    val named: Boolean
+    val named: Boolean,
+    /** Taille du groupe : départage les fusions entre anonymes ([proposeMerges]). */
+    val photoCount: Int = 0
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -17,6 +19,7 @@ data class PersonCentroid(
 
         if (personId != other.personId) return false
         if (named != other.named) return false
+        if (photoCount != other.photoCount) return false
         if (!centroid.contentEquals(other.centroid)) return false
 
         return true
@@ -25,6 +28,7 @@ data class PersonCentroid(
     override fun hashCode(): Int {
         var result = personId.hashCode()
         result = 31 * result + named.hashCode()
+        result = 31 * result + photoCount
         result = 31 * result + centroid.contentHashCode()
         return result
     }
@@ -75,6 +79,69 @@ fun assignFace(
         return Assignment.Pending(winner.personId, bestSimilarity)
     }
     return Assignment.NewPerson
+}
+
+/** Deux groupes que l'app propose de réunir : [keepId] survit, [mergeId] disparaît. */
+data class MergeProposal(
+    val keepId: Long,
+    val mergeId: Long,
+    val similarity: Float
+)
+
+/**
+ * Propose de réunir les groupes trop proches pour être deux personnes.
+ *
+ * C'est le filet de sécurité de `assignFace`, qui décide visage→personne, dans
+ * l'ordre où les photos arrivent, et **ne revient jamais** sur une décision : un
+ * premier visage flou ancre mal un groupe, la personne se scinde en deux, et plus
+ * rien ne peut les réunir. La comparaison groupe↔groupe est la seule à voir ce
+ * qu'aucune décision par visage ne pouvait voir.
+ *
+ * O(k²) sur les **centroïdes** (quelques centaines), pas O(n²) sur les visages.
+ *
+ * Deux personnes **nommées** ne sont jamais proposées : deux noms distincts sont
+ * une affirmation de l'utilisateur, pas une hésitation. Nommée + anonyme : la
+ * nommée est gardée, son nom étant la seule information rare de la paire. Deux
+ * anonymes : le plus gros groupe est gardé, son centroïde reposant sur plus de
+ * visages.
+ *
+ * Un groupe n'apparaît que dans **une** proposition, les paires étant prises par
+ * similarité décroissante : proposer A+B puis A+C n'aurait pas de sens, la seconde
+ * portant sur un groupe que la première vient de faire disparaître.
+ */
+fun proposeMerges(centroids: List<PersonCentroid>, floor: Float): List<MergeProposal> {
+    val candidates = mutableListOf<MergeProposal>()
+
+    for (i in centroids.indices) {
+        for (j in i + 1 until centroids.size) {
+            val a = centroids[i]
+            val b = centroids[j]
+            if (a.named && b.named) continue
+
+            val similarity = dotProduct(a.centroid, b.centroid)
+            if (similarity < floor) continue
+
+            val keep = if (preferAsKeep(a, b)) a else b
+            val merge = if (keep === a) b else a
+            candidates += MergeProposal(keep.personId, merge.personId, similarity)
+        }
+    }
+
+    candidates.sortByDescending { it.similarity }
+
+    val served = mutableSetOf<Long>()
+    return candidates.filter { proposal ->
+        if (proposal.keepId in served || proposal.mergeId in served) return@filter false
+        served += proposal.keepId
+        served += proposal.mergeId
+        true
+    }
+}
+
+/** Lequel des deux garde son identité. Le nom prime sur la taille. */
+private fun preferAsKeep(a: PersonCentroid, b: PersonCentroid): Boolean = when {
+    a.named != b.named -> a.named
+    else -> a.photoCount >= b.photoCount
 }
 
 /**

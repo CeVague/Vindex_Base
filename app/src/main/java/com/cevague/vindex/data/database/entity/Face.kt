@@ -100,5 +100,15 @@ data class Face(
 
         /** Confirmé par l'utilisateur : seule vérité terrain, jamais réécrit par l'automate. */
         const val ASSIGNMENT_MANUAL = "manual"
+
+        /**
+         * Écarté par l'utilisateur (« ce n'est pas une personne ») : animal, statue,
+         * portrait peint. Sort définitivement de la file d'identification et des
+         * centroïdes, sans effacer la détection.
+         *
+         * Room n'accepte que des littéraux dans `@Query` : la valeur est donc répétée
+         * en dur dans les requêtes de FaceDao — c'est ici qu'elle est déclarée.
+         */
+        const val ASSIGNMENT_IGNORED = "ignored"
     }
 }
