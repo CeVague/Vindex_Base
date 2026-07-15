@@ -49,6 +49,7 @@ data class PhotoAnalysis(
         const val TYPE_CAPTION = "caption"
         const val TYPE_CAPTION_EMBEDDING = "caption_embedding"
         const val TYPE_CLIP_EMBEDDING = "clip_embedding"
+        const val TYPE_FACES = "faces"
         const val TYPE_TAGS = "tags"
         const val TYPE_OCR = "ocr"
     }

@@ -6,6 +6,8 @@ import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import com.bumptech.glide.Glide
@@ -13,6 +15,7 @@ import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cevague.vindex.data.database.entity.AiModel
 import com.cevague.vindex.data.repository.AiModelRepository
+import com.cevague.vindex.search.normalizeL2
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -49,6 +52,26 @@ class FaceEngine @Inject constructor(
         val embedderModel: String,
         val embeddingDim: Int
     )
+
+    data class AnalyzedFace(val detected: DetectedFace, val embedding: FloatArray) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as AnalyzedFace
+
+            if (detected != other.detected) return false
+            if (!embedding.contentEquals(other.embedding)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = detected.hashCode()
+            result = 31 * result + embedding.contentHashCode()
+            return result
+        }
+    }
 
     /**
      * Photo préparée pour le détecteur : le contenu, ratio conservé, est collé
@@ -108,7 +131,7 @@ class FaceEngine @Inject constructor(
             val session = loaded.session
                 ?: openSession(loaded, ModelConfig.FILE_FACE_DETECTOR).also { loaded.session = it }
 
-            val tensor = detectorTensor(loaded, letterboxed.bitmap)
+            val tensor = imageTensor(loaded, letterboxed.bitmap)
             try {
                 val inputName = session.inputInfo.keys.first()
                 session.run(mapOf(inputName to tensor)).use { result ->
@@ -194,34 +217,32 @@ class FaceEngine @Inject constructor(
         decodeStride(cls, obj, bbox, kps, stride, cols, detection.scoreThreshold)
     }
 
-    /**
-     * Décode la photo à la taille du détecteur en conservant le ratio (Glide
-     * applique l'orientation EXIF), puis la colle en haut-gauche d'un canevas
-     * carré. Padding bas/droite : c'est la convention de YuNet, et ça rend la
-     * reprojection triviale (aucun offset à défaire). Jamais de décodage en
-     * pleine résolution.
-     */
-    private fun loadForDetection(contentUri: String, size: Int): Letterboxed {
-        val fitted = Glide.with(context)
-            .asBitmap()
-            .load(contentUri.toUri())
+    private fun decodeFitted(contentUri: String, size: Int): Bitmap =
+        Glide.with(context).asBitmap().load(contentUri.toUri())
             .format(DecodeFormat.PREFER_ARGB_8888)
             .disallowHardwareConfig()
             .diskCacheStrategy(DiskCacheStrategy.NONE)
             .skipMemoryCache(true)
-            .fitCenter()
-            .submit(size, size)
-            .get()
+            .fitCenter().submit(size, size).get()
 
-        // Bitmap neuf = zéros = padding noir.
+    private fun loadForDetection(contentUri: String, size: Int): Letterboxed {
+        val fitted = decodeFitted(contentUri, size)
         val padded = createBitmap(size, size)
         Canvas(padded).drawBitmap(fitted, 0f, 0f, null)
-
         return Letterboxed(padded, fitted.width, fitted.height)
     }
 
-    /** Canevas → tenseur CHW en BGR brut 0-255 (convention YuNet). */
-    private fun detectorTensor(loaded: Loaded, bitmap: Bitmap): OnnxTensor {
+    private fun loadForEmbedding(contentUri: String, size: Int): Bitmap =
+        decodeFitted(contentUri, size)
+
+
+    /**
+     * Bitmap → tenseur CHW selon les conventions déclarées par le modèle :
+     * `channel_order` (rgb/bgr) et `normalization` (mean_std/none). Sert donc le
+     * détecteur (BGR brut 0-255) comme l'embedder (RGB normalisé) — les mean/std
+     * du config.json sont donnés en RGB, on normalise avant de réordonner.
+     */
+    private fun imageTensor(loaded: Loaded, bitmap: Bitmap): OnnxTensor {
         val size = bitmap.width
         val area = size * size
         val pixels = loaded.pixelBuffer?.takeIf { it.size == area }
@@ -229,16 +250,123 @@ class FaceEngine @Inject constructor(
         val floats = loaded.floatBuffer?.takeIf { it.size == 3 * area }
             ?: FloatArray(3 * area).also { loaded.floatBuffer = it }
 
+        val normalize = loaded.config.normalization == ModelConfig.NORM_MEAN_STD
+        val bgr = loaded.config.channelOrder == ModelConfig.CHANNEL_BGR
+
+        var m0 = 0f
+        var m1 = 0f
+        var m2 = 0f
+        var s0 = 1f
+        var s1 = 1f
+        var s2 = 1f
+        if (normalize) {
+            val mean = loaded.config.mean ?: error("image.mean manquant")
+            val std = loaded.config.std ?: error("image.std manquant")
+            m0 = mean[0].toFloat(); m1 = mean[1].toFloat(); m2 = mean[2].toFloat()
+            s0 = std[0].toFloat(); s1 = std[1].toFloat(); s2 = std[2].toFloat()
+        }
+
         bitmap.getPixels(pixels, 0, size, 0, 0, size, size)
 
         for (i in 0 until area) {
             val p = pixels[i]
-            floats[i] = (p and 0xFF).toFloat()
-            floats[area + i] = (p shr 8 and 0xFF).toFloat()
-            floats[2 * area + i] = (p shr 16 and 0xFF).toFloat()
+            var r = ((p shr 16) and 0xFF).toFloat()
+            var g = ((p shr 8) and 0xFF).toFloat()
+            var b = (p and 0xFF).toFloat()
+
+            if (normalize) {
+                r = (r / 255f - m0) / s0
+                g = (g / 255f - m1) / s1
+                b = (b / 255f - m2) / s2
+            }
+
+            if (bgr) {
+                val tmp = r
+                r = b
+                b = tmp
+            }
+
+            floats[i] = r
+            floats[area + i] = g
+            floats[2 * area + i] = b
         }
         return OnnxTensor.createTensor(
             env, FloatBuffer.wrap(floats), longArrayOf(1, 3, size.toLong(), size.toLong())
         )
+    }
+
+    /** Visage redressé sur le gabarit ArcFace, prêt pour l'embedder. */
+    private fun alignFace(source: Bitmap, landmarks: FloatArray, outputSize: Int): Bitmap {
+        val src = landmarks.toPixels(source.width, source.height)
+        val similarity = similarityTransform(src, ARCFACE_TEMPLATE_112)
+        val matrix = Matrix().apply {
+            setValues(
+                floatArrayOf(
+                    similarity.a, -similarity.b, similarity.tx,
+                    similarity.b, similarity.a, similarity.ty,
+                    0f, 0f, 1f
+                )
+            )
+        }
+
+        val aligned = createBitmap(outputSize, outputSize)
+        val paint = Paint().apply { isFilterBitmap = true }
+        Canvas(aligned).drawBitmap(source, matrix, paint)
+        return aligned
+    }
+
+    /**
+     * Crop aligné → vecteur normalisé L2, dans l'espace de l'embedder.
+     *
+     * Ne prend pas le verrou et ne résout aucun modèle : [loaded] est l'embedder
+     * déjà résolu par l'appelant, qui détient le verrou. Le `Mutex` n'étant pas
+     * réentrant, le reprendre ici gèlerait la coroutine.
+     *
+     * Contrairement au détecteur, ce modèle n'a **qu'une** sortie `[1, dim]`
+     * (vérifié à l'export) : ses nombres *sont* le résultat, il n'y a rien à
+     * post-traiter.
+     */
+    private fun embedFace(loaded: Loaded, crop: Bitmap): FloatArray {
+        val session = loaded.session
+            ?: openSession(loaded, ModelConfig.FILE_FACE_EMBEDDER).also { loaded.session = it }
+
+        val tensor = imageTensor(loaded, crop)
+        try {
+            val inputName = session.inputInfo.keys.first()
+            return session.run(mapOf(inputName to tensor)).use { result ->
+                val output = result[0] as OnnxTensor
+                val dim = output.info.shape.last().toInt()
+                val expected = loaded.config.embeddingDim ?: error("embedding_dim manquant")
+                require(dim == expected) { "sortie de dimension $dim, embedding_dim déclare $expected" }
+
+                val vector = FloatArray(dim)
+                output.floatBuffer.get(vector)
+                vector.normalizeL2()
+            }
+        } finally {
+            tensor.close()
+        }
+    }
+
+    suspend fun analyzeFaces(contentUri: String): List<AnalyzedFace> {
+        val faces = locateFaces(contentUri)
+        if (faces.isEmpty()) return emptyList()
+
+        return mutex.withLock {
+            val loaded = ensureEmbedderLocked() ?: return emptyList()
+            val size = loaded.config.inputSize ?: error("input_size manquant")
+
+            val source = loadForEmbedding(contentUri, EMBED_SOURCE_SIZE)
+            faces.map { face ->
+                val crop = alignFace(source, face.landmarks, size)
+                val embeding = embedFace(loaded, crop)
+                AnalyzedFace(face, embeding)
+            }
+        }
+    }
+
+    private companion object {
+        /** Rechargement pour les crops : taille fixe pour l'instant (cf. backlog). */
+        const val EMBED_SOURCE_SIZE = 1024
     }
 }
