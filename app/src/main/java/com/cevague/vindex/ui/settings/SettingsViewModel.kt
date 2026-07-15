@@ -103,6 +103,16 @@ class SettingsViewModel @Inject constructor(
         scanManager.startFullScan()
     }
 
+    /**
+     * Ré-analyse des visages à la demande. Sans elle, une amélioration du pipeline
+     * (crop, alignement, seuils du détecteur) resterait **invisible** : la file est
+     * un `NOT EXISTS` sur le composite `détecteur_embedder`, qui ne bouge pas quand
+     * c'est le *code* qui change. Seul un changement de modèle relançait le calcul.
+     */
+    fun startFaceReanalysis() {
+        viewModelScope.launch { scanManager.startFaceReanalysis() }
+    }
+
     /** Dossiers d'images disponibles (pour l'édition des dossiers indexés). */
     suspend fun availableFolders(): List<MediaScanner.FolderInfo> =
         withContext(Dispatchers.IO) { mediaScanner.listImageFolders() }

@@ -287,6 +287,8 @@
     <!-- Settings - Advanced -->
     <string name="settings_advanced">Avancé</string>
     <string name="settings_advanced_summary">Affichage des scores et calibration des seuils</string>
+    <string name="settings_reanalyze_faces">Ré-analyser les visages</string>
+    <string name="settings_reanalyze_faces_summary">Recalculer tous les visages avec les réglages actuels. Nécessaire pour que les photos déjà analysées profitent d\'une amélioration.</string>
     <string name="settings_face_threshold">Seuil de reconnaissance faciale</string>
     <string name="settings_face_threshold_summary">Plus bas = plus de correspondances, plus haut = moins de faux positifs</string>
     <string name="settings_show_scores">Afficher les scores de similarité</string>

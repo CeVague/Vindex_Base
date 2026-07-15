@@ -3,6 +3,7 @@ package com.cevague.vindex.ai
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.ln
 
@@ -210,5 +211,66 @@ class FaceDecoderTest {
             face.landmarks,
             0.001f
         )
+    }
+
+    // ---------------------------------------------------------- embedSourceSize
+
+    private fun sourceSize(smallestBoxWidth: Float, baseWidth: Int = 1024) = embedSourceSize(
+        smallestBoxWidth = smallestBoxWidth,
+        baseSize = 1024,
+        baseWidth = baseWidth,
+        cropSize = 112,
+        maxSize = 3072
+    )
+
+    /** Un visage déjà plus grand que le crop : relire serait du gaspillage. */
+    @Test
+    fun `un grand visage ne fait pas relire la photo`() {
+        // 0.5 × 1024 = 512 pixels, très au-dessus de 112.
+        assertEquals(1024, sourceSize(0.5f))
+    }
+
+    /** Pile à la taille du crop : suffisant, donc on garde la base. */
+    @Test
+    fun `la frontiere est le crop lui-meme`() {
+        // 0.109375 × 1024 = 112 pixels exactement.
+        assertEquals(1024, sourceSize(0.109375f))
+    }
+
+    /**
+     * Le cas qui motive tout : un petit visage n'atteint pas 112 px à la base, et
+     * la taille relue est exactement celle qui l'y amène.
+     */
+    @Test
+    fun `un petit visage fait relire juste assez grand`() {
+        // 0.05 × 1024 = 51.2 px ; il faut 112/51.2 = 2.1875× → 2240.
+        assertEquals(2240, sourceSize(0.05f))
+        // À 2240, le visage vaut 0.05 × 2240 = 112 px.
+    }
+
+    /** Sous le plafond, un visage minuscule ne fait pas exploser la mémoire. */
+    @Test
+    fun `le plafond borne les visages minuscules`() {
+        assertEquals(3072, sourceSize(0.001f))
+    }
+
+    /**
+     * Le point à ne pas rater : la boîte est normalisée par rapport à la photo,
+     * alors qu'un « fit » ne borne que la plus grande dimension. Un portrait décodé
+     * dans un carré de 1024 est plus étroit que 1024, et son visage compte donc
+     * moins de pixels à boîte égale — d'où le calcul sur la largeur réelle.
+     */
+    @Test
+    fun `un portrait etroit demande plus qu'un paysage a boite egale`() {
+        val paysage = sourceSize(0.08f, baseWidth = 1024)
+        val portrait = sourceSize(0.08f, baseWidth = 768) // 3:4
+
+        assertTrue("le portrait doit demander plus : $portrait vs $paysage", portrait > paysage)
+    }
+
+    /** Boîte dégénérée : on ne divise pas par zéro, on garde la base. */
+    @Test
+    fun `une boite de largeur nulle garde la base`() {
+        assertEquals(1024, sourceSize(0f))
     }
 }

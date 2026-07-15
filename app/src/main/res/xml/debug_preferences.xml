@@ -64,6 +64,12 @@
             app:summary="@string/settings_threshold_new_summary"
             app:title="@string/settings_threshold_new" />
 
+        <Preference
+            app:icon="@drawable/vector_refresh"
+            app:key="reanalyze_faces"
+            app:summary="@string/settings_reanalyze_faces_summary"
+            app:title="@string/settings_reanalyze_faces" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

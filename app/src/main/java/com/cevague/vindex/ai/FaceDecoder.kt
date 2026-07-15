@@ -69,6 +69,41 @@ data class DetectedFace(
 }
 
 /**
+ * Taille de décodage de la photo pour tailler les crops d'embedding.
+ *
+ * Charger à une taille fixe fait payer le plus petit visage : à 1024 px, un
+ * visage occupant 4 % de la largeur ne fait que 41 pixels, et l'alignement
+ * l'**agrandit** vers 112×112 en inventant les pixels manquants. L'embedding qui
+ * en sort n'est pas faux, il est flou — et un vecteur flou n'échoue jamais
+ * bruyamment : il s'éloigne un peu de tout, et la personne se scinde en deux
+ * groupes sans que rien ne le signale.
+ *
+ * La règle : le plus petit visage doit valoir au moins [cropSize] pixels.
+ * [baseWidth] est la largeur **réellement décodée** à [baseSize] et non [baseSize]
+ * lui-même — un « fit » borne la plus grande dimension, donc un portrait décodé
+ * dans un carré de 1024 est plus étroit que 1024, et raisonner sur la taille
+ * demandée sous-provisionnerait tous les portraits.
+ *
+ * Renvoie [baseSize] quand le plus petit visage y est déjà assez grand (le cas
+ * courant : aucune relecture), sinon la taille agrandie, plafonnée par [maxSize]
+ * — au-delà, le coût mémoire d'un bitmap ne se justifie plus pour un visage que
+ * la détection a de toute façon vu de très loin.
+ */
+fun embedSourceSize(
+    smallestBoxWidth: Float,
+    baseSize: Int,
+    baseWidth: Int,
+    cropSize: Int,
+    maxSize: Int
+): Int {
+    val facePixels = smallestBoxWidth * baseWidth
+    if (facePixels <= 0f) return baseSize
+    val factor = cropSize / facePixels
+    if (factor <= 1f) return baseSize
+    return (baseSize * factor).toInt().coerceIn(baseSize, maxSize)
+}
+
+/**
  * Décode un niveau de la pyramide. Le prior d'index `a` est la case
  * `(a / cols, a % cols)` de la grille ; le réseau ne prédit que des écarts à
  * cette case. Le score combine classification et objectness (moyenne

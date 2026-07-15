@@ -232,8 +232,32 @@ class FaceEngine @Inject constructor(
         return Letterboxed(padded, fitted.width, fitted.height)
     }
 
-    private fun loadForEmbedding(contentUri: String, size: Int): Bitmap =
-        decodeFitted(contentUri, size)
+    /**
+     * Photo décodée à une résolution **déduite du plus petit visage** : lui seul
+     * dicte la taille, puisque tous les crops sont taillés dans la même image.
+     *
+     * Un premier décodage à [EMBED_BASE_SIZE] sert de mesure — c'est lui qui donne
+     * la largeur réelle, seule façon de savoir combien de pixels fait vraiment un
+     * visage sans présumer de l'orientation de la photo. S'il suffit (le cas
+     * courant), il est gardé tel quel ; sinon on relit une fois, plus grand. Le
+     * surcoût ne se paie donc que sur les photos qui en ont besoin.
+     */
+    private fun loadForEmbedding(
+        contentUri: String,
+        faces: List<DetectedFace>,
+        cropSize: Int
+    ): Bitmap {
+        val base = decodeFitted(contentUri, EMBED_BASE_SIZE)
+        val smallest = faces.minOf { it.boxRight - it.boxLeft }
+        val size = embedSourceSize(
+            smallestBoxWidth = smallest,
+            baseSize = EMBED_BASE_SIZE,
+            baseWidth = base.width,
+            cropSize = cropSize,
+            maxSize = EMBED_MAX_SIZE
+        )
+        return if (size <= EMBED_BASE_SIZE) base else decodeFitted(contentUri, size)
+    }
 
 
     /**
@@ -356,7 +380,7 @@ class FaceEngine @Inject constructor(
             val loaded = ensureEmbedderLocked() ?: return emptyList()
             val size = loaded.config.inputSize ?: error("input_size manquant")
 
-            val source = loadForEmbedding(contentUri, EMBED_SOURCE_SIZE)
+            val source = loadForEmbedding(contentUri, faces, size)
             faces.map { face ->
                 val crop = alignFace(source, face.landmarks, size)
                 val embeding = embedFace(loaded, crop)
@@ -366,7 +390,14 @@ class FaceEngine @Inject constructor(
     }
 
     private companion object {
-        /** Rechargement pour les crops : taille fixe pour l'instant (cf. backlog). */
-        const val EMBED_SOURCE_SIZE = 1024
+        /** Décodage de mesure, et taille finale quand les visages y suffisent. */
+        const val EMBED_BASE_SIZE = 1024
+
+        /**
+         * Plafond du décodage agrandi. 3072² en ARGB_8888 pèse déjà ~37 Mo — et le
+         * visage qui réclamerait davantage occupe moins de 4 % de la largeur : la
+         * détection l'a vu de trop loin pour que ses pixels valent ce prix.
+         */
+        const val EMBED_MAX_SIZE = 3072
     }
 }
