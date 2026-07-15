@@ -126,8 +126,10 @@ class FaceAnalysisWorker @AssistedInject constructor(
      * [faceIds] et [analyzed] sont appariés **par position** — c'est le contrat
      * de `insertAll`.
      *
-     * La liste des centroïdes est tenue en mémoire et **mutable** : une personne
-     * créée pour le premier visage d'une photo doit être visible du deuxième.
+     * Contrainte du domaine : **deux visages d'une même photo sont deux personnes
+     * différentes**. Une personne servie sur cette photo sort donc des candidats
+     * pour les visages suivants. Sans elle, deux frères sur une photo peuvent tous
+     * deux dépasser le seuil pour le même groupe — et l'un des deux sera faux.
      */
     private suspend fun assignNewFaces(
         faceIds: List<Long>,
@@ -137,23 +139,24 @@ class FaceAnalysisWorker @AssistedInject constructor(
         val high = settingsCache.faceThresholdHigh
         val medium = settingsCache.faceThresholdMedium
 
-        val centroids = personRepository.getAllPersonsOnce()
-            .mapNotNull { person ->
-                person.centroidEmbedding?.let {
-                    PersonCentroid(person.id, it.asFloatArray(dim), named = person.name != null)
-                }
+        val centroids = personRepository.getAllPersonsOnce().mapNotNull { person ->
+            person.centroidEmbedding?.let {
+                PersonCentroid(person.id, it.asFloatArray(dim), named = person.name != null)
             }
-            .toMutableList()
+        }
 
         // Seul un Auto fait bouger un centroïde : un Pending est une question, pas
         // une réponse, et corromprait la personne avant qu'on y ait répondu.
         val touched = mutableSetOf<Long>()
 
+        // Les personnes déjà servies par cette photo, y compris celles qu'on vient
+        // de créer : elles ne peuvent pas réapparaître sur la même image.
+        val takenInThisPhoto = mutableSetOf<Long>()
+
         for (i in faceIds.indices) {
             val embedding = analyzed[i].embedding
 
-
-            when (val assignment = assignFace(embedding, centroids, high, medium)) {
+            when (val assignment = assignFace(embedding, centroids, high, medium, takenInThisPhoto)) {
                 is Assignment.Auto -> {
                     personRepository.assignFaceToPerson(
                         faceId = faceIds[i],
@@ -163,15 +166,19 @@ class FaceAnalysisWorker @AssistedInject constructor(
                         weight = assignment.similarity
                     )
                     touched += assignment.personId
+                    takenInThisPhoto += assignment.personId
                 }
 
-                is Assignment.Pending -> personRepository.assignFaceToPerson(
-                    faceId = faceIds[i],
-                    personId = assignment.personId,
-                    assignmentType = Face.ASSIGNMENT_PENDING,
-                    confidence = assignment.similarity,
-                    weight = assignment.similarity
-                )
+                is Assignment.Pending -> {
+                    personRepository.assignFaceToPerson(
+                        faceId = faceIds[i],
+                        personId = assignment.personId,
+                        assignmentType = Face.ASSIGNMENT_PENDING,
+                        confidence = assignment.similarity,
+                        weight = assignment.similarity
+                    )
+                    takenInThisPhoto += assignment.personId
+                }
 
                 Assignment.NewPerson -> {
                     val personId = personRepository.createPerson()
@@ -184,7 +191,7 @@ class FaceAnalysisWorker @AssistedInject constructor(
                     )
                     // Moyenne d'un seul vecteur : lui-même, déjà normalisé L2.
                     personRepository.updateCentroid(personId, embedding.toEmbeddingBlob())
-                    centroids += PersonCentroid(personId, embedding, named = false)
+                    takenInThisPhoto += personId
                 }
             }
         }

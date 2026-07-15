@@ -116,6 +116,47 @@ class FaceClustererTest {
         assertAuto(2L, 0.9f, assignFace(face, centroids, high, medium))
     }
 
+    // ------------------------------------------- contrainte « même photo »
+
+    /**
+     * Deux visages d'une même photo sont deux personnes différentes. La personne
+     * déjà servie sort des candidats — même si c'est la plus ressemblante.
+     */
+    @Test
+    fun `une personne exclue n'est plus candidate`() {
+        val parfait = person(1L, 1f, 0f)
+
+        assertAuto(1L, 1f, assignFace(face, listOf(parfait), high, medium))
+        assertEquals(
+            Assignment.NewPerson,
+            assignFace(face, listOf(parfait), high, medium, excluded = setOf(1L))
+        )
+    }
+
+    /**
+     * Le cas qui motive la contrainte : deux frères sur une photo. Le premier
+     * visage prend le groupe ; le second, qui lui ressemble assez pour dépasser
+     * le seuil, doit se rabattre sur quelqu'un d'autre plutôt que d'y entrer.
+     */
+    @Test
+    fun `le second meilleur l'emporte quand le meilleur est exclu`() {
+        val frere = person(1L, 1f, 0f)      // 1.0
+        val soeur = person(2L, 0.8f, 0.6f)  // 0.8
+
+        assertAuto(2L, 0.8f, assignFace(face, listOf(frere, soeur), high, medium, setOf(1L)))
+    }
+
+    /** Toutes les personnes servies : le visage suivant crée forcément un groupe. */
+    @Test
+    fun `tout exclure donne une nouvelle personne`() {
+        val centroids = listOf(person(1L, 1f, 0f), person(2L, 0.9f, 0.436f))
+
+        assertEquals(
+            Assignment.NewPerson,
+            assignFace(face, centroids, high, medium, excluded = setOf(1L, 2L))
+        )
+    }
+
     // ------------------------------------------------------- weightedCentroid
 
     /** Un seul visage : le centroïde est ce visage, renormalisé. */

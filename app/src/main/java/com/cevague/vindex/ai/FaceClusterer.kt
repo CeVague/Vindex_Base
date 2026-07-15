@@ -44,16 +44,24 @@ sealed interface Assignment {
  * répond, « est-ce le groupe #47 ? » n'a aucun sens pour l'utilisateur. Un
  * groupe sans nom au seuil moyen reste donc séparé — la proposition de fusion
  * de groupes (à venir) est faite pour les réunir. Sinon, nouvelle personne.
+ *
+ * [excluded] retire des candidats des personnes déjà servies. L'appelant s'en
+ * sert pour une raison de fond : **deux visages d'une même photo sont deux
+ * personnes différentes**. Sans ça, deux frères sur une photo peuvent tous deux
+ * dépasser le seuil pour le même groupe, et l'un des deux sera forcément faux —
+ * d'autant plus que le seuil est bas.
  */
 fun assignFace(
     embedding: FloatArray,
     centroids: List<PersonCentroid>,
     high: Float,
-    medium: Float
+    medium: Float,
+    excluded: Set<Long> = emptySet()
 ): Assignment {
     var best: PersonCentroid? = null
     var bestSimilarity = Float.NEGATIVE_INFINITY
     for (candidate in centroids) {
+        if (candidate.personId in excluded) continue
         val similarity = dotProduct(embedding, candidate.centroid)
         if (similarity > bestSimilarity) {
             bestSimilarity = similarity
