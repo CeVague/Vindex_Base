@@ -40,7 +40,9 @@ class AlbumsAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
-            is AlbumListItem.Header -> (holder as HeaderViewHolder).binding.textHeader.text = item.title
+            is AlbumListItem.Header -> (holder as HeaderViewHolder).binding.textHeader.text =
+                item.title
+
             is AlbumListItem.Card -> bindCard(holder as CardViewHolder, item)
         }
     }
@@ -63,7 +65,8 @@ class AlbumsAdapter(
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
-        if (holder is CardViewHolder) Glide.with(holder.binding.imageCover).clear(holder.binding.imageCover)
+        if (holder is CardViewHolder) Glide.with(holder.binding.imageCover)
+            .clear(holder.binding.imageCover)
     }
 
     companion object {
@@ -75,12 +78,17 @@ class AlbumsAdapter(
                 when {
                     oldItem is AlbumListItem.Header && newItem is AlbumListItem.Header ->
                         oldItem.title == newItem.title
+
                     oldItem is AlbumListItem.Card && newItem is AlbumListItem.Card ->
                         oldItem.key == newItem.key
+
                     else -> false
                 }
 
-            override fun areContentsTheSame(oldItem: AlbumListItem, newItem: AlbumListItem): Boolean =
+            override fun areContentsTheSame(
+                oldItem: AlbumListItem,
+                newItem: AlbumListItem
+            ): Boolean =
                 oldItem == newItem
         }
     }

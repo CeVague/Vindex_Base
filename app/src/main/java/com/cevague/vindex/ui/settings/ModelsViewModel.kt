@@ -27,7 +27,9 @@ class ModelsViewModel @Inject constructor(
 
     sealed class Event {
         data class ImportSuccess(val model: AiModel) : Event()
-        data class ImportFailure(val reason: ModelImportException.Reason, val detail: String?) : Event()
+        data class ImportFailure(val reason: ModelImportException.Reason, val detail: String?) :
+            Event()
+
         data class ConfirmReindex(val model: AiModel) : Event()
     }
 

@@ -19,8 +19,8 @@ import com.cevague.vindex.databinding.FragmentSearchBinding
 import com.cevague.vindex.search.SearchSessionRepository
 import com.cevague.vindex.ui.main.MainSharedViewModel
 import com.cevague.vindex.ui.viewer.PhotoViewerActivity
-import com.google.android.material.chip.Chip
 import com.cevague.vindex.ui.viewer.ViewerSource
+import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -75,7 +75,8 @@ class SearchFragment : Fragment() {
             this.layoutManager = gridLayoutManager
             setHasFixedSize(true)
             setItemViewCacheSize(20)
-            itemAnimator = null // Désactive les animations pour éviter que le scroll ne "suive" une vignette
+            itemAnimator =
+                null // Désactive les animations pour éviter que le scroll ne "suive" une vignette
         }
 
         observeGridColumns()
@@ -91,7 +92,8 @@ class SearchFragment : Fragment() {
         })
 
         // Pre-load on focus
-        val searchEditText = binding.inputSearch.findViewById<View>(androidx.appcompat.R.id.search_src_text)
+        val searchEditText =
+            binding.inputSearch.findViewById<View>(androidx.appcompat.R.id.search_src_text)
         searchEditText?.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) viewModel.onSearchFocused()
         }

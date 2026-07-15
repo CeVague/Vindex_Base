@@ -35,7 +35,11 @@ object FolderPickerDialog {
             }
             .setPositiveButton(R.string.welcome_validate) { _, _ ->
                 if (selected.isEmpty()) {
-                    Toast.makeText(context, R.string.welcome_select_at_least_one, Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        context,
+                        R.string.welcome_select_at_least_one,
+                        Toast.LENGTH_SHORT
+                    )
                         .show()
                 } else {
                     onConfirm(selected)

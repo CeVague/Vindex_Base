@@ -45,7 +45,7 @@ class SearchResultAdapter(
     /** Photos affichées, dans l'ordre courant (ids pour la session du viewer). */
     val photos: List<PhotoSummary> get() = currentList.map { it.photo }
 
-    inner class PhotoViewHolder(
+    class PhotoViewHolder(
         val binding: ItemGalleryPhotoBinding
     ) : RecyclerView.ViewHolder(binding.root)
 

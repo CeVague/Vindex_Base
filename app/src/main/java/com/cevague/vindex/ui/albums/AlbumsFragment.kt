@@ -43,6 +43,7 @@ class AlbumsFragment : Fragment() {
             val args = when (val target = card.target) {
                 is AlbumListItem.Card.Target.Folder ->
                     bundleOf(AlbumDetailFragment.ARG_FOLDER_PATH to target.folderPath)
+
                 is AlbumListItem.Card.Target.Album ->
                     bundleOf(AlbumDetailFragment.ARG_ALBUM_ID to target.albumId)
             }
@@ -66,7 +67,8 @@ class AlbumsFragment : Fragment() {
                 viewModel.items.collect { items ->
                     adapter.submitList(items)
                     binding.textEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
-                    binding.recyclerAlbums.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
+                    binding.recyclerAlbums.visibility =
+                        if (items.isEmpty()) View.GONE else View.VISIBLE
                 }
             }
         }

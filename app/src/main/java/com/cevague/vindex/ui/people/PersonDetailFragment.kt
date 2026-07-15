@@ -88,7 +88,8 @@ class PersonDetailFragment : Fragment() {
                 launch {
                     viewModel.title.collect { title ->
                         if (title.isNotEmpty()) {
-                            (requireActivity() as? AppCompatActivity)?.supportActionBar?.title = title
+                            (requireActivity() as? AppCompatActivity)?.supportActionBar?.title =
+                                title
                         }
                     }
                 }

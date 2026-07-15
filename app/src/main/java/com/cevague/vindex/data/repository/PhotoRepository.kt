@@ -13,6 +13,7 @@ import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.Photo
 import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.local.SettingsCache
+import com.cevague.vindex.data.repository.PhotoRepository.Companion.CHUNK_SIZE
 import com.cevague.vindex.util.MediaScanner
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -142,6 +143,7 @@ class PhotoRepository @Inject constructor(
     suspend fun upsertAll(photos: List<Photo>) = photoDao.upsertAll(photos)
     suspend fun deleteByContentUris(contentUris: List<String>) =
         contentUris.chunked(CHUNK_SIZE).forEach { photoDao.deleteByContentUris(it) }
+
     suspend fun deleteAll() = photoDao.deleteAll()
 
     // --- Analyses ---
@@ -149,16 +151,30 @@ class PhotoRepository @Inject constructor(
     fun getAnalysesForPhoto(photoId: Long): Flow<List<PhotoAnalysis>> =
         photoAnalysisDao.getAnalysesForPhoto(photoId)
 
-    suspend fun getPhotosMissingAnalysis(type: String, modelName: String, limit: Int): List<PhotoSummary> =
+    suspend fun getPhotosMissingAnalysis(
+        type: String,
+        modelName: String,
+        limit: Int
+    ): List<PhotoSummary> =
         photoDao.getPhotosMissingAnalysis(type, modelName, limit)
 
     suspend fun countPhotosMissingAnalysis(type: String, modelName: String): Int =
         photoDao.countPhotosMissingAnalysis(type, modelName)
 
-    suspend fun getEmbeddingsForPhotos(type: String, modelName: String, photoIds: List<Long>): List<EmbeddingRow> =
-        photoIds.chunked(CHUNK_SIZE).flatMap { photoAnalysisDao.getEmbeddingsForPhotos(type, modelName, it) }
+    suspend fun getEmbeddingsForPhotos(
+        type: String,
+        modelName: String,
+        photoIds: List<Long>
+    ): List<EmbeddingRow> =
+        photoIds.chunked(CHUNK_SIZE)
+            .flatMap { photoAnalysisDao.getEmbeddingsForPhotos(type, modelName, it) }
 
-    suspend fun getEmbeddingsChunk(type: String, modelName: String, afterPhotoId: Long, limit: Int): List<EmbeddingRow> =
+    suspend fun getEmbeddingsChunk(
+        type: String,
+        modelName: String,
+        afterPhotoId: Long,
+        limit: Int
+    ): List<EmbeddingRow> =
         photoAnalysisDao.getEmbeddingsChunk(type, modelName, afterPhotoId, limit)
 
     suspend fun upsertAnalysis(analysis: PhotoAnalysis) =

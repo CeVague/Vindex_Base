@@ -360,7 +360,11 @@ class QueryParser(
         }
 
         /** Dernière saison [startMonth]..[endMonth] entièrement écoulée. */
-        private fun lastSeason(now: LocalDate, startMonth: Int, endMonth: Int): Pair<LocalDate, LocalDate> {
+        private fun lastSeason(
+            now: LocalDate,
+            startMonth: Int,
+            endMonth: Int
+        ): Pair<LocalDate, LocalDate> {
             var year = now.year
             if (!YearMonth.of(year, endMonth).atEndOfMonth().isBefore(now)) year--
             return LocalDate.of(year, startMonth, 1) to YearMonth.of(year, endMonth).atEndOfMonth()
@@ -375,7 +379,8 @@ class QueryParser(
 
         private val lastSpring: (LocalDate) -> Pair<LocalDate, LocalDate> = { lastSeason(it, 3, 5) }
         private val lastSummer: (LocalDate) -> Pair<LocalDate, LocalDate> = { lastSeason(it, 6, 8) }
-        private val lastAutumn: (LocalDate) -> Pair<LocalDate, LocalDate> = { lastSeason(it, 9, 11) }
+        private val lastAutumn: (LocalDate) -> Pair<LocalDate, LocalDate> =
+            { lastSeason(it, 9, 11) }
         private val lastWinterR: (LocalDate) -> Pair<LocalDate, LocalDate> = { lastWinter(it) }
 
         /**

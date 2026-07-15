@@ -1,13 +1,11 @@
 package com.cevague.vindex.worker
 
 import android.content.Context
-import android.database.sqlite.SQLiteException
 import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.cevague.vindex.BuildConfig
 import com.cevague.vindex.R
 import com.cevague.vindex.ai.Assignment
 import com.cevague.vindex.ai.FaceEngine
@@ -20,15 +18,10 @@ import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.search.asFloatArray
-import com.cevague.vindex.search.dotProduct
 import com.cevague.vindex.search.toEmbeddingBlob
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import java.io.IOException
-import kotlin.time.Duration.Companion.milliseconds
 
 @HiltWorker
 class FaceAnalysisWorker @AssistedInject constructor(
@@ -207,7 +200,7 @@ class FaceAnalysisWorker @AssistedInject constructor(
     private suspend fun recomputeCentroid(personId: Long, dim: Int) {
         val faces = personRepository.getFacesByPersonOnce(personId).filter {
             it.embedding != null &&
-                (it.assignmentType == Face.ASSIGNMENT_AUTO || it.assignmentType == Face.ASSIGNMENT_MANUAL)
+                    (it.assignmentType == Face.ASSIGNMENT_AUTO || it.assignmentType == Face.ASSIGNMENT_MANUAL)
         }
         if (faces.isEmpty()) return
 

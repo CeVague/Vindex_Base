@@ -41,7 +41,8 @@ class ClipIndexWorker @AssistedInject constructor(
             var processed = 0
 
             while (true) {
-                val batch = photoRepository.getPhotosMissingAnalysis(type, active.modelName, BATCH_SIZE)
+                val batch =
+                    photoRepository.getPhotosMissingAnalysis(type, active.modelName, BATCH_SIZE)
                 if (batch.isEmpty()) break
 
                 val analyses = batch.map { photo ->

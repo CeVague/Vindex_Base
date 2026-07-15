@@ -4,11 +4,11 @@ import com.cevague.vindex.ai.ClipEngine
 import com.cevague.vindex.data.database.dao.EmbeddingRow
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.PhotoAnalysis
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.CityRepository
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.data.repository.PhotoSearchCriteria
-import com.cevague.vindex.data.local.SettingsCache
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -62,8 +62,8 @@ class SearchPipeline @Inject constructor(
         )
 
         val hasFilters = parsed.dateRange != null || parsed.geoFilter != null ||
-            parsed.typeFilter != null || parsed.persons.isNotEmpty() ||
-            parsed.countryFilter != null
+                parsed.typeFilter != null || parsed.persons.isNotEmpty() ||
+                parsed.countryFilter != null
         if (!hasFilters && parsed.freeText.trim().length < 2) {
             return Result(parsed, emptyList())
         }
@@ -148,7 +148,8 @@ class SearchPipeline @Inject constructor(
         fun score(rows: List<EmbeddingRow>) {
             for (row in rows) {
                 if (row.embeddingDim != queryVector.size) continue
-                val similarity = dotProduct(queryVector, row.embedding.asFloatArray(row.embeddingDim))
+                val similarity =
+                    dotProduct(queryVector, row.embedding.asFloatArray(row.embeddingDim))
                 if (similarity >= floor) topK.offer(row.photoId, similarity)
             }
         }
@@ -250,8 +251,14 @@ class SearchPipeline @Inject constructor(
 
     private fun GeoFilter.toBoundingBox(): BoundingBox {
         val latDelta = radiusKm / KM_PER_DEGREE_LAT
-        val lonDelta = radiusKm / (KM_PER_DEGREE_LAT * cos(Math.toRadians(latitude)).coerceAtLeast(0.01))
-        return BoundingBox(latitude - latDelta, latitude + latDelta, longitude - lonDelta, longitude + lonDelta)
+        val lonDelta =
+            radiusKm / (KM_PER_DEGREE_LAT * cos(Math.toRadians(latitude)).coerceAtLeast(0.01))
+        return BoundingBox(
+            latitude - latDelta,
+            latitude + latDelta,
+            longitude - lonDelta,
+            longitude + lonDelta
+        )
     }
 
     private companion object {

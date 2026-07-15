@@ -152,11 +152,13 @@ class SentencePieceBpeTokenizer(
                         pair = mutableListOf()
                         i++
                     }
+
                     ']' -> {
                         if (depth == 2 && pair.size == 2) merges.add(pair[0] to pair[1])
                         depth--
                         i++
                     }
+
                     '"' -> {
                         val (value, next) = readJsonString(json, i)
                         if (depth == 2) {
@@ -170,6 +172,7 @@ class SentencePieceBpeTokenizer(
                         }
                         i = next
                     }
+
                     else -> i++
                 }
             }
@@ -189,6 +192,7 @@ class SentencePieceBpeTokenizer(
                             sb.append(json.substring(i + 1, i + 5).toInt(16).toChar())
                             i += 4
                         }
+
                         'n' -> sb.append('\n')
                         't' -> sb.append('\t')
                         'r' -> sb.append('\r')

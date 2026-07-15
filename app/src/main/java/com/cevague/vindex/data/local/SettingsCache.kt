@@ -119,6 +119,7 @@ class SettingsCache @Inject constructor(
 
     companion object {
         const val DEFAULT_SHOW_SCORES = false
+
         // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
         // la recherche : plus haut = plus proche.
         //

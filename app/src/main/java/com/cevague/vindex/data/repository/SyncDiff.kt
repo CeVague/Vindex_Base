@@ -23,9 +23,9 @@ internal object SyncDiff {
     ): List<Photo> = batch.filter { scanned ->
         val existing = dbPhotosByUri[scanned.contentUri]
         existing == null ||
-            existing.id != scanned.id ||
-            existing.fileSize != scanned.fileSize ||
-            existing.fileLastModified != scanned.fileLastModified
+                existing.id != scanned.id ||
+                existing.fileSize != scanned.fileSize ||
+                existing.fileLastModified != scanned.fileLastModified
     }
 
     /**

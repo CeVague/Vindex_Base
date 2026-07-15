@@ -24,7 +24,12 @@ class StorageRepository @Inject constructor(
     /** Fichier(s) de la base Room (analyses, visages, personnes, villes…). */
     fun databaseSize(): Long {
         val db = context.getDatabasePath(AppDatabase.DATABASE_NAME)
-        return listOf(db, File("${db.path}-wal"), File("${db.path}-shm"), File("${db.path}-journal"))
+        return listOf(
+            db,
+            File("${db.path}-wal"),
+            File("${db.path}-shm"),
+            File("${db.path}-journal")
+        )
             .filter { it.exists() }
             .sumOf { it.length() }
     }

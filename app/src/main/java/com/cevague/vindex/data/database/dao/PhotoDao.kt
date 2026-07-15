@@ -81,8 +81,8 @@ interface PhotoDao {
 
     @Query(
         "SELECT DISTINCT p.id, p.file_path, p.file_name, p.date_added, p.date_taken, p.is_favorite " +
-            "FROM photos p JOIN faces f ON f.photo_id = p.id " +
-            "WHERE f.person_id = :personId AND p.is_hidden = 0 ORDER BY p.date_taken DESC"
+                "FROM photos p JOIN faces f ON f.photo_id = p.id " +
+                "WHERE f.person_id = :personId AND p.is_hidden = 0 ORDER BY p.date_taken DESC"
     )
     fun getPhotosSummaryByPerson(personId: Long): Flow<List<PhotoSummary>>
 
@@ -146,7 +146,11 @@ interface PhotoDao {
         LIMIT :limit
     """
     )
-    suspend fun getPhotosMissingAnalysis(type: String, modelName: String, limit: Int): List<PhotoSummary>
+    suspend fun getPhotosMissingAnalysis(
+        type: String,
+        modelName: String,
+        limit: Int
+    ): List<PhotoSummary>
 
     @Query(
         """

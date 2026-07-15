@@ -27,7 +27,7 @@ data class Candidate(
         if (javaClass != other?.javaClass) return false
         other as Candidate
         return x1 == other.x1 && y1 == other.y1 && x2 == other.x2 && y2 == other.y2 &&
-            score == other.score && landmarks.contentEquals(other.landmarks)
+                score == other.score && landmarks.contentEquals(other.landmarks)
     }
 
     override fun hashCode(): Int {
@@ -53,8 +53,8 @@ data class DetectedFace(
         if (javaClass != other?.javaClass) return false
         other as DetectedFace
         return boxLeft == other.boxLeft && boxTop == other.boxTop &&
-            boxRight == other.boxRight && boxBottom == other.boxBottom &&
-            score == other.score && landmarks.contentEquals(other.landmarks)
+                boxRight == other.boxRight && boxBottom == other.boxBottom &&
+                score == other.score && landmarks.contentEquals(other.landmarks)
     }
 
     override fun hashCode(): Int {

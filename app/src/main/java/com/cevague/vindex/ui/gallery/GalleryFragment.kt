@@ -105,8 +105,7 @@ class GalleryFragment : Fragment() {
 
                 launch {
                     adapter.loadStateFlow.collectLatest { loadStates ->
-                        val refresh = loadStates.refresh
-                        when (refresh) {
+                        when (val refresh = loadStates.refresh) {
                             is LoadState.Loading -> renderState(GalleryUiState.Loading)
                             is LoadState.Error -> renderState(
                                 GalleryUiState.Error(

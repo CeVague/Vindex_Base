@@ -153,6 +153,7 @@ class ClipBpeTokenizer(
                                 key.append(json.substring(i + 1, i + 5).toInt(16).toChar())
                                 i += 4
                             }
+
                             'n' -> key.append('\n')
                             't' -> key.append('\t')
                             'r' -> key.append('\r')

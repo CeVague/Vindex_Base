@@ -32,7 +32,7 @@ data class PhotoSearchCriteria(
 internal fun buildPhotoSearchQuery(criteria: PhotoSearchCriteria): Pair<String, List<Any>> {
     val sql = StringBuilder(
         "SELECT id, file_path, file_name, date_added, date_taken, is_favorite " +
-            "FROM photos WHERE is_hidden = 0"
+                "FROM photos WHERE is_hidden = 0"
     )
     val args = mutableListOf<Any>()
 
@@ -54,7 +54,7 @@ internal fun buildPhotoSearchQuery(criteria: PhotoSearchCriteria): Pair<String, 
         criteria.minLon != null && criteria.maxLon != null
     ) {
         val inBox = "(latitude IS NOT NULL AND longitude IS NOT NULL " +
-            "AND latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?)"
+                "AND latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?)"
         // Nié : une photo sans GPS n'est pas « à Lille » → elle est incluse.
         sql.append(if (criteria.geoNegated) " AND NOT $inBox" else " AND $inBox")
         args += criteria.minLat

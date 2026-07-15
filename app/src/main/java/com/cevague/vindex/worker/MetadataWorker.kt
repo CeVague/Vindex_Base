@@ -59,7 +59,8 @@ class MetadataWorker @AssistedInject constructor(
                                         data.longitude!!
                                     )
                                     city?.let {
-                                        data = data.copy(locationName = "${it.name}, ${it.countryCode}")
+                                        data =
+                                            data.copy(locationName = "${it.name}, ${it.countryCode}")
                                     }
                                 }
 

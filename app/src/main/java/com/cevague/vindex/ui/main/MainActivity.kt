@@ -152,6 +152,7 @@ class MainActivity : AppCompatActivity() {
                     if (hasPlaceholder) workText.replace("%d", progress.toString()) else workText
                 b.root.visibility = View.VISIBLE
             }
+
             transientLoadingLabel != null -> {
                 val b = ensureSyncBinding()
                 b.syncProgressBar.visibility = View.GONE
@@ -159,6 +160,7 @@ class MainActivity : AppCompatActivity() {
                 b.textProgressBar.text = transientLoadingLabel
                 b.root.visibility = View.VISIBLE
             }
+
             else -> syncBinding?.root?.visibility = View.GONE
         }
     }
