@@ -78,7 +78,18 @@ class PeopleViewModel @Inject constructor(
             }
         }
 
-        val proposal = proposeMerges(centroids, settingsCache.faceThresholdNew)
+        // Même politique qu'en recherche : en mode debug, aucun plancher. Un seuil
+        // qui filtre les propositions les rend invisibles — impossible de voir qu'il
+        // est trop haut, donc impossible de le calibrer. Sans plancher, les paires
+        // défilent par similarité décroissante et la frontière se lit entre le
+        // dernier « oui » et le premier « non ».
+        val floor = if (settingsCache.showScores) {
+            Float.NEGATIVE_INFINITY
+        } else {
+            settingsCache.faceThresholdNew
+        }
+
+        val proposal = proposeMerges(centroids, floor)
             .firstOrNull { pairKey(it) !in refused }
             ?: return null
 

@@ -17,6 +17,7 @@ import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
 import com.cevague.vindex.search.asFloatArray
+import com.cevague.vindex.search.dotProduct
 import com.cevague.vindex.search.toEmbeddingBlob
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -155,6 +156,8 @@ class FaceAnalysisWorker @AssistedInject constructor(
         for (i in faceIds.indices) {
             val embedding = analyzed[i].embedding
 
+            logBestSimilarity(embedding, centroids, takenInThisPhoto)
+
             when (val assignment = assignFace(embedding, centroids, high, medium, takenInThisPhoto)) {
                 is Assignment.Auto -> {
                     personRepository.assignFaceToPerson(
@@ -196,5 +199,31 @@ class FaceAnalysisWorker @AssistedInject constructor(
         }
 
         touched.forEach { personRepository.recomputeCentroid(it) }
+    }
+
+    /**
+     * Calibration de `high`/`medium` : la meilleure similarité **de chaque visage**,
+     * y compris quand elle perd.
+     *
+     * C'est la seule donnée qui permette de placer les seuils, et aucune table ne la
+     * conserve : `assignment_confidence` ne garde que celle des visages **retenus**,
+     * or ce sont justement les perdants — les premières apparitions — qui bornent le
+     * seuil par le bas. La frontière se lit dans le trou entre leur plafond et le
+     * plancher des retrouvailles (mesuré à 0,353 / 0,453 le 2026-07-15).
+     *
+     * Recalculée ici plutôt qu'obtenue d'`assignFace` : la fonction pure renvoie une
+     * **décision**, pas une mesure, et lui faire porter de quoi déboguer la
+     * déformerait. Coût : k produits scalaires, en mode debug seulement.
+     */
+    private fun logBestSimilarity(
+        embedding: FloatArray,
+        centroids: List<PersonCentroid>,
+        excluded: Set<Long>
+    ) {
+        if (!settingsCache.showScores) return
+        val best = centroids
+            .filterNot { it.personId in excluded }
+            .maxOfOrNull { dotProduct(embedding, it.centroid) }
+        Log.d(TAG, "CALIBRATION best=${best ?: "aucun candidat"} (high=${settingsCache.faceThresholdHigh} medium=${settingsCache.faceThresholdMedium})")
     }
 }
