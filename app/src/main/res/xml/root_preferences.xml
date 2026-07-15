@@ -129,7 +129,7 @@
 
         <EditTextPreference
             android:inputType="numberDecimal"
-            app:defaultValue="0.40"
+            app:defaultValue="0.45"
             app:icon="@drawable/vector_verified"
             app:key="face_threshold_high"
             app:summary="@string/settings_threshold_high_summary"
@@ -137,7 +137,7 @@
 
         <EditTextPreference
             android:inputType="numberDecimal"
-            app:defaultValue="0.60"
+            app:defaultValue="0.35"
             app:icon="@drawable/vector_help"
             app:key="face_threshold_medium"
             app:summary="@string/settings_threshold_medium_summary"
@@ -145,7 +145,7 @@
 
         <EditTextPreference
             android:inputType="numberDecimal"
-            app:defaultValue="0.75"
+            app:defaultValue="0.40"
             app:icon="@drawable/vector_person_add"
             app:key="face_threshold_new"
             app:summary="@string/settings_threshold_new_summary"

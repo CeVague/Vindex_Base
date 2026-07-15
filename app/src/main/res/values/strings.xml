@@ -236,13 +236,13 @@
 
     <!-- Settings - Threshold -->
     <string name="settings_threshold_high">High confidence threshold</string>
-    <string name="settings_threshold_high_summary">Auto-assign when confidence ≥ this value (default: 0.40)</string>
+    <string name="settings_threshold_high_summary">Auto-assign when confidence ≥ this value (default: 0.45)</string>
 
     <string name="settings_threshold_medium">Medium confidence threshold</string>
-    <string name="settings_threshold_medium_summary">Show as suggestion when confidence ≥ this value (default: 0.60)</string>
+    <string name="settings_threshold_medium_summary">Suggest on a named person when confidence ≥ this value (default: 0.35)</string>
 
     <string name="settings_threshold_new">New person threshold</string>
-    <string name="settings_threshold_new_summary">Create new person when no match above this value (default: 0.75)</string>
+    <string name="settings_threshold_new_summary">Create new person when no match above this value (default: 0.40)</string>
 
 
     <!-- Settings - AI -->

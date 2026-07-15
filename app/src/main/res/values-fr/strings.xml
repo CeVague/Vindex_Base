@@ -243,13 +243,13 @@
 
     <!-- Settings - Threshold -->
     <string name="settings_threshold_high">Seuil de confiance élevé</string>
-    <string name="settings_threshold_high_summary">Attribution auto si confiance ≥ cette valeur (défaut : 0.40)</string>
+    <string name="settings_threshold_high_summary">Attribution auto si confiance ≥ cette valeur (défaut : 0.45)</string>
 
     <string name="settings_threshold_medium">Seuil de confiance moyen</string>
-    <string name="settings_threshold_medium_summary">Afficher en suggestion si confiance ≥ cette valeur (défaut : 0.60)</string>
+    <string name="settings_threshold_medium_summary">Proposer sur une personne nommée si confiance ≥ cette valeur (défaut : 0.35)</string>
 
     <string name="settings_threshold_new">Seuil nouvelle personne</string>
-    <string name="settings_threshold_new_summary">Créer une nouvelle personne si aucune correspondance au-dessus (défaut : 0.75)</string>
+    <string name="settings_threshold_new_summary">Créer une nouvelle personne si aucune correspondance au-dessus (défaut : 0.40)</string>
 
     <!-- Settings - AI -->
     <string name="settings_ai">Analyse IA</string>

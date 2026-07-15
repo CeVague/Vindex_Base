@@ -90,4 +90,15 @@ data class Face(
     override fun hashCode(): Int {
         return id.hashCode()
     }
+
+    companion object {
+        /** Assigné par le clustering, au-dessus du seuil haut. */
+        const val ASSIGNMENT_AUTO = "auto"
+
+        /** Suggestion en attente de confirmation : ne compte pas dans le centroïde. */
+        const val ASSIGNMENT_PENDING = "pending"
+
+        /** Confirmé par l'utilisateur : seule vérité terrain, jamais réécrit par l'automate. */
+        const val ASSIGNMENT_MANUAL = "manual"
+    }
 }

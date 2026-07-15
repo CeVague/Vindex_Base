@@ -119,8 +119,18 @@ class SettingsCache @Inject constructor(
 
     companion object {
         const val DEFAULT_SHOW_SCORES = false
-        const val DEFAULT_FACE_THRESHOLD_HIGH = 0.40f
-        const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.60f
-        const val DEFAULT_FACE_THRESHOLD_NEW = 0.75f
+        // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
+        // la recherche : plus haut = plus proche.
+        //
+        // Calibrés le 2026-07-15 sur la galerie de test (21 visages, ~9 personnes) :
+        // les premières apparitions plafonnaient à 0,353, les ré-apparitions
+        // démarraient à 0,453 — la frontière est dans ce trou. Échantillon minuscule,
+        // à revoir sur une vraie galerie.
+        //
+        // NEW n'est pas sur le même axe : il servira à proposer la fusion de deux
+        // groupes (décision groupe↔groupe), pas à placer un visage. Inutilisé à ce jour.
+        const val DEFAULT_FACE_THRESHOLD_HIGH = 0.45f
+        const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.35f
+        const val DEFAULT_FACE_THRESHOLD_NEW = 0.40f
     }
 }
