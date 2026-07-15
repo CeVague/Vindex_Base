@@ -7,7 +7,7 @@ import ai.onnxruntime.OrtSession
 import ai.onnxruntime.TensorInfo
 import android.content.Context
 import android.graphics.Bitmap
-import android.net.Uri
+import androidx.core.net.toUri
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -26,7 +26,6 @@ import java.nio.LongBuffer
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
-import androidx.core.net.toUri
 
 /**
  * Moteur d'inférence CLIP (phase 2 §4.2-4.3) : sessions ONNX paresseuses sur le
@@ -191,10 +190,12 @@ class ClipEngine @Inject constructor(
                 File(loaded.dir, config.files.getValue(ModelConfig.FILE_TOKENIZER_MERGES)),
                 contextLength
             )
+
             ModelConfig.TOKENIZER_SENTENCEPIECE -> SentencePieceBpeTokenizer.fromTokenizerJson(
                 File(loaded.dir, config.files.getValue(ModelConfig.FILE_TOKENIZER_JSON)),
                 contextLength
             )
+
             else -> error("tokenizer non supporté : ${config.tokenizer}")
         }
     }
@@ -239,7 +240,7 @@ class ClipEngine @Inject constructor(
         if (resizeMode != ModelConfig.RESIZE_SQUASH) {
             return request.centerCrop().submit(size, size).get()
         }
-        
+
         // Squash : décodage borné à ~size (Glide sous-échantillonne en gardant
         // le ratio — jamais la pleine résolution en mémoire), puis étirement
         // final en carré. fitCenter garantit un bitmap ≤ size × size.
@@ -262,8 +263,12 @@ class ClipEngine @Inject constructor(
         val mean = config.mean ?: error("image.mean manquant")
         val std = config.std ?: error("image.std manquant")
 
-        val m0 = mean[0].toFloat(); val m1 = mean[1].toFloat(); val m2 = mean[2].toFloat()
-        val s0 = std[0].toFloat(); val s1 = std[1].toFloat(); val s2 = std[2].toFloat()
+        val m0 = mean[0].toFloat()
+        val m1 = mean[1].toFloat()
+        val m2 = mean[2].toFloat()
+        val s0 = std[0].toFloat()
+        val s1 = std[1].toFloat()
+        val s2 = std[2].toFloat()
 
         for (i in 0 until area) {
             val p = pixels[i]
@@ -289,7 +294,11 @@ class ClipEngine @Inject constructor(
      * projetés type CLIP/Qdrant) ou `pooler_output` (exports HF type SigLIP,
      * qui contient bien la tête finale).
      */
-    private fun extractEmbedding(result: OrtSession.Result, expectedDim: Int?, isText: Boolean): FloatArray {
+    private fun extractEmbedding(
+        result: OrtSession.Result,
+        expectedDim: Int?,
+        isText: Boolean
+    ): FloatArray {
         val preferredName = if (isText) "text_embeds" else "image_embeds"
         val candidates = result.mapNotNull { entry ->
             val tensor = entry.value as? OnnxTensor ?: return@mapNotNull null
@@ -303,7 +312,7 @@ class ClipEngine @Inject constructor(
             }
             ?: error(
                 "aucune sortie embedding 2D [1, dim] — sorties : " +
-                    result.joinToString { "${it.key}${(it.value as? OnnxTensor)?.info?.shape?.contentToString()}" }
+                        result.joinToString { "${it.key}${(it.value as? OnnxTensor)?.info?.shape?.contentToString()}" }
             )
 
         val dim = tensor.info.shape.last().toInt()

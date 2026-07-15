@@ -3,11 +3,9 @@ package com.cevague.vindex.ai
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.util.Log
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import com.bumptech.glide.Glide
@@ -15,7 +13,6 @@ import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cevague.vindex.data.database.entity.AiModel
 import com.cevague.vindex.data.repository.AiModelRepository
-import com.cevague.vindex.search.normalizeL2
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -37,7 +34,8 @@ import kotlin.math.min
  *
  * Les deux modèles ont des conventions d'entrée **opposées**, dictées par leur
  * lignée : le détecteur (OpenCV) attend du BGR brut 0-255, l'embedder (PyTorch)
- * du RGB normalisé mean/std.
+ * du RGB normalisé mean/std. Les maths du post-traitement vivent dans
+ * `FaceDecoder` (pures, testées).
  */
 @Singleton
 class FaceEngine @Inject constructor(
@@ -45,12 +43,11 @@ class FaceEngine @Inject constructor(
     private val aiModelRepository: AiModelRepository
 ) {
 
+    /** Noms des modèles actifs (marqueur `photo_analyses`, `faces.embedding_model`). */
     data class ActiveFace(
-        val modelDetectorName: String,
-        val modelEmbedderName: String,
-        val embeddingDim: Int,
-        val scoreThreshold: Float?,
-        val nmsThreshold: Float?
+        val detectorModel: String,
+        val embedderModel: String,
+        val embeddingDim: Int
     )
 
     /**
@@ -90,29 +87,35 @@ class FaceEngine @Inject constructor(
         val detector = ensureDetectorLocked() ?: return@withLock null
         val embedder = ensureEmbedderLocked() ?: return@withLock null
         ActiveFace(
-            modelDetectorName = detector.model.modelName,
-            modelEmbedderName = embedder.model.modelName,
-            embeddingDim = embedder.config.embeddingDim ?: 0,
-            scoreThreshold = detector.config.detection?.scoreThreshold,
-            nmsThreshold = detector.config.detection?.nmsThreshold
+            detectorModel = detector.model.modelName,
+            embedderModel = embedder.model.modelName,
+            embeddingDim = embedder.config.embeddingDim ?: 0
         )
     }
 
-    suspend fun locateFaces(contentUri: String) = withContext(Dispatchers.IO) {
+    /**
+     * Visages d'une photo, boîtes et landmarks normalisés 0-1 ; liste vide si
+     * aucun modèle de détection n'est actif. Les échecs de décodage/inférence
+     * remontent en exception (gérés par photo dans le worker).
+     */
+    suspend fun locateFaces(contentUri: String): List<DetectedFace> = withContext(Dispatchers.IO) {
         mutex.withLock {
-            val loaded = ensureDetectorLocked() ?: return@withLock
+            val loaded = ensureDetectorLocked() ?: return@withLock emptyList()
+            val detection = loaded.config.detection ?: error("detection manquant")
             val size = loaded.config.inputSize ?: error("input_size manquant")
+
             val letterboxed = loadForDetection(contentUri, size)
-            val session = loaded.session ?: openSession(loaded, ModelConfig.FILE_FACE_DETECTOR)
-                .also { loaded.session = it }
+            val session = loaded.session
+                ?: openSession(loaded, ModelConfig.FILE_FACE_DETECTOR).also { loaded.session = it }
 
             val tensor = detectorTensor(loaded, letterboxed.bitmap)
             try {
                 val inputName = session.inputInfo.keys.first()
                 session.run(mapOf(inputName to tensor)).use { result ->
-                    result.forEach {
-                        Log.d("FaceEngine", "${it.key} ${(it.value as OnnxTensor).info.shape.contentToString()}")
-                    }
+                    val outputs = result.associate { it.key to it.value as OnnxTensor }
+                    nms(decodeStrides(outputs, detection, size), detection.nmsThreshold)
+                        .filterMinSize(detection.minFaceSize)
+                        .toDetectedFaces(letterboxed.contentWidth, letterboxed.contentHeight)
                 }
             } finally {
                 tensor.close()
@@ -164,6 +167,31 @@ class FaceEngine @Inject constructor(
             setIntraOpNumThreads(min(4, Runtime.getRuntime().availableProcessors()))
         }
         return env.createSession(file.absolutePath, options)
+    }
+
+    /**
+     * Recopie les sorties de chaque stride hors des tenseurs — ils sont fermés
+     * avec le `Result` — puis délègue les maths à `decodeStride`. Les noms sont
+     * reconstruits depuis la config (`cls_8`, `bbox_16`…), rien n'est en dur.
+     */
+    private fun decodeStrides(
+        outputs: Map<String, OnnxTensor>,
+        detection: DetectionConfig,
+        size: Int
+    ): List<Candidate> = detection.strides.flatMap { stride ->
+        val cols = size / stride
+        val anchors = cols * cols
+        val cls = FloatArray(anchors)
+        val obj = FloatArray(anchors)
+        val bbox = FloatArray(anchors * 4)
+        val kps = FloatArray(anchors * 10)
+
+        outputs.getValue("${detection.classLayer}_$stride").floatBuffer.get(cls)
+        outputs.getValue("${detection.objectLayer}_$stride").floatBuffer.get(obj)
+        outputs.getValue("${detection.boxLayer}_$stride").floatBuffer.get(bbox)
+        outputs.getValue("${detection.landmarkLayer}_$stride").floatBuffer.get(kps)
+
+        decodeStride(cls, obj, bbox, kps, stride, cols, detection.scoreThreshold)
     }
 
     /**

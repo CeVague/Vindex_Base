@@ -52,7 +52,7 @@ class FaceAnalysisWorker @AssistedInject constructor(
 
             if (BuildConfig.DEBUG) {
                 val photos = photoRepository.getAllPhotosSummary().first()
-                photos.take(3).forEach { photo ->
+                photos.take(10).forEach { photo ->
                     faceEngine.locateFaces(photo.filePath)
                 }
                 faceEngine.releaseSessions()
