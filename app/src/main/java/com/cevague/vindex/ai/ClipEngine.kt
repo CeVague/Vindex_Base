@@ -26,6 +26,7 @@ import java.nio.LongBuffer
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
+import androidx.core.net.toUri
 
 /**
  * Moteur d'inférence CLIP (phase 2 §4.2-4.3) : sessions ONNX paresseuses sur le
@@ -229,7 +230,7 @@ class ClipEngine @Inject constructor(
     private fun loadBitmap(contentUri: String, size: Int, resizeMode: String): Bitmap {
         val request = Glide.with(context)
             .asBitmap()
-            .load(Uri.parse(contentUri))
+            .load(contentUri.toUri())
             .format(DecodeFormat.PREFER_ARGB_8888)
             .disallowHardwareConfig()
             .diskCacheStrategy(DiskCacheStrategy.NONE)

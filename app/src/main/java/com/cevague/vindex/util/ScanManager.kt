@@ -37,6 +37,10 @@ class ScanManager @Inject constructor(
             .addTag("SCAN_TAG")
             .build()
 
+        val faceReq = OneTimeWorkRequestBuilder<FaceAnalysisWorker>()
+            .addTag("SCAN_TAG")
+            .build()
+
         val cleanupReq = OneTimeWorkRequestBuilder<CleanupWorker>()
             .addTag("SCAN_TAG")
             .build()
@@ -45,6 +49,7 @@ class ScanManager @Inject constructor(
             .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
             .then(metadataReq)
             .then(clipReq)
+            .then(faceReq)
             .then(cleanupReq)
             .enqueue()
     }
