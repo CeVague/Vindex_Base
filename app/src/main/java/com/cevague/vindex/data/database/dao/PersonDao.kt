@@ -43,11 +43,13 @@ interface PersonDao {
         LIMIT 1
     )
     LEFT JOIN photos ph ON f.photo_id = ph.id
-    WHERE p.name IS NOT NULL
-    ORDER BY (p.photo_count = 0), p.name ASC
+    ORDER BY (p.name IS NULL),     -- les personnes nommées d'abord
+             (p.photo_count = 0),  -- les vides en fin de leur groupe
+             p.name ASC,           -- nommées : ordre alphabétique
+             p.photo_count DESC    -- anonymes : les plus gros groupes d'abord
 """
     )
-    fun getNamedPersonsWithCover(): Flow<List<PersonWithCover>>
+    fun getPeopleForTrombinoscope(): Flow<List<PersonWithCover>>
 
     @Query("SELECT * FROM persons ORDER BY name ASC")
     fun getAllPersons(): Flow<List<Person>>

@@ -24,8 +24,8 @@ class PersonRepository @Inject constructor(
 
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
-    fun getNamedPersonsWithCover(): Flow<List<PersonDao.PersonWithCover>> =
-        personDao.getNamedPersonsWithCover()
+    fun getPeopleForTrombinoscope(): Flow<List<PersonDao.PersonWithCover>> =
+        personDao.getPeopleForTrombinoscope()
 
 
     fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =

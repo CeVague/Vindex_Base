@@ -11,7 +11,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PeopleViewModel @Inject constructor(private val repository: PersonRepository) : ViewModel() {
-    val allPeople = repository.getNamedPersonsWithCover()
+    val allPeople = repository.getPeopleForTrombinoscope()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val unnamedCount = repository.getUnnamedPersonCount()
