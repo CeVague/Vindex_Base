@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Ordre : ce qu'on regarde (statistiques), ce qu'on règle tous les jours
+    (affichage), ce qui alimente l'app (bibliothèque), ce qui la fait chercher
+    (modèles), le réglage fin (avancé, en sous-écran), l'irréversible (isolé en
+    dernier), puis À propos.
+
+    La calibration vit dans debug_preferences.xml : six réglages de mise au point
+    dont trois demandent de taper un décimal, ils n'ont rien à faire au même niveau
+    que Thème et Langue.
+-->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -11,40 +21,10 @@
         app:key="category_stats"
         app:title="@string/settings_category_stats">
 
-        <Preference
-            app:icon="@drawable/vector_gallery"
-            app:key="stat_photos"
-            app:selectable="false"
-            app:summary="@string/msg_loading"
-            app:title="@string/settings_stat_photos" />
-
-        <Preference
-            app:icon="@drawable/vector_peoples"
-            app:key="stat_people"
-            app:selectable="false"
-            app:summary="@string/msg_loading"
-            app:title="@string/settings_stat_people" />
-
-        <Preference
-            app:icon="@drawable/vector_face"
-            app:key="stat_faces"
-            app:selectable="false"
-            app:summary="@string/msg_loading"
-            app:title="@string/settings_stat_faces" />
-
-        <Preference
-            app:icon="@drawable/vector_albums"
-            app:key="stat_albums"
-            app:selectable="false"
-            app:summary="@string/msg_loading"
-            app:title="@string/settings_stat_albums" />
-
-        <Preference
-            app:icon="@drawable/vector_storage"
-            app:key="stat_storage"
-            app:selectable="false"
-            app:summary="@string/msg_loading"
-            app:title="@string/settings_stat_storage" />
+        <com.cevague.vindex.ui.settings.StatsPreference
+            app:iconSpaceReserved="false"
+            app:key="stats_card"
+            app:selectable="false" />
 
     </PreferenceCategory>
 
@@ -87,74 +67,7 @@
     </PreferenceCategory>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
-    <!-- INTELLIGENCE ARTIFICIELLE                                            -->
-    <!-- ════════════════════════════════════════════════════════════════════ -->
-
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category_ai"
-        app:title="@string/settings_category_ai">
-
-        <Preference
-            app:icon="@drawable/vector_images_search"
-            app:key="manage_models"
-            app:summary="@string/settings_models_summary"
-            app:title="@string/settings_models" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/vector_percent"
-            app:key="show_scores"
-            app:summary="@string/settings_show_scores_summary"
-            app:title="@string/settings_show_scores" />
-
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue=""
-            app:icon="@drawable/vector_verified"
-            app:key="search_threshold"
-            app:summary="@string/settings_search_threshold_summary"
-            app:title="@string/settings_search_threshold" />
-
-    </PreferenceCategory>
-
-    <!-- ════════════════════════════════════════════════════════════════════ -->
-    <!-- RECONNAISSANCE FACIALE                                               -->
-    <!-- ════════════════════════════════════════════════════════════════════ -->
-
-    <PreferenceCategory
-        app:iconSpaceReserved="false"
-        app:key="category_face_recognition"
-        app:title="@string/settings_category_face">
-
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue="0.45"
-            app:icon="@drawable/vector_verified"
-            app:key="face_threshold_high"
-            app:summary="@string/settings_threshold_high_summary"
-            app:title="@string/settings_threshold_high" />
-
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue="0.35"
-            app:icon="@drawable/vector_help"
-            app:key="face_threshold_medium"
-            app:summary="@string/settings_threshold_medium_summary"
-            app:title="@string/settings_threshold_medium" />
-
-        <EditTextPreference
-            android:inputType="numberDecimal"
-            app:defaultValue="0.40"
-            app:icon="@drawable/vector_person_add"
-            app:key="face_threshold_new"
-            app:summary="@string/settings_threshold_new_summary"
-            app:title="@string/settings_threshold_new" />
-
-    </PreferenceCategory>
-
-    <!-- ════════════════════════════════════════════════════════════════════ -->
-    <!-- DONNÉES                                                              -->
+    <!-- BIBLIOTHÈQUE                                                         -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
 
     <PreferenceCategory
@@ -174,17 +87,51 @@
             app:summary="@string/settings_rescan_summary"
             app:title="@string/settings_rescan" />
 
+    </PreferenceCategory>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- INTELLIGENCE ARTIFICIELLE                                            -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category_ai"
+        app:title="@string/settings_category_ai">
+
         <Preference
-            app:icon="@drawable/vector_delete_forever"
-            app:key="reset_database"
-            app:summary="@string/settings_reset_db_summary"
-            app:title="@string/settings_reset_db" />
+            app:icon="@drawable/vector_images_search"
+            app:key="manage_models"
+            app:summary="@string/settings_models_summary"
+            app:title="@string/settings_models" />
+
+        <Preference
+            app:icon="@drawable/vector_percent"
+            app:key="advanced_settings"
+            app:summary="@string/settings_advanced_summary"
+            app:title="@string/settings_advanced" />
+
+    </PreferenceCategory>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- ZONE DANGEREUSE                                                      -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category_danger"
+        app:title="@string/settings_category_danger">
 
         <Preference
             app:icon="@drawable/vector_restore"
             app:key="reset_settings"
             app:summary="@string/settings_reset_summary"
             app:title="@string/settings_reset" />
+
+        <Preference
+            app:icon="@drawable/vector_delete_forever"
+            app:key="reset_database"
+            app:summary="@string/settings_reset_db_summary"
+            app:title="@string/settings_reset_db" />
 
     </PreferenceCategory>
 

@@ -163,6 +163,19 @@
     <string name="people_delete">Supprimer</string>
     <string name="people_merge">Fusionner avec…</string>
     <string name="people_split">Séparer les visages</string>
+    <string name="people_not_a_person_title">Ce n\'est pas une personne ?</string>
+    <plurals name="people_not_a_person_message">
+        <item quantity="one">%d visage sera écarté et ce groupe disparaîtra. À utiliser pour un animal, une statue ou un portrait.</item>
+        <item quantity="many">%d visages seront écartés et ce groupe disparaîtra. À utiliser pour un animal, une statue ou un portrait.</item>
+        <item quantity="other">%d visages seront écartés et ce groupe disparaîtra. À utiliser pour un animal, une statue ou un portrait.</item>
+    </plurals>
+    <string name="people_not_a_person_confirm">Écarter</string>
+    <string name="people_merge_suggest_title">Est-ce la même personne ?</string>
+    <string name="people_merge_suggest_separator">+</string>
+    <string name="people_merge_suggest_dismiss">Pas maintenant</string>
+    <string name="people_merge_suggest_confirm">Fusionner</string>
+    <string name="people_merge_suggest_names">%1$s + %2$s</string>
+    <string name="people_merge_suggest_detail">%1$s · %2$s</string>
 
     <!-- Settings -->
     <string name="settings_title">Paramètres</string>
@@ -186,15 +199,12 @@
     <!-- Settings - Stats -->
     <string name="settings_stat_photos">Photos</string>
     <string name="settings_stat_people">Personnes</string>
-    <string name="settings_stat_faces">Visages à identifier</string>
+    <string name="settings_stat_faces">À identifier</string>
     <string name="settings_stat_albums">Albums</string>
-    <string name="settings_stat_storage">Espace utilisé par Vindex</string>
-    <string name="settings_storage_summary">%1$s au total\nModèles : %2$s · Base (analyses, visages, villes…) : %3$s</string>
+    <string name="settings_storage_summary">%1$s · modèles %2$s · base %3$s</string>
 
     <string name="settings_stat_hidden">masquées</string>
-    <string name="settings_stat_named">nommées</string>
     <string name="settings_stat_unnamed">sans nom</string>
-    <string name="settings_stat_all_identified">Tous les visages sont identifiés</string>
 
     <!-- Settings - Category -->
     <string name="settings_category_stats">Bibliothèque</string>
@@ -202,6 +212,7 @@
     <string name="settings_category_ai">Intelligence artificielle</string>
     <string name="settings_category_face">Reconnaissance faciale</string>
     <string name="settings_category_data">Données</string>
+    <string name="settings_category_danger">Irréversible</string>
 
     <!-- Settings - AI models -->
     <string name="settings_models">Gestion des modèles</string>
@@ -226,8 +237,20 @@
     <string name="models_error_exists">Un modèle de ce nom existe déjà</string>
     <string name="models_error_io">Échec de l\'import (erreur de lecture/écriture)</string>
     <string name="models_type_clip">Encodeur image et texte (CLIP)</string>
+    <string name="models_type_face_detection">Détection des visages</string>
+    <string name="models_type_face_embedding">Reconnaissance des visages</string>
     <string name="models_type_translation">Traduction des requêtes</string>
     <string name="models_type_captioning">Description d\'images</string>
+    <string name="models_type_unknown">Autre</string>
+    <string name="models_section_clip">Recherche</string>
+    <string name="models_section_face_detection">Détection des visages</string>
+    <string name="models_section_face_embedding">Reconnaissance des visages</string>
+    <string name="models_section_translation">Traduction</string>
+    <string name="models_section_captioning">Description d\'images</string>
+    <string name="models_section_other">Autres</string>
+    <string name="models_reindex_faces_title">Ré-analyser les visages ?</string>
+    <string name="models_reindex_faces_message">Changer ce modèle invalide tous les visages déjà calculés : ils seront détectés et reconnus à nouveau, et les groupes reconstruits de zéro. Les personnes nommées sont conservées, mais vides — renommer un nouveau groupe avec le même nom proposera de les fusionner.</string>
+    <string name="models_reindex_faces_action">Ré-analyser</string>
 
     <!-- Settings - Data -->
     <string name="settings_rescan">Rescanner la galerie</string>
@@ -263,6 +286,7 @@
 
     <!-- Settings - Advanced -->
     <string name="settings_advanced">Avancé</string>
+    <string name="settings_advanced_summary">Affichage des scores et calibration des seuils</string>
     <string name="settings_face_threshold">Seuil de reconnaissance faciale</string>
     <string name="settings_face_threshold_summary">Plus bas = plus de correspondances, plus haut = moins de faux positifs</string>
     <string name="settings_show_scores">Afficher les scores de similarité</string>

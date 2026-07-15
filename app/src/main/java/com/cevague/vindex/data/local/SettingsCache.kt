@@ -78,12 +78,22 @@ class SettingsCache @Inject constructor(
         set(value) = prefs.edit { putBoolean(Setting.KEY_SHOW_SCORES, value) }
 
     /**
+     * La saisie **brute** de l'EditTextPreference, telle que tapée. C'est elle qui
+     * est stockée, et non le float : une saisie invalide doit rester visible dans
+     * le champ plutôt que de disparaître, sinon le réglage semble s'effacer tout
+     * seul.
+     */
+    var searchThresholdInput: String
+        get() = prefs.getString(Setting.KEY_SEARCH_THRESHOLD, "") ?: ""
+        set(value) = prefs.edit { putString(Setting.KEY_SEARCH_THRESHOLD, value) }
+
+    /**
      * Override manuel du seuil de similarité de la recherche sémantique.
-     * Stocké en String (EditTextPreference) ; vide ou invalide = null = mode
-     * auto (le seuil vient du config.json du modèle actif, `similarity_floor`).
+     * Vide ou invalide = null = mode auto (le seuil vient du config.json du modèle
+     * actif, `similarity_floor`).
      */
     val searchThresholdOverride: Float?
-        get() = prefs.getString(Setting.KEY_SEARCH_THRESHOLD, null)?.toFloatOrNull()
+        get() = searchThresholdInput.toFloatOrNull()
 
     var faceThresholdHigh: Float
         get() = prefs.getFloat(Setting.KEY_FACE_THRESHOLD_HIGH, DEFAULT_FACE_THRESHOLD_HIGH)

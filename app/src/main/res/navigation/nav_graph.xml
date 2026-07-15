@@ -69,11 +69,19 @@
         <action
             android:id="@+id/action_settings_to_models"
             app:destination="@id/modelsFragment" />
+        <action
+            android:id="@+id/action_settings_to_debug"
+            app:destination="@id/debugSettingsFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/modelsFragment"
         android:name="com.cevague.vindex.ui.settings.ModelsFragment"
         android:label="@string/models_title" />
+
+    <fragment
+        android:id="@+id/debugSettingsFragment"
+        android:name="com.cevague.vindex.ui.settings.DebugSettingsFragment"
+        android:label="@string/settings_advanced" />
 
 </navigation>

@@ -156,6 +156,18 @@
     <string name="people_delete">Delete</string>
     <string name="people_merge">Merge with…</string>
     <string name="people_split">Separate faces</string>
+    <string name="people_not_a_person_title">Not a person?</string>
+    <plurals name="people_not_a_person_message">
+        <item quantity="one">%d face will be discarded and this group will disappear. Use this for an animal, a statue or a portrait.</item>
+        <item quantity="other">%d faces will be discarded and this group will disappear. Use this for an animal, a statue or a portrait.</item>
+    </plurals>
+    <string name="people_not_a_person_confirm">Discard</string>
+    <string name="people_merge_suggest_title">Is this the same person?</string>
+    <string name="people_merge_suggest_separator">+</string>
+    <string name="people_merge_suggest_dismiss">Not now</string>
+    <string name="people_merge_suggest_confirm">Merge</string>
+    <string name="people_merge_suggest_names">%1$s + %2$s</string>
+    <string name="people_merge_suggest_detail">%1$s · %2$s</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -182,6 +194,7 @@
     <string name="settings_category_ai">Artificial intelligence</string>
     <string name="settings_category_face">Face Recognition</string>
     <string name="settings_category_data">Data</string>
+    <string name="settings_category_danger">Irreversible</string>
 
     <!-- Settings - AI models -->
     <string name="settings_models">Model management</string>
@@ -206,21 +219,30 @@
     <string name="models_error_exists">A model with this name already exists</string>
     <string name="models_error_io">Import failed (read/write error)</string>
     <string name="models_type_clip">Image and text encoder (CLIP)</string>
+    <string name="models_type_face_detection">Face detection</string>
+    <string name="models_type_face_embedding">Face recognition</string>
     <string name="models_type_translation">Query translation</string>
     <string name="models_type_captioning">Image captioning</string>
+    <string name="models_type_unknown">Other</string>
+    <string name="models_section_clip">Search</string>
+    <string name="models_section_face_detection">Face detection</string>
+    <string name="models_section_face_embedding">Face recognition</string>
+    <string name="models_section_translation">Translation</string>
+    <string name="models_section_captioning">Captioning</string>
+    <string name="models_section_other">Other</string>
+    <string name="models_reindex_faces_title">Re-analyze faces?</string>
+    <string name="models_reindex_faces_message">Changing this model invalidates every face already computed: they will be detected and recognized again, and groups rebuilt from scratch. Named people are kept, but empty — renaming a new group with the same name will offer to merge them.</string>
+    <string name="models_reindex_faces_action">Re-analyze</string>
 
     <!-- Settings - Stats -->
     <string name="settings_stat_photos">Photos</string>
     <string name="settings_stat_people">People</string>
-    <string name="settings_stat_faces">Faces to identify</string>
+    <string name="settings_stat_faces">To identify</string>
     <string name="settings_stat_albums">Albums</string>
-    <string name="settings_stat_storage">Space used by Vindex</string>
-    <string name="settings_storage_summary">%1$s total\nModels: %2$s · Database (analyses, faces, cities…): %3$s</string>
+    <string name="settings_storage_summary">%1$s · models %2$s · database %3$s</string>
 
     <string name="settings_stat_hidden">hidden</string>
-    <string name="settings_stat_named">named</string>
     <string name="settings_stat_unnamed">unnamed</string>
-    <string name="settings_stat_all_identified">All faces identified</string>
 
     <!-- Settings - Data -->
     <string name="settings_rescan">Rescan gallery</string>
@@ -257,6 +279,7 @@
 
     <!-- Settings - Advanced -->
     <string name="settings_advanced">Advanced</string>
+    <string name="settings_advanced_summary">Score display and threshold calibration</string>
     <string name="settings_face_threshold">Face recognition threshold</string>
     <string name="settings_face_threshold_summary">Lower = more matches, higher = fewer false positives</string>
     <string name="settings_show_scores">Show similarity scores</string>

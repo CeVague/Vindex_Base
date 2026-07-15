@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Réglages de mise au point : ils se calibrent sur SA galerie, à la mesure, et
+    n'ont de sens qu'une fois les scores affichés. Les valeurs par défaut ne sont
+    volontairement PAS déclarées ici : elles vivent dans SettingsCache
+    (DEFAULT_FACE_THRESHOLD_*), et un `defaultValue` en XML n'en serait qu'une copie
+    libre de diverger — d'autant que le PreferenceDataStore court-circuite de toute
+    façon le mécanisme de défaut du framework.
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- RECHERCHE                                                            -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category_debug_search"
+        app:title="@string/settings_category_ai">
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/vector_percent"
+            app:key="show_scores"
+            app:summary="@string/settings_show_scores_summary"
+            app:title="@string/settings_show_scores" />
+
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            app:icon="@drawable/vector_verified"
+            app:key="search_threshold"
+            app:summary="@string/settings_search_threshold_summary"
+            app:title="@string/settings_search_threshold" />
+
+    </PreferenceCategory>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- RECONNAISSANCE FACIALE                                               -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="category_face_recognition"
+        app:title="@string/settings_category_face">
+
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            app:icon="@drawable/vector_verified"
+            app:key="face_threshold_high"
+            app:summary="@string/settings_threshold_high_summary"
+            app:title="@string/settings_threshold_high" />
+
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            app:icon="@drawable/vector_help"
+            app:key="face_threshold_medium"
+            app:summary="@string/settings_threshold_medium_summary"
+            app:title="@string/settings_threshold_medium" />
+
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            app:icon="@drawable/vector_person_add"
+            app:key="face_threshold_new"
+            app:summary="@string/settings_threshold_new_summary"
+            app:title="@string/settings_threshold_new" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

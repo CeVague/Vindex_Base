@@ -3,7 +3,6 @@ package com.cevague.vindex.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.BuildConfig
-import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.AlbumRepository
 import com.cevague.vindex.data.repository.PersonRepository
@@ -136,36 +135,9 @@ class SettingsViewModel @Inject constructor(
         settingsCache.resetToDefaults()
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Persistance des réglages
-    // ════════════════════════════════════════════════════════════════════════
-
-    fun saveStringSetting(key: String, value: String) {
-        when (key) {
-            Setting.KEY_THEME -> settingsCache.themeMode = value
-            Setting.KEY_LANGUAGE -> settingsCache.userLanguage = value
-            Setting.KEY_FACE_THRESHOLD_HIGH -> value.toFloatOrNull()
-                ?.let { settingsCache.faceThresholdHigh = it }
-
-            Setting.KEY_FACE_THRESHOLD_MEDIUM -> value.toFloatOrNull()
-                ?.let { settingsCache.faceThresholdMedium = it }
-
-            Setting.KEY_FACE_THRESHOLD_NEW -> value.toFloatOrNull()
-                ?.let { settingsCache.faceThresholdNew = it }
-        }
-    }
-
-    fun saveIntSetting(key: String, value: Int) {
-        if (key == Setting.KEY_GRID_COLUMNS) {
-            settingsCache.gridColumns = value
-        }
-    }
-
-    fun saveBooleanSetting(key: String, value: Boolean) {
-        if (key == Setting.KEY_SHOW_SCORES) {
-            settingsCache.showScores = value
-        }
-    }
+    // La persistance des réglages est passée dans SettingsDataStore : le ViewModel
+    // n'était qu'un relais vers SettingsCache, et deux écrans de préférences ont
+    // désormais besoin du même branchement.
 
     // ════════════════════════════════════════════════════════════════════════
     // Data Classes

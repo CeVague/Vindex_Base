@@ -13,7 +13,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.ListPreference
 import androidx.preference.Preference
-import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.entity.Setting
@@ -34,10 +33,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private val viewModel: SettingsViewModel by viewModels()
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        preferenceManager.preferenceDataStore = CacheBasedDataStore()
+        preferenceManager.preferenceDataStore = SettingsDataStore(settingsCache)
         setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
-        setupStatisticsPreferences()
         setupDisplayPreferences()
         setupAiPreferences()
         setupDataPreferences()
@@ -47,10 +45,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onViewCreated(view: android.view.View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         observeStatistics()
-    }
-
-    private fun setupStatisticsPreferences() {
-        // Mis à jour via observeStatistics()
     }
 
     private fun setupDisplayPreferences() {
@@ -68,6 +62,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupAiPreferences() {
         findPreference<Preference>("manage_models")?.setOnPreferenceClickListener {
             findNavController().navigate(R.id.action_settings_to_models)
+            true
+        }
+
+        findPreference<Preference>("advanced_settings")?.setOnPreferenceClickListener {
+            findNavController().navigate(R.id.action_settings_to_debug)
             true
         }
     }
@@ -106,15 +105,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.libraryStats.collect { stats -> updateStatsSummaries(stats) }
+                    viewModel.libraryStats.collect { stats -> updateStatsTiles(stats) }
                 }
                 launch {
                     viewModel.storage.collect { s ->
-                        findPreference<Preference>("stat_storage")?.summary = getString(
-                            R.string.settings_storage_summary,
-                            s.totalBytes.formatFileSize(),
-                            s.modelsBytes.formatFileSize(),
-                            s.databaseBytes.formatFileSize()
+                        findPreference<StatsPreference>("stats_card")?.setStorage(
+                            getString(
+                                R.string.settings_storage_summary,
+                                s.totalBytes.formatFileSize(),
+                                s.modelsBytes.formatFileSize(),
+                                s.databaseBytes.formatFileSize()
+                            )
                         )
                     }
                 }
@@ -122,32 +123,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private fun updateStatsSummaries(stats: SettingsViewModel.LibraryStats) {
-        findPreference<Preference>("stat_photos")?.summary = buildString {
-            append(stats.visiblePhotos.formatNumber())
-            if (stats.hiddenPhotos > 0) {
-                append(" (${stats.hiddenPhotos} ${getString(R.string.settings_stat_hidden)})")
-            }
-        }
-
-        findPreference<Preference>("stat_people")?.summary = buildString {
-            append(stats.namedPeople.formatNumber())
-            append(" ${getString(R.string.settings_stat_named)}")
-            if (stats.unnamedPeople > 0) {
-                append(", ${stats.unnamedPeople} ${getString(R.string.settings_stat_unnamed)}")
-            }
-        }
-
-        findPreference<Preference>("stat_faces")?.summary = when {
-            stats.pendingFaces == 0 -> getString(R.string.settings_stat_all_identified)
-            else -> resources.getQuantityString(
-                R.plurals.people_to_identify_count,
-                stats.pendingFaces,
-                stats.pendingFaces
+    /** Les nuances (masquées, sans nom) ne s'affichent que si elles existent. */
+    private fun updateStatsTiles(stats: SettingsViewModel.LibraryStats) {
+        findPreference<StatsPreference>("stats_card")?.setTiles(
+            photos = StatsPreference.Tile(
+                value = stats.visiblePhotos.formatNumber(),
+                label = getString(R.string.settings_stat_photos),
+                hint = stats.hiddenPhotos
+                    .takeIf { it > 0 }
+                    ?.let { "$it ${getString(R.string.settings_stat_hidden)}" }
+            ),
+            people = StatsPreference.Tile(
+                value = stats.totalPeople.formatNumber(),
+                label = getString(R.string.settings_stat_people),
+                hint = stats.unnamedPeople
+                    .takeIf { it > 0 }
+                    ?.let { "$it ${getString(R.string.settings_stat_unnamed)}" }
+            ),
+            faces = StatsPreference.Tile(
+                value = stats.pendingFaces.formatNumber(),
+                label = getString(R.string.settings_stat_faces)
+            ),
+            albums = StatsPreference.Tile(
+                value = stats.totalAlbums.formatNumber(),
+                label = getString(R.string.settings_stat_albums)
             )
-        }
-
-        findPreference<Preference>("stat_albums")?.summary = stats.totalAlbums.formatNumber()
+        )
     }
 
     private fun applyTheme(theme: String) {
@@ -242,6 +243,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupAiPreferences()
         setupDataPreferences()
         setupAboutPreferences()
+        // L'écran vient d'être reconstruit : la carte de stats est neuve et vide
+        // jusqu'à la prochaine émission des flows, qu'un reset ne déclenche pas.
+        updateStatsTiles(viewModel.libraryStats.value)
 
         Toast.makeText(requireContext(), R.string.settings_reset_done, Toast.LENGTH_SHORT).show()
     }
@@ -254,37 +258,4 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private inner class CacheBasedDataStore : PreferenceDataStore() {
-        override fun getString(key: String, defValue: String?): String? = when (key) {
-            Setting.KEY_THEME -> settingsCache.themeMode
-            Setting.KEY_LANGUAGE -> settingsCache.userLanguage
-            Setting.KEY_FACE_THRESHOLD_HIGH -> settingsCache.faceThresholdHigh.toString()
-            Setting.KEY_FACE_THRESHOLD_MEDIUM -> settingsCache.faceThresholdMedium.toString()
-            Setting.KEY_FACE_THRESHOLD_NEW -> settingsCache.faceThresholdNew.toString()
-            else -> defValue
-        }
-
-        override fun getInt(key: String, defValue: Int): Int = when (key) {
-            Setting.KEY_GRID_COLUMNS -> settingsCache.gridColumns
-            else -> defValue
-        }
-
-        override fun getBoolean(key: String, defValue: Boolean): Boolean = when (key) {
-            Setting.KEY_SHOW_SCORES -> settingsCache.showScores
-            else -> defValue
-        }
-
-        override fun putString(key: String, value: String?) {
-            value ?: return
-            viewModel.saveStringSetting(key, value)
-        }
-
-        override fun putInt(key: String, value: Int) {
-            viewModel.saveIntSetting(key, value)
-        }
-
-        override fun putBoolean(key: String, value: Boolean) {
-            viewModel.saveBooleanSetting(key, value)
-        }
-    }
 }
