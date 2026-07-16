@@ -41,6 +41,9 @@ class AiModelRepository @Inject constructor(
 
     suspend fun getActiveModelOnce(type: String): AiModel? = aiModelDao.getActiveModelOnce(type)
 
+    suspend fun getModelsByTypeOnce(type: String): List<AiModel> =
+        aiModelDao.getModelsByTypeOnce(type)
+
     /** Activation exclusive par type. */
     suspend fun activate(model: AiModel) {
         aiModelDao.deactivateAllOfType(model.modelType)

@@ -82,6 +82,12 @@
             app:summary="@string/settings_export_similarities_summary"
             app:title="@string/settings_export_similarities" />
 
+        <Preference
+            app:icon="@drawable/vector_verified"
+            app:key="export_comparison"
+            app:summary="@string/settings_export_comparison_summary"
+            app:title="@string/settings_export_comparison" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

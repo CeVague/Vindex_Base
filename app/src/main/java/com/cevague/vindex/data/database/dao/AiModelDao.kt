@@ -18,6 +18,9 @@ interface AiModelDao {
     @Query("SELECT * FROM ai_models WHERE model_type = :type ORDER BY model_name")
     fun getModelsByType(type: String): Flow<List<AiModel>>
 
+    @Query("SELECT * FROM ai_models WHERE model_type = :type ORDER BY model_name")
+    suspend fun getModelsByTypeOnce(type: String): List<AiModel>
+
     @Query("SELECT * FROM ai_models WHERE model_type = :type AND is_active = 1 LIMIT 1")
     fun getActiveModel(type: String): Flow<AiModel?>
 

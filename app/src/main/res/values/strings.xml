@@ -296,6 +296,9 @@
     <string name="settings_auto_clustering_summary">When off, every face goes to the identification queue and grouping is entirely manual. Used to produce ground truth for threshold calibration.</string>
     <string name="settings_export_similarities">Export similarities</string>
     <string name="settings_export_similarities_summary">Writes a CSV of every pair of identified faces (same person or not, similarity). Do this after a manual grouping.</string>
+    <string name="settings_export_comparison">Compare embedders</string>
+    <string name="settings_export_comparison_summary">Re-embeds labelled faces with every imported embedding model (one CSV per model), plus a per-face quality CSV. Activates nothing, erases nothing. Slow.</string>
+    <string name="settings_export_running">Export running, please wait…</string>
     <string name="settings_export_done">Exported to %1$s</string>
     <string name="settings_export_empty">Nothing to export: at least two identified faces are needed (and fewer than 2000).</string>
     <string name="settings_face_threshold">Face recognition threshold</string>

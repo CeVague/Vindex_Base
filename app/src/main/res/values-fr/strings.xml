@@ -303,6 +303,9 @@
     <string name="settings_auto_clustering_summary">Désactivé, tous les visages partent en attente d\'identification et le regroupement se fait entièrement à la main. Sert à produire une vérité terrain pour calibrer les seuils.</string>
     <string name="settings_export_similarities">Exporter les similarités</string>
     <string name="settings_export_similarities_summary">Écrit un CSV de toutes les paires de visages identifiés (même personne ou non, similarité). À faire après un regroupement manuel.</string>
+    <string name="settings_export_comparison">Comparer les embedders</string>
+    <string name="settings_export_comparison_summary">Ré-embarque les visages étiquetés avec chaque modèle d\'embedding importé (un CSV par modèle), plus un CSV de qualité par visage. N\'active rien, n\'efface rien. Long.</string>
+    <string name="settings_export_running">Export en cours, patientez…</string>
     <string name="settings_export_done">Exporté vers %1$s</string>
     <string name="settings_export_empty">Rien à exporter : il faut au moins deux visages identifiés (et moins de 2000).</string>
     <string name="settings_face_threshold">Seuil de reconnaissance faciale</string>

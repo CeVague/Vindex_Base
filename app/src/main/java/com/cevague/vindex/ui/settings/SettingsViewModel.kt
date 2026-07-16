@@ -5,7 +5,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cevague.vindex.BuildConfig
+import com.cevague.vindex.ai.DetectedFace
+import com.cevague.vindex.ai.boxAspect
+import com.cevague.vindex.ai.edgeMargin
+import com.cevague.vindex.ai.eyeDistance
+import com.cevague.vindex.ai.FaceEngine
+import com.cevague.vindex.data.database.dao.FaceDao
+import com.cevague.vindex.data.database.entity.AiModel
 import com.cevague.vindex.data.local.SettingsCache
+import com.cevague.vindex.data.repository.AiModelRepository
 import com.cevague.vindex.search.asFloatArray
 import com.cevague.vindex.search.dotProduct
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -44,6 +52,8 @@ class SettingsViewModel @Inject constructor(
     private val photoRepository: PhotoRepository,
     private val personRepository: PersonRepository,
     private val albumRepository: AlbumRepository,
+    private val aiModelRepository: AiModelRepository,
+    private val faceEngine: FaceEngine,
     val settingsCache: SettingsCache, // Gardé public pour le DataStore du Fragment
     private val scanManager: ScanManager,
     private val mediaScanner: MediaScanner,
@@ -120,9 +130,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { scanManager.startFaceReanalysis() }
     }
 
+    /** Un visage étiqueté, prêt pour l'export : sa personne (+ nom) et son vecteur. */
+    private data class CalibFace(
+        val faceId: Long,
+        val personId: Long,
+        val personName: String,
+        val embedding: FloatArray
+    )
+
     /**
      * Debug : exporte **toutes les paires** de visages identifiés — même personne ou
-     * non, et similarité — en CSV.
+     * non, similarité, et **noms** — en CSV, avec l'embedder actif (vecteurs déjà en
+     * base).
      *
      * Ce que ça permet et que rien d'autre ne permet : calibrer sur une **vérité
      * terrain**. Le log `CALIBRATION` ne donne qu'une distribution dont il faut
@@ -130,43 +149,170 @@ class SettingsViewModel @Inject constructor(
      * calcule au lieu de s'estimer. À utiliser après un regroupement manuel
      * (`autoClusteringEnabled = false`), sans quoi on ne mesure que l'accord de
      * l'automate avec lui-même.
-     *
-     * O(n²) assumé : c'est un outil de galerie de test, d'où le garde-fou.
      */
     suspend fun exportFaceSimilarities(): String? = withContext(Dispatchers.IO) {
         // Hors personnes masquées : deux visages du même passant peuvent finir dans
         // deux groupes masqués distincts, ce qui inscrirait « personnes différentes »
         // dans la vérité terrain alors que c'est la même. Mieux vaut ne pas les
         // compter que compter faux.
+        val names = personNames()
         val faces = personRepository.getFacesForCalibration()
-        if (faces.size < 2) return@withContext null
-        if (faces.size > MAX_EXPORT_FACES) {
-            Log.w(TAG, "Export refusé : ${faces.size} visages, ${MAX_EXPORT_FACES} max")
-            return@withContext null
-        }
+            .filter { it.embedding != null }
+            .map { face ->
+                val blob = face.embedding!!
+                CalibFace(
+                    faceId = face.id,
+                    personId = face.personId ?: 0,
+                    personName = names[face.personId] ?: "",
+                    embedding = blob.asFloatArray(blob.size / Float.SIZE_BYTES)
+                )
+            }
+        writePairs(faces, "face_pairs.csv")
+    }
 
-        val vectors = faces.map { face ->
-            val blob = face.embedding!!
-            blob.asFloatArray(blob.size / Float.SIZE_BYTES)
-        }
+    /**
+     * Debug : le **même** export, mais recalculé avec **chaque embedder importé** —
+     * un CSV par modèle. C'est ainsi qu'on compare des modèles (EdgeFace S, XXS…) sur
+     * une vérité terrain fixe.
+     *
+     * ⚠ Les vecteurs sont **recalculés**, jamais lus en base, et **rien n'est
+     * activé** : activer un modèle de visages déclencherait la ré-analyse, qui
+     * effacerait justement le regroupement manuel qu'on veut mesurer. Le détecteur
+     * actif est réutilisé tel quel (on ne fait varier que l'embedder), et chaque
+     * détection est ré-appariée au visage étiqueté par recouvrement de boîte.
+     */
+    suspend fun exportEmbedderComparison(): List<String> = withContext(Dispatchers.IO) {
+        val models = aiModelRepository.getModelsByTypeOnce(AiModel.TYPE_FACE_EMBEDDING)
+        if (models.isEmpty()) return@withContext emptyList()
 
-        val file = File(context.getExternalFilesDir(null), "face_pairs.csv")
+        val names = personNames()
+        // Groupées par photo : une détection re-tourne tous les visages d'une image
+        // d'un coup, autant ne la lancer qu'une fois par photo.
+        val byPhoto = personRepository.getLabeledFacesWithPhoto().groupBy { it.filePath }
+
+        val written = mutableListOf<String>()
+        writeMetrics(byPhoto, names)?.let { written += it }
+        try {
+            for (model in models) {
+                val faces = mutableListOf<CalibFace>()
+                for ((uri, stored) in byPhoto) {
+                    val analyzed = try {
+                        faceEngine.analyzeFacesWith(uri, model)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Ré-embarquement impossible ($uri, ${model.modelName})", e)
+                        continue
+                    }
+                    // Même détecteur → mêmes boîtes : chaque visage stocké retrouve sa
+                    // détection par le meilleur recouvrement.
+                    for (face in stored) {
+                        val match = analyzed.maxByOrNull { faceBoxIou(face, it.detected) } ?: continue
+                        if (faceBoxIou(face, match.detected) < MATCH_IOU) continue
+                        faces += CalibFace(
+                            face.id, face.personId, names[face.personId] ?: "", match.embedding
+                        )
+                    }
+                }
+                val safe = model.modelName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                writePairs(faces, "face_pairs_$safe.csv")?.let { written += it }
+            }
+        } finally {
+            faceEngine.releaseCalibrationSessions()
+        }
+        written
+    }
+
+    /**
+     * Une ligne par visage : tout ce qui peut expliquer **pourquoi** un visage se
+     * reconnaît mal, indépendamment de qui il est.
+     *
+     * Écrit une seule fois, pas par modèle : ces mesures ne dépendent que du
+     * détecteur et de la géométrie. À joindre aux `face_pairs_*.csv` sur `face_id`.
+     */
+    private suspend fun writeMetrics(
+        byPhoto: Map<String, List<FaceDao.LabeledFace>>,
+        names: Map<Long, String>
+    ): String? {
+        val file = File(context.getExternalFilesDir(null), "face_metrics.csv")
+        var rows = 0
         file.bufferedWriter().use { out ->
-            out.write("same_person,similarity,face_a,face_b,person_a,person_b,type_a,type_b\n")
+            out.write(
+                "face_id,person_id,name,det_score,box_w,box_h,box_aspect," +
+                        "face_px,eye_dist_px,photo_px,edge_margin," +
+                        "align_rmse,align_scale,align_roll_deg,yaw,blur,brightness,contrast\n"
+            )
+            for ((uri, stored) in byPhoto) {
+                val metrics = try {
+                    faceEngine.faceMetrics(uri)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Métriques impossibles ($uri)", e)
+                    continue
+                }
+                for (face in stored) {
+                    val m = metrics.maxByOrNull { faceBoxIou(face, it.detected) } ?: continue
+                    if (faceBoxIou(face, m.detected) < MATCH_IOU) continue
+
+                    val d = m.detected
+                    val pw = face.photoWidth ?: 0
+                    val ph = face.photoHeight ?: 0
+                    // Pixels réels : c'est la largeur d'origine qui décide, pas la
+                    // fraction de l'image — un visage à 5 % d'un 48 Mpx reste net.
+                    val facePx = (d.boxRight - d.boxLeft) * pw
+                    val eyePx = eyeDistance(d.landmarks) * pw
+                    out.write(
+                        "${face.id},${face.personId},${names[face.personId] ?: ""}," +
+                                "${d.score},${d.boxRight - d.boxLeft},${d.boxBottom - d.boxTop}," +
+                                "${boxAspect(d.boxLeft, d.boxTop, d.boxRight, d.boxBottom)}," +
+                                "$facePx,$eyePx,${pw.toLong() * ph}," +
+                                "${edgeMargin(d.boxLeft, d.boxTop, d.boxRight, d.boxBottom)}," +
+                                "${m.alignRmse},${m.alignScale},${m.alignRollDeg},${m.yaw}," +
+                                "${m.blur},${m.brightness},${m.contrast}\n"
+                    )
+                    rows++
+                }
+            }
+        }
+        if (rows == 0) return null
+        Log.i(TAG, "Métriques : $rows visages -> ${file.absolutePath}")
+        return file.absolutePath
+    }
+
+    private suspend fun personNames(): Map<Long, String> =
+        personRepository.getAllPersonsOnce().associate { it.id to (it.name ?: "") }
+
+    private fun writePairs(faces: List<CalibFace>, fileName: String): String? {
+        if (faces.size < 2) return null
+        if (faces.size > MAX_EXPORT_FACES) {
+            Log.w(TAG, "Export refusé : ${faces.size} visages, $MAX_EXPORT_FACES max")
+            return null
+        }
+        val file = File(context.getExternalFilesDir(null), fileName)
+        file.bufferedWriter().use { out ->
+            out.write("same_person,similarity,face_a,face_b,person_a,person_b,name_a,name_b\n")
             for (i in faces.indices) {
                 for (j in i + 1 until faces.size) {
-                    val same = if (faces[i].personId == faces[j].personId) 1 else 0
-                    val similarity = dotProduct(vectors[i], vectors[j])
+                    val a = faces[i]
+                    val b = faces[j]
+                    val same = if (a.personId == b.personId) 1 else 0
+                    val similarity = dotProduct(a.embedding, b.embedding)
                     out.write(
-                        "$same,$similarity,${faces[i].id},${faces[j].id}," +
-                                "${faces[i].personId},${faces[j].personId}," +
-                                "${faces[i].assignmentType},${faces[j].assignmentType}\n"
+                        "$same,$similarity,${a.faceId},${b.faceId}," +
+                                "${a.personId},${b.personId},${a.personName},${b.personName}\n"
                     )
                 }
             }
         }
         Log.i(TAG, "Export : ${faces.size} visages -> ${file.absolutePath}")
-        file.absolutePath
+        return file.absolutePath
+    }
+
+    /** Recouvrement d'une boîte stockée et d'une boîte détectée, normalisées 0-1. */
+    private fun faceBoxIou(a: FaceDao.LabeledFace, b: DetectedFace): Float {
+        val interW = (minOf(a.boxRight, b.boxRight) - maxOf(a.boxLeft, b.boxLeft)).coerceAtLeast(0f)
+        val interH = (minOf(a.boxBottom, b.boxBottom) - maxOf(a.boxTop, b.boxTop)).coerceAtLeast(0f)
+        val inter = interW * interH
+        val union = (a.boxRight - a.boxLeft) * (a.boxBottom - a.boxTop) +
+                (b.boxRight - b.boxLeft) * (b.boxBottom - b.boxTop) - inter
+        return if (union <= 0f) 0f else inter / union
     }
 
     /** Dossiers d'images disponibles (pour l'édition des dossiers indexés). */
@@ -210,6 +356,13 @@ class SettingsViewModel @Inject constructor(
 
         /** ~2 M paires, quelques dizaines de Mo de CSV : au-delà, l'O(n²) n'a plus de sens. */
         const val MAX_EXPORT_FACES = 2000
+
+        /**
+         * Recouvrement minimal pour ré-apparier une détection à un visage stocké. Le
+         * détecteur étant le même, la bonne paire frôle 1,0 — ce seuil ne sert qu'à
+         * rejeter l'absence de correspondance, pas à départager.
+         */
+        const val MATCH_IOU = 0.5f
     }
 
     // ════════════════════════════════════════════════════════════════════════

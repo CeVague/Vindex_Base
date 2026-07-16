@@ -41,6 +41,28 @@ class DebugSettingsFragment : PreferenceFragmentCompat() {
             exportSimilarities()
             true
         }
+
+        findPreference<Preference>("export_comparison")?.setOnPreferenceClickListener {
+            exportComparison()
+            true
+        }
+    }
+
+    /**
+     * Ré-embarque toute la galerie avec chaque embedder importé : long (détection +
+     * inférence par photo et par modèle), d'où le Toast d'attente.
+     */
+    private fun exportComparison() {
+        Toast.makeText(requireContext(), R.string.settings_export_running, Toast.LENGTH_SHORT).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val paths = viewModel.exportEmbedderComparison()
+            val message = if (paths.isEmpty()) {
+                getString(R.string.settings_export_empty)
+            } else {
+                getString(R.string.settings_export_done, paths.joinToString("\n"))
+            }
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun exportSimilarities() {

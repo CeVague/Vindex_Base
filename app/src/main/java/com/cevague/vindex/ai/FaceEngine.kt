@@ -105,6 +105,9 @@ class FaceEngine @Inject constructor(
     private var loadedDetector: Loaded? = null
     private var loadedEmbedder: Loaded? = null
 
+    /** Embedder de comparaison (debug), tenu à part pour ne pas déloger l'actif. */
+    private var loadedCalibration: Loaded? = null
+
     /** Modèles visages actifs, ou null si l'un des deux manque. */
     suspend fun activeFace(): ActiveFace? = mutex.withLock {
         val detector = ensureDetectorLocked() ?: return@withLock null
@@ -319,6 +322,67 @@ class FaceEngine @Inject constructor(
         )
     }
 
+    /**
+     * Mesures de qualité d'un visage (debug/calibration) : ce que la similarité ne
+     * dit pas — pose, netteté, exposition, cadrage. Voir `FaceQuality`.
+     */
+    data class FaceMetrics(
+        val detected: DetectedFace,
+        /** Résidu d'alignement en pixels du gabarit : le capteur de pose. */
+        val alignRmse: Float,
+        /** > 1 = le visage a été agrandi pour tenir le gabarit, donc peu de pixels. */
+        val alignScale: Float,
+        val alignRollDeg: Float,
+        val yaw: Float,
+        val blur: Float,
+        val brightness: Float,
+        val contrast: Float
+    )
+
+    /**
+     * Détecte, aligne et **mesure** chaque visage, sans embarquer : ces métriques ne
+     * dépendent que du détecteur et de la géométrie, jamais de l'embedder — inutile
+     * de les recalculer pour chaque modèle comparé.
+     */
+    suspend fun faceMetrics(contentUri: String): List<FaceMetrics> {
+        val faces = locateFaces(contentUri)
+        if (faces.isEmpty()) return emptyList()
+
+        return mutex.withLock {
+            val size = ARCFACE_SIZE
+            val source = loadForEmbedding(contentUri, faces, size)
+            faces.map { face ->
+                val src = face.landmarks.toPixels(source.width, source.height)
+                val transform = similarityTransform(src, ARCFACE_TEMPLATE_112)
+                val crop = alignFace(source, face.landmarks, size)
+                val gray = grayscale(crop)
+                val (brightness, contrast) = meanStd(gray)
+                FaceMetrics(
+                    detected = face,
+                    alignRmse = alignmentResidual(src, ARCFACE_TEMPLATE_112, transform),
+                    alignScale = transform.scale(),
+                    alignRollDeg = transform.rollDegrees(),
+                    yaw = yawProxy(face.landmarks),
+                    blur = laplacianVariance(gray, size, size),
+                    brightness = brightness,
+                    contrast = contrast
+                )
+            }
+        }
+    }
+
+    /** Luminance perçue (Rec. 601), 0-255 : les mesures de FaceQuality travaillent en gris. */
+    private fun grayscale(bitmap: Bitmap): FloatArray {
+        val w = bitmap.width
+        val h = bitmap.height
+        val pixels = IntArray(w * h)
+        bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+        return FloatArray(w * h) { i ->
+            val p = pixels[i]
+            0.299f * ((p shr 16) and 0xFF) + 0.587f * ((p shr 8) and 0xFF) + 0.114f * (p and 0xFF)
+        }
+    }
+
     /** Visage redressé sur le gabarit ArcFace, prêt pour l'embedder. */
     private fun alignFace(source: Bitmap, landmarks: FloatArray, outputSize: Int): Bitmap {
         val src = landmarks.toPixels(source.width, source.height)
@@ -389,7 +453,52 @@ class FaceEngine @Inject constructor(
         }
     }
 
+    /**
+     * Comme [analyzeFaces], mais embarque avec **[embedderModel]** au lieu du modèle
+     * actif — pour comparer des embedders sur la même vérité terrain, sans rien
+     * activer ni écrire.
+     *
+     * Le détecteur reste l'actif : c'est voulu, on veut faire varier *un seul*
+     * facteur. La session de l'embedder de comparaison est cachée à part
+     * ([loadedCalibration]), pour ne pas perturber le modèle actif et ne l'ouvrir
+     * qu'une fois pour toute une galerie. À libérer par [releaseCalibrationSessions].
+     */
+    suspend fun analyzeFacesWith(
+        contentUri: String,
+        embedderModel: AiModel
+    ): List<AnalyzedFace> {
+        val faces = locateFaces(contentUri)
+        if (faces.isEmpty()) return emptyList()
+
+        return mutex.withLock {
+            val loaded = ensureCalibrationEmbedderLocked(embedderModel) ?: return emptyList()
+            val size = loaded.config.inputSize ?: error("input_size manquant")
+
+            val source = loadForEmbedding(contentUri, faces, size)
+            faces.map { face ->
+                val crop = alignFace(source, face.landmarks, size)
+                AnalyzedFace(face, embedFace(loaded, crop))
+            }
+        }
+    }
+
+    private fun ensureCalibrationEmbedderLocked(model: AiModel): Loaded? {
+        if (loadedCalibration?.model?.id == model.id) return loadedCalibration
+        loadedCalibration?.close()
+        val configJson = model.configJson ?: return null
+        val path = model.modelPath ?: return null
+        return Loaded(model, ModelConfig.parse(configJson), File(path)).also { loadedCalibration = it }
+    }
+
+    suspend fun releaseCalibrationSessions() = mutex.withLock {
+        loadedCalibration?.close()
+        loadedCalibration = null
+    }
+
     private companion object {
+        /** Le gabarit ArcFace est défini en 112 : les métriques s'y mesurent. */
+        const val ARCFACE_SIZE = 112
+
         /** Décodage de mesure, et taille finale quand les visages y suffisent. */
         const val EMBED_BASE_SIZE = 1024
 

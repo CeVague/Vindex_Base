@@ -198,6 +198,10 @@ class PersonRepository @Inject constructor(
     /** Jeu de mesure : visages identifiés, hors personnes masquées (cf. le DAO). */
     suspend fun getFacesForCalibration(): List<Face> = faceDao.getFacesForCalibration()
 
+    /** Idem, avec le chemin de la photo : pour ré-embarquer avec un autre modèle. */
+    suspend fun getLabeledFacesWithPhoto(): List<FaceDao.LabeledFace> =
+        faceDao.getLabeledFacesWithPhoto()
+
     suspend fun getCoverPhotoPathForPerson(personId: Long): String? =
         faceDao.getCoverPhotoPathForPerson(personId)
 

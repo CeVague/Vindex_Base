@@ -199,6 +199,39 @@ interface FaceDao {
     )
     suspend fun getFacesForCalibration(): List<Face>
 
+    /**
+     * Visage étiqueté (hors masqués) + sa photo : pour ré-embarquer avec un autre
+     * modèle et mesurer sa qualité. [photoWidth]/[photoHeight] sont les dimensions
+     * **d'origine** — seules elles disent combien de pixels réels le visage occupe.
+     */
+    data class LabeledFace(
+        val id: Long,
+        @ColumnInfo(name = "person_id") val personId: Long,
+        val filePath: String,
+        @ColumnInfo(name = "box_left") val boxLeft: Float,
+        @ColumnInfo(name = "box_top") val boxTop: Float,
+        @ColumnInfo(name = "box_right") val boxRight: Float,
+        @ColumnInfo(name = "box_bottom") val boxBottom: Float,
+        val confidence: Float?,
+        @ColumnInfo(name = "exclusion_reason") val exclusionReason: String?,
+        val photoWidth: Int?,
+        val photoHeight: Int?
+    )
+
+    @Query(
+        """
+        SELECT f.id, f.person_id, ph.file_path AS filePath,
+               f.box_left, f.box_top, f.box_right, f.box_bottom,
+               f.confidence, f.exclusion_reason,
+               ph.width AS photoWidth, ph.height AS photoHeight
+        FROM faces f
+        JOIN persons p ON p.id = f.person_id
+        JOIN photos ph ON ph.id = f.photo_id
+        WHERE p.is_hidden = 0
+    """
+    )
+    suspend fun getLabeledFacesWithPhoto(): List<LabeledFace>
+
     // Insert
 
     @Insert
