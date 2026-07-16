@@ -120,6 +120,19 @@ class SettingsCache @Inject constructor(
         get() = prefs.getFloat(Setting.KEY_FACE_THRESHOLD_NEW, DEFAULT_FACE_THRESHOLD_NEW)
         set(value) = prefs.edit { putFloat(Setting.KEY_FACE_THRESHOLD_NEW, value) }
 
+    /**
+     * Désactivé, l'analyse laisse **tous** les visages en attente d'identification :
+     * le regroupement devient 100 % manuel, et le résultat est une **vérité terrain**.
+     *
+     * C'est le seul moyen de calibrer autrement qu'à l'œil : sans elle, on ne peut
+     * que déduire les seuils de la *forme* d'une distribution, en supposant qui est
+     * qui. Réservé au debug — sur une vraie galerie, nommer chaque visage à la main
+     * est hors de question.
+     */
+    var autoClusteringEnabled: Boolean
+        get() = prefs.getBoolean(Setting.KEY_AUTO_CLUSTERING, DEFAULT_AUTO_CLUSTERING)
+        set(value) = prefs.edit { putBoolean(Setting.KEY_AUTO_CLUSTERING, value) }
+
     // ════════════════════════════════════════════════════════════════════════
     // Méthodes utilitaires
     // ════════════════════════════════════════════════════════════════════════
@@ -142,6 +155,7 @@ class SettingsCache @Inject constructor(
 
     companion object {
         const val DEFAULT_SHOW_SCORES = false
+        const val DEFAULT_AUTO_CLUSTERING = true
 
         // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
         // la recherche : plus haut = plus proche.

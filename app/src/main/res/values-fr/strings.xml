@@ -289,6 +289,12 @@
     <string name="settings_advanced_summary">Affichage des scores et calibration des seuils</string>
     <string name="settings_reanalyze_faces">Ré-analyser les visages</string>
     <string name="settings_reanalyze_faces_summary">Recalculer tous les visages avec les réglages actuels. Nécessaire pour que les photos déjà analysées profitent d\'une amélioration.</string>
+    <string name="settings_auto_clustering">Regroupement automatique</string>
+    <string name="settings_auto_clustering_summary">Désactivé, tous les visages partent en attente d\'identification et le regroupement se fait entièrement à la main. Sert à produire une vérité terrain pour calibrer les seuils.</string>
+    <string name="settings_export_similarities">Exporter les similarités</string>
+    <string name="settings_export_similarities_summary">Écrit un CSV de toutes les paires de visages identifiés (même personne ou non, similarité). À faire après un regroupement manuel.</string>
+    <string name="settings_export_done">Exporté vers %1$s</string>
+    <string name="settings_export_empty">Rien à exporter : il faut au moins deux visages identifiés (et moins de 2000).</string>
     <string name="settings_face_threshold">Seuil de reconnaissance faciale</string>
     <string name="settings_face_threshold_summary">Plus bas = plus de correspondances, plus haut = moins de faux positifs</string>
     <string name="settings_show_scores">Afficher les scores de similarité</string>

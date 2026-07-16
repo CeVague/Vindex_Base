@@ -136,6 +136,11 @@ class FaceAnalysisWorker @AssistedInject constructor(
         analyzed: List<FaceEngine.AnalyzedFace>,
         dim: Int
     ) {
+        if (!settingsCache.autoClusteringEnabled) {
+            leaveForManualIdentification(faceIds)
+            return
+        }
+
         val high = settingsCache.faceThresholdHigh
         val medium = settingsCache.faceThresholdMedium
 
@@ -199,6 +204,25 @@ class FaceAnalysisWorker @AssistedInject constructor(
         }
 
         touched.forEach { personRepository.recomputeCentroid(it) }
+    }
+
+    /**
+     * Mode manuel (debug) : chaque visage part en attente, sans personne.
+     *
+     * Explicitement `pending`, et non laissé à `null` : c'est cette valeur que lit la
+     * file d'identification (`assignment_type = 'pending'`), donc un visage inséré
+     * sans elle n'apparaîtrait nulle part — analysé, et pourtant introuvable.
+     */
+    private suspend fun leaveForManualIdentification(faceIds: List<Long>) {
+        faceIds.forEach { faceId ->
+            personRepository.assignFaceToPerson(
+                faceId = faceId,
+                personId = null,
+                assignmentType = Face.ASSIGNMENT_PENDING,
+                confidence = null,
+                weight = 1f
+            )
+        }
     }
 
     /**

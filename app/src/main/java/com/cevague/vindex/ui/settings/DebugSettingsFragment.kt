@@ -1,13 +1,16 @@
 package com.cevague.vindex.ui.settings
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.cevague.vindex.R
 import com.cevague.vindex.data.local.SettingsCache
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -32,6 +35,20 @@ class DebugSettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>("reanalyze_faces")?.setOnPreferenceClickListener {
             confirmFaceReanalysis()
             true
+        }
+
+        findPreference<Preference>("export_similarities")?.setOnPreferenceClickListener {
+            exportSimilarities()
+            true
+        }
+    }
+
+    private fun exportSimilarities() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val path = viewModel.exportFaceSimilarities()
+            val message = path?.let { getString(R.string.settings_export_done, it) }
+                ?: getString(R.string.settings_export_empty)
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
         }
     }
 

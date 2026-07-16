@@ -64,11 +64,23 @@
             app:summary="@string/settings_threshold_new_summary"
             app:title="@string/settings_threshold_new" />
 
+        <SwitchPreferenceCompat
+            app:icon="@drawable/vector_account_off"
+            app:key="auto_clustering"
+            app:summary="@string/settings_auto_clustering_summary"
+            app:title="@string/settings_auto_clustering" />
+
         <Preference
             app:icon="@drawable/vector_refresh"
             app:key="reanalyze_faces"
             app:summary="@string/settings_reanalyze_faces_summary"
             app:title="@string/settings_reanalyze_faces" />
+
+        <Preference
+            app:icon="@drawable/vector_percent"
+            app:key="export_similarities"
+            app:summary="@string/settings_export_similarities_summary"
+            app:title="@string/settings_export_similarities" />
 
     </PreferenceCategory>
 
