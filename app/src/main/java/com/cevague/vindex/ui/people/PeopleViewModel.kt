@@ -45,7 +45,20 @@ class PeopleViewModel @Inject constructor(
     val unnamedCount = repository.getUnnamedPersonCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    val unidentifiedFaceCount: StateFlow<Int> = repository.getPendingFaceCount()
+    /**
+     * Ce que la file a réellement à demander : les **groupes anonymes** à nommer, plus
+     * les visages `pending` à confirmer.
+     *
+     * Comptait autrefois les seuls `pending` — et c'est pour ça que l'app ne demandait
+     * **jamais** rien : un `pending` n'existe que si la personne la plus ressemblante
+     * est **nommée**, donc sur une galerie neuve il n'y en a aucun. Le bouton restait
+     * caché, la file vide, et le nommage n'était atteignable que par un clic long sur
+     * un groupe — que rien n'indiquait.
+     */
+    val unidentifiedFaceCount: StateFlow<Int> = combine(
+        repository.getGroupsToNameCount(),
+        repository.getPendingFaceCount()
+    ) { groups, pending -> groups + pending }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     /**

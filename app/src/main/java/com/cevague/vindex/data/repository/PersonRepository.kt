@@ -49,6 +49,12 @@ class PersonRepository @Inject constructor(
 
     fun getUnnamedPersonCount(): Flow<Int> = personDao.getUnnamedPersonCount()
 
+    /** Groupes anonymes restant à nommer (cf. le DAO : ce n'est PAS le compte des `pending`). */
+    fun getGroupsToNameCount(): Flow<Int> = personDao.getGroupsToNameCount()
+
+    suspend fun getNextGroupToName(excludeIds: Set<Long>): PersonDao.GroupToName? =
+        personDao.getNextGroupToName(excludeIds)
+
     // Person queries - one-shot
 
     suspend fun getPersonByIdOnce(id: Long): Person? = personDao.getPersonByIdOnce(id)

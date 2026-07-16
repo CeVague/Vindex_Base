@@ -132,6 +132,55 @@ interface PersonDao {
     @Query("SELECT COUNT(*) FROM persons WHERE name IS NULL")
     fun getUnnamedPersonCount(): Flow<Int>
 
+    /**
+     * Groupes anonymes restant à nommer : masqués et vides exclus.
+     *
+     * C'est **ce** compteur que la file d'identification doit afficher, et non celui
+     * des visages `pending` : un `pending` n'existe que si la personne la plus proche
+     * est **nommée**, donc sur une galerie neuve il n'y en a jamais — le bouton
+     * restait caché et personne ne demandait jamais rien.
+     */
+    @Query("SELECT COUNT(*) FROM persons WHERE name IS NULL AND is_hidden = 0 AND photo_count > 0")
+    fun getGroupsToNameCount(): Flow<Int>
+
+    /** Un groupe anonyme et son visage représentatif, pour la file d'identification. */
+    data class GroupToName(
+        val personId: Long,
+        val faceId: Long,
+        val filePath: String,
+        val boxLeft: Float,
+        val boxTop: Float,
+        val boxRight: Float,
+        val boxBottom: Float,
+        val photoCount: Int,
+        val centroid: ByteArray?
+    )
+
+    /**
+     * Le prochain groupe à nommer, **le plus gros d'abord** : nommer un groupe de huit
+     * photos vaut mieux que d'en nommer un d'une seule — les questions les plus
+     * rentables en premier, même critère que le tri du trombinoscope.
+     */
+    @Query(
+        """
+        SELECT p.id AS personId, f.id AS faceId, ph.file_path AS filePath,
+               f.box_left AS boxLeft, f.box_top AS boxTop,
+               f.box_right AS boxRight, f.box_bottom AS boxBottom,
+               p.photo_count AS photoCount, p.centroid_embedding AS centroid
+        FROM persons p
+        JOIN faces f ON f.id = (
+            SELECT id FROM faces WHERE person_id = p.id
+            ORDER BY is_primary DESC, confidence DESC LIMIT 1
+        )
+        JOIN photos ph ON ph.id = f.photo_id
+        WHERE p.name IS NULL AND p.is_hidden = 0 AND p.photo_count > 0
+          AND p.id NOT IN (:excludeIds)
+        ORDER BY p.photo_count DESC
+        LIMIT 1
+    """
+    )
+    suspend fun getNextGroupToName(excludeIds: Set<Long>): GroupToName?
+
     // Queries - one-shot
 
     @Query("SELECT * FROM persons WHERE id = :id")

@@ -38,10 +38,33 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     private var _binding: DialogIdentifyFaceBinding? = null
     private val binding get() = _binding!!
 
-    /** Visages passés PENDANT cette session : restent `pending` en base. */
-    private val skippedIds = mutableSetOf<Long>()
+    /**
+     * Ce que la file demande. Deux questions distinctes, dans cet ordre :
+     *
+     * [Group] « qui est-ce ? » sur un **groupe** anonyme — c'est le nommage initial,
+     * et il porte sur le groupe entier : répondre une fois nomme ses huit photos.
+     *
+     * [SingleFace] « est-ce bien Marie ? » sur un visage `pending` — une confirmation,
+     * qui n'existe qu'une fois des personnes nommées.
+     */
+    private sealed interface Target {
+        val face: FaceDao.FaceWithPhoto
 
-    private var currentFace: FaceDao.FaceWithPhoto? = null
+        data class Group(
+            val personId: Long,
+            override val face: FaceDao.FaceWithPhoto,
+            val photoCount: Int,
+            val centroid: ByteArray?
+        ) : Target
+
+        data class SingleFace(override val face: FaceDao.FaceWithPhoto) : Target
+    }
+
+    /** Passés PENDANT cette session : rien n'est écrit en base. */
+    private val skippedGroups = mutableSetOf<Long>()
+    private val skippedFaces = mutableSetOf<Long>()
+
+    private var current: Target? = null
     private var allPersons: List<Person> = emptyList()
 
     @Inject
@@ -65,7 +88,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         setupAutoComplete()
         setupButtons()
         setupPreview()
-        loadNextFace()
+        loadNext()
     }
 
     private fun setupAutoComplete() {
@@ -129,27 +152,47 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
+    /**
+     * Chaque action porte sur **tout le groupe** quand la file en sert un : écarter un
+     * groupe de mains écarte ses huit visages d'un coup, et non un seul qui laisserait
+     * les sept autres reposer la question.
+     */
     private fun setupButtons() {
         binding.buttonSkip.setOnClickListener {
-            currentFace?.let { skippedIds.add(it.id) }
-            loadNextFace()
+            when (val target = current) {
+                is Target.Group -> skippedGroups += target.personId
+                is Target.SingleFace -> skippedFaces += target.face.id
+                null -> Unit
+            }
+            loadNext()
         }
 
         // Un clic, pas de sous-question : la nuance animal/dessin a servi à la
         // calibration, elle ne sert plus à l'usage.
         binding.buttonNotPerson.setOnClickListener {
-            val face = currentFace ?: return@setOnClickListener
+            val target = current ?: return@setOnClickListener
             lifecycleScope.launch {
-                personRepository.markAsIgnored(face.id, Face.EXCLUDED_IRRELEVANT)
-                loadNextFace()
+                when (target) {
+                    is Target.Group ->
+                        personRepository.excludePerson(target.personId, Face.EXCLUDED_IRRELEVANT)
+
+                    is Target.SingleFace ->
+                        personRepository.markAsIgnored(target.face.id, Face.EXCLUDED_IRRELEVANT)
+                }
+                loadNext()
             }
         }
 
         binding.buttonStranger.setOnClickListener {
-            val face = currentFace ?: return@setOnClickListener
+            val target = current ?: return@setOnClickListener
             lifecycleScope.launch {
-                hideAsStranger(face)
-                loadNextFace()
+                when (target) {
+                    // Le groupe existe déjà : il suffit de le masquer, et il continuera
+                    // d'absorber ses futures apparitions sans jamais revenir à l'écran.
+                    is Target.Group -> personRepository.setPersonHidden(target.personId, true)
+                    is Target.SingleFace -> hideAsStranger(target.face)
+                }
+                loadNext()
             }
         }
     }
@@ -164,7 +207,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     @SuppressLint("ClickableViewAccessibility")
     private fun setupPreview() {
         binding.imageFace.setOnLongClickListener {
-            val face = currentFace ?: return@setOnLongClickListener false
+            val face = current?.face ?: return@setOnLongClickListener false
             Glide.with(this).load(face.filePath.toUri()).into(binding.imagePreview)
             binding.imagePreview.visibility = View.VISIBLE
             true
@@ -181,17 +224,42 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun loadNextFace() {
+    /**
+     * Les **groupes anonymes d'abord**, les confirmations ensuite : nommer un groupe
+     * de huit photos répond à huit questions à la fois, alors qu'un `pending` n'en
+     * règle qu'une — et les `pending` n'existent de toute façon qu'une fois des
+     * personnes nommées.
+     */
+    private fun loadNext() {
         lifecycleScope.launch {
-            currentFace = personRepository.getNextPendingFaceExcluding(skippedIds)
-            val face = currentFace
-            if (face == null) {
+            val group = personRepository.getNextGroupToName(skippedGroups)
+            current = when {
+                group != null -> Target.Group(
+                    personId = group.personId,
+                    face = FaceDao.FaceWithPhoto(
+                        id = group.faceId,
+                        filePath = group.filePath,
+                        boxLeft = group.boxLeft,
+                        boxTop = group.boxTop,
+                        boxRight = group.boxRight,
+                        boxBottom = group.boxBottom
+                    ),
+                    photoCount = group.photoCount,
+                    centroid = group.centroid
+                )
+
+                else -> personRepository.getNextPendingFaceExcluding(skippedFaces)
+                    ?.let { Target.SingleFace(it) }
+            }
+
+            val target = current
+            if (target == null) {
                 dismiss()
                 return@launch
             }
-            displayFace(face)
-            updateSuggestions(face)
-            updateCounter()
+            displayFace(target.face)
+            updateSuggestions(target)
+            updateCounter(target)
         }
     }
 
@@ -218,8 +286,13 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
      * ressemble à Marie » — était précisément celle qui manquait, alors que l'app la
      * calcule déjà pour clusteriser.
      */
-    private suspend fun updateSuggestions(face: FaceDao.FaceWithPhoto) {
-        val embedding = personRepository.getFaceByIdOnce(face.id)?.embedding
+    private suspend fun updateSuggestions(target: Target) {
+        // Un groupe se compare par son centroïde — le résumé de tous ses visages —
+        // plutôt que par le seul visage affiché : c'est plus fidèle et déjà calculé.
+        val embedding = when (target) {
+            is Target.Group -> target.centroid
+            is Target.SingleFace -> personRepository.getFaceByIdOnce(target.face.id)?.embedding
+        }
         val ranked = if (embedding == null) {
             // Sans vecteur, aucune ressemblance calculable : on retombe sur les plus
             // photographiées plutôt que de ne rien proposer.
@@ -285,11 +358,29 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         return chip
     }
 
-    private fun updateCounter() {
+    private fun updateCounter(target: Target) {
         lifecycleScope.launch {
-            val remaining = personRepository.getPendingFaceCount().first() - skippedIds.size
+            val remaining = when (target) {
+                is Target.Group ->
+                    personRepository.getGroupsToNameCount().first() - skippedGroups.size
+
+                is Target.SingleFace ->
+                    personRepository.getPendingFaceCount().first() - skippedFaces.size
+            }
             binding.textCounter.text =
                 resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
+            // Sur un groupe, dire combien de photos sont en jeu : la réponse ne coûte
+            // pas le même effort selon qu'elle en règle une ou huit.
+            binding.textPhotoCount.apply {
+                if (target is Target.Group && target.photoCount > 1) {
+                    text = resources.getQuantityString(
+                        R.plurals.people_photo_count, target.photoCount, target.photoCount
+                    )
+                    visibility = View.VISIBLE
+                } else {
+                    visibility = View.GONE
+                }
+            }
         }
     }
 
@@ -312,24 +403,45 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun identifyCurrentFaceAs(name: String) {
-        val face = currentFace ?: return
-
+        val target = current ?: return
         lifecycleScope.launch {
-            val personId = personRepository.getOrCreatePersonByName(name)
-            personRepository.assignFaceToPerson(
-                faceId = face.id,
-                personId = personId,
-                assignmentType = Face.ASSIGNMENT_MANUAL,
-                confidence = 1.0f,
-                weight = 1.0f
-            )
-            // Sans ça, une personne nommée à la main n'a aucun centroïde : invisible
-            // pour `assignFace` comme pour les propositions de fusion, qui écartent
-            // tous deux les centroïdes nuls.
-            personRepository.recomputeCentroid(personId)
-            skippedIds.remove(face.id)
-            loadNextFace()
+            when (target) {
+                is Target.Group -> nameGroup(target, name)
+                is Target.SingleFace -> nameSingleFace(target.face, name)
+            }
+            loadNext()
         }
+    }
+
+    /**
+     * Nommer un groupe anonyme. Si le nom existe déjà, c'est une **fusion** et non un
+     * renommage : deux groupes du même nom seraient deux personnes homonymes, donc un
+     * bug. Le groupe nommé survit, l'anonyme y est versé.
+     */
+    private suspend fun nameGroup(target: Target.Group, name: String) {
+        val existing = personRepository.getPersonByName(name)
+        if (existing != null && existing.id != target.personId) {
+            personRepository.mergePersons(keepId = existing.id, mergeId = target.personId)
+        } else {
+            personRepository.updateName(target.personId, name)
+        }
+        skippedGroups.remove(target.personId)
+    }
+
+    private suspend fun nameSingleFace(face: FaceDao.FaceWithPhoto, name: String) {
+        val personId = personRepository.getOrCreatePersonByName(name)
+        personRepository.assignFaceToPerson(
+            faceId = face.id,
+            personId = personId,
+            assignmentType = Face.ASSIGNMENT_MANUAL,
+            confidence = 1.0f,
+            weight = 1.0f
+        )
+        // Sans ça, une personne nommée à la main n'a aucun centroïde : invisible pour
+        // `assignFace` comme pour les propositions de fusion, qui écartent tous deux
+        // les centroïdes nuls.
+        personRepository.recomputeCentroid(personId)
+        skippedFaces.remove(face.id)
     }
 
     override fun onDestroyView() {
