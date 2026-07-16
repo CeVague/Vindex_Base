@@ -130,10 +130,18 @@ data class Face(
         /**
          * Une personne, mais **représentée** : dessin, affiche, écran, photo de photo.
          *
-         * Plus dangereux qu'un animal, justement parce que le détecteur a raison :
-         * l'embedding est un vrai embedding de visage, seulement biaisé par la
-         * stylisation. Il **peut** donc matcher la vraie personne et tirer son
-         * centroïde — un chat, lui, ne ressemble à personne.
+         * ⚠ **Mesuré le 2026-07-16, contre l'intuition** : un dessin grossier ne vole
+         * l'identité de personne — **0 paire sur 301** entre un dessin et une vraie
+         * personne atteint le seuil de fusion (max 0,315). C'est du **bruit**, comme un
+         * animal, pas un aimant.
+         *
+         * En revanche, **aucune mesure de qualité ne l'attrape** (0/9 rejetés) : un
+         * dessin est frontal, net, bien détecté — son résidu d'alignement est *meilleur*
+         * que celui d'un vrai visage, il est géométriquement **plus parfait**. C'est un
+         * problème sémantique, pas de qualité : cette catégorie restera manuelle.
+         *
+         * (Une affiche **photoréaliste** n'a pas été mesurée et reste à surveiller :
+         * elle, pourrait ressembler à la vraie personne.)
          */
         const val EXCLUDED_DEPICTION = "depiction"
 
