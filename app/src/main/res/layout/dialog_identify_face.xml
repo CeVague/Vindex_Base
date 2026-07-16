@@ -110,14 +110,21 @@
             app:singleSelection="true" />
     </HorizontalScrollView>
 
-    <!-- Saisie du nom avec auto-complétion (insensible casse ET accents) -->
+    <!--
+        Saisie du nom (auto-complétion insensible casse ET accents) + Valider.
+        Le bouton n'est pas redondant avec la touche « Terminé » du clavier : rien
+        n'indiquait qu'elle validait, et une fois une suggestion choisie au doigt le
+        clavier n'est même pas ouvert.
+    -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutName"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:hint="@string/people_identify_new_name"
+        app:layout_constraintEnd_toStartOf="@id/buttonValidate"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scrollSuggestions">
 
         <AutoCompleteTextView
@@ -128,6 +135,19 @@
             android:imeOptions="actionDone"
             android:inputType="textPersonName|textCapWords" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonValidate"
+        style="@style/Widget.Material3.Button.IconButton.Filled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:contentDescription="@string/action_ok"
+        android:enabled="false"
+        app:icon="@drawable/vector_check"
+        app:layout_constraintBottom_toBottomOf="@id/layoutName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/layoutName" />
 
     <!--
         Trois issues, un clic chacune : passer, « rien à voir » (écarté), « je ne

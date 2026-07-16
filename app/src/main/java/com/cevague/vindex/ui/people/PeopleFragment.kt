@@ -129,20 +129,17 @@ class PeopleFragment : Fragment() {
         loadFaceCrop(binding.imageMergeKeep, suggestion.keepFace)
         loadFaceCrop(binding.imageMergeOther, suggestion.mergeFace)
 
-        val unknown = getString(R.string.people_unknown)
-        val names = getString(
-            R.string.people_merge_suggest_names,
-            suggestion.keepName ?: unknown,
-            suggestion.mergeName ?: unknown
-        )
+        // La ligne EST la question : « Marie ? ». L'autre groupe étant toujours
+        // anonyme, écrire « + Inconnu » n'apprenait rien et prenait de la place.
+        val question = getString(R.string.people_merge_suggest_question, suggestion.keepName)
         binding.textMergeDetail.text = if (settingsCache.showScores) {
             getString(
                 R.string.people_merge_suggest_detail,
-                names,
+                question,
                 String.format(Locale.US, "%.2f", suggestion.proposal.similarity)
             )
         } else {
-            names
+            question
         }
 
         binding.buttonMergeConfirm.setOnClickListener { viewModel.acceptMerge(suggestion) }

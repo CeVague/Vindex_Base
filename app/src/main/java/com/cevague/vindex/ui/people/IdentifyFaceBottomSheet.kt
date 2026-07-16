@@ -10,6 +10,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Filter
 import androidx.core.net.toUri
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -110,6 +111,18 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
 
         binding.editName.setOnItemClickListener { _, _, position, _ ->
             identifyCurrentFaceAs(binding.editName.adapter.getItem(position) as String)
+        }
+
+        binding.buttonValidate.setOnClickListener {
+            binding.editName.text.toString().trim()
+                .takeIf { it.isNotEmpty() }
+                ?.let { identifyCurrentFaceAs(it) }
+        }
+
+        // Grisé tant que le champ est vide : un bouton qui ne peut rien faire ne doit
+        // pas avoir l'air actionnable.
+        binding.editName.doAfterTextChanged {
+            binding.buttonValidate.isEnabled = !it.isNullOrBlank()
         }
     }
 

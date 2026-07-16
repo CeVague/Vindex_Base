@@ -23,12 +23,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Une proposition de fusion, prête à afficher : les deux visages et les deux noms. */
+/**
+ * Une proposition prête à afficher. Une seule question possible désormais — « ce
+ * groupe anonyme, est-ce Marie ? » — donc un seul nom : celui de [keepFace]. L'autre
+ * est forcément anonyme, et l'annoncer « + Inconnu » n'apprenait rien.
+ */
 data class MergeSuggestion(
     val keepFace: FaceDao.FaceWithPhoto,
-    val keepName: String?,
+    val keepName: String,
     val mergeFace: FaceDao.FaceWithPhoto,
-    val mergeName: String?,
     val proposal: MergeProposal
 )
 
@@ -90,8 +93,7 @@ class PeopleViewModel @Inject constructor(
                 PersonCentroid(
                     personId = person.id,
                     centroid = blob.asFloatArray(blob.size / Float.SIZE_BYTES),
-                    named = person.name != null,
-                    photoCount = person.photoCount
+                    named = person.name != null
                 )
             }
         }
@@ -115,12 +117,13 @@ class PeopleViewModel @Inject constructor(
         // sans lui, on demanderait de fusionner deux numéros.
         val keepFace = repository.getPrimaryFaceWithPhoto(proposal.keepId) ?: return null
         val mergeFace = repository.getPrimaryFaceWithPhoto(proposal.mergeId) ?: return null
+        // `proposeMerges` garantit que le gardé est la personne nommée.
+        val keepName = repository.getPersonByIdOnce(proposal.keepId)?.name ?: return null
 
         return MergeSuggestion(
             keepFace = keepFace,
-            keepName = repository.getPersonByIdOnce(proposal.keepId)?.name,
+            keepName = keepName,
             mergeFace = mergeFace,
-            mergeName = repository.getPersonByIdOnce(proposal.mergeId)?.name,
             proposal = proposal
         )
     }

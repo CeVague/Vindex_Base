@@ -19,8 +19,8 @@ class FaceClustererTest {
     /** Vecteur unitaire de référence : sa similarité à `[x, y]` vaut simplement x. */
     private val face = floatArrayOf(1f, 0f)
 
-    private fun person(id: Long, x: Float, y: Float, named: Boolean = true, photoCount: Int = 0) =
-        PersonCentroid(id, floatArrayOf(x, y), named, photoCount)
+    private fun person(id: Long, x: Float, y: Float, named: Boolean = true) =
+        PersonCentroid(id, floatArrayOf(x, y), named)
 
     private fun assertAuto(expectedId: Long, expectedSimilarity: Float, actual: Assignment) {
         assertTrue("attendu Auto, obtenu $actual", actual is Assignment.Auto)
@@ -167,11 +167,11 @@ class FaceClustererTest {
         assertEquals("absorbé", expectedMerge, actual.mergeId)
     }
 
-    /** Le cas nominal : une personne scindée en deux par l'ordre d'arrivée. */
+    /** Le cas nominal : un fragment anonyme rattaché à une personne nommée. */
     @Test
-    fun `deux groupes proches sont proposes a la fusion`() {
+    fun `un groupe anonyme proche d'une nommee est propose`() {
         val proposals = proposeMerges(
-            listOf(person(1L, 1f, 0f, named = false), person(2L, 0.9f, 0.436f, named = false)),
+            listOf(person(1L, 1f, 0f, named = true), person(2L, 0.9f, 0.436f, named = false)),
             floor
         )
 
@@ -183,7 +183,7 @@ class FaceClustererTest {
     @Test
     fun `sous le plancher rien n'est propose`() {
         val proposals = proposeMerges(
-            listOf(person(1L, 1f, 0f, named = false), person(2L, 0.3f, 0.954f, named = false)),
+            listOf(person(1L, 1f, 0f, named = true), person(2L, 0.3f, 0.954f, named = false)),
             floor
         )
 
@@ -194,11 +194,26 @@ class FaceClustererTest {
     @Test
     fun `le plancher est inclusif`() {
         val proposals = proposeMerges(
-            listOf(person(1L, 1f, 0f, named = false), person(2L, 0.40f, 0.9165f, named = false)),
+            listOf(person(1L, 1f, 0f, named = true), person(2L, 0.40f, 0.9165f, named = false)),
             floor
         )
 
         assertEquals(1, proposals.size)
+    }
+
+    /**
+     * « Ces deux inconnus sont-ils la même personne ? » ne se répond pas — et la
+     * question est redondante depuis que la file nomme les groupes : on nomme le plus
+     * gros fragment, les suivants reviennent en « est-ce Marie ? ».
+     */
+    @Test
+    fun `deux anonymes ne sont jamais proposes`() {
+        val proposals = proposeMerges(
+            listOf(person(1L, 1f, 0f, named = false), person(2L, 1f, 0f, named = false)),
+            floor
+        )
+
+        assertTrue("attendu aucune proposition, obtenu $proposals", proposals.isEmpty())
     }
 
     /**
@@ -215,42 +230,32 @@ class FaceClustererTest {
         assertTrue("attendu aucune proposition, obtenu $proposals", proposals.isEmpty())
     }
 
-    /** Le nom est la seule information rare de la paire : il survit, quel que soit l'ordre. */
+    /** C'est toujours la **nommée** qui garde son identité, quel que soit l'ordre d'entrée. */
     @Test
     fun `la personne nommee est celle qu'on garde`() {
         val nommee = person(1L, 1f, 0f, named = true)
-        val anonyme = person(2L, 0.9f, 0.436f, named = false, photoCount = 50)
+        val anonyme = person(2L, 0.9f, 0.436f, named = false)
 
         assertProposal(1L, 2L, proposeMerges(listOf(nommee, anonyme), floor).single())
         assertProposal(1L, 2L, proposeMerges(listOf(anonyme, nommee), floor).single())
     }
 
-    /** Entre anonymes, le plus gros groupe garde son identité : son centroïde est mieux fondé. */
-    @Test
-    fun `entre anonymes le plus gros groupe est garde`() {
-        val petit = person(1L, 1f, 0f, named = false, photoCount = 2)
-        val gros = person(2L, 0.9f, 0.436f, named = false, photoCount = 30)
-
-        assertProposal(2L, 1L, proposeMerges(listOf(petit, gros), floor).single())
-        assertProposal(2L, 1L, proposeMerges(listOf(gros, petit), floor).single())
-    }
-
     /**
-     * Le cœur de l'appariement : A ressemble à B et à C, mais accepter A+B ferait
-     * disparaître A — proposer A+C ensuite n'aurait plus de sens. La meilleure paire
-     * gagne, le reste attend le prochain passage.
+     * Le cœur de l'appariement : Marie ressemble à deux fragments, mais accepter le
+     * premier la fait disparaître de la liste — proposer le second ensuite n'aurait
+     * plus de sens. La meilleure paire gagne, le reste attend le prochain passage.
      */
     @Test
     fun `un groupe n'apparait que dans une proposition`() {
-        val a = person(1L, 1f, 0f, named = false)
-        val b = person(2L, 0.95f, 0.312f, named = false)   // 0.95 avec A
-        val c = person(3L, 0.8f, 0.6f, named = false)      // 0.80 avec A
+        val marie = person(1L, 1f, 0f, named = true)
+        val proche = person(2L, 0.95f, 0.312f, named = false)   // 0.95 avec Marie
+        val loin = person(3L, 0.8f, 0.6f, named = false)        // 0.80 avec Marie
 
-        val proposals = proposeMerges(listOf(a, b, c), floor)
+        val proposals = proposeMerges(listOf(marie, proche, loin), floor)
 
         assertEquals(1, proposals.size)
         assertEquals(0.95f, proposals[0].similarity, 0.001f)
-        assertTrue("C ne doit pas être servi", 3L !in setOf(proposals[0].keepId, proposals[0].mergeId))
+        assertTrue("le second fragment attend", 3L !in setOf(proposals[0].keepId, proposals[0].mergeId))
     }
 
     /** Deux paires disjointes se proposent en même temps, la meilleure d'abord. */
@@ -258,9 +263,9 @@ class FaceClustererTest {
     fun `des paires disjointes sont toutes proposees`() {
         val proposals = proposeMerges(
             listOf(
-                person(1L, 1f, 0f, named = false),
+                person(1L, 1f, 0f, named = true),
                 person(2L, 0.99f, 0.141f, named = false),   // 0.99 avec 1
-                person(3L, 0f, 1f, named = false),
+                person(3L, 0f, 1f, named = true),
                 person(4L, 0.141f, 0.99f, named = false)    // 0.99 avec 3, ~0.14 avec 1
             ),
             floor

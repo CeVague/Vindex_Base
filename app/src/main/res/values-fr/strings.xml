@@ -177,11 +177,9 @@
     <string name="people_unhidden_done">De nouveau affiché.</string>
     <string name="settings_show_hidden_people">Afficher les personnes masquées</string>
     <string name="settings_show_hidden_people_summary">Montre les inconnus masqués en fin de trombinoscope, grisés, pour pouvoir les ré-afficher.</string>
-    <string name="people_merge_suggest_title">Est-ce la même personne ?</string>
-    <string name="people_merge_suggest_separator">+</string>
+    <string name="people_merge_suggest_question">%1$s ?</string>
     <string name="people_merge_suggest_dismiss">Pas maintenant</string>
     <string name="people_merge_suggest_confirm">Fusionner</string>
-    <string name="people_merge_suggest_names">%1$s + %2$s</string>
     <string name="people_merge_suggest_detail">%1$s · %2$s</string>
 
     <!-- Settings -->
