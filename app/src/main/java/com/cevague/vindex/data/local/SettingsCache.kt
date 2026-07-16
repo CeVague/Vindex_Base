@@ -195,15 +195,23 @@ class SettingsCache @Inject constructor(
         // millièmes), donc il posait des questions sur des inconnus.
         //
         // NEW n'est pas sur le même axe : il sert à proposer la fusion de deux groupes
-        // (décision groupe↔groupe), pas à placer un visage. Calibré le 2026-07-15 en
-        // répondant aux propositions, plancher désactivé : justes jusqu'à 0,32, faux
-        // en dessous — et faux d'une façon précise, ce sont les frères et sœurs qui
-        // apparaissent.
+        // (décision groupe↔groupe), pas à placer un visage. 0,32 **confirmé sur vérité
+        // terrain** (2026-07-15) : regroupement 100 % manuel de 43 visages en 10
+        // personnes, export de toutes les paires, une fois deux erreurs de clic
+        // retirées. Sur 639 paires de personnes différentes, les DEUX seules qui
+        // atteignent 0,32-0,326 sont deux fratries (P2/P4) — 0,326 est le plafond
+        // absolu des « différents ». Le seuil est posé pile à cette frontière : un
+        // cran plus bas, les frères et sœurs fusionnent.
         //
         // Il est plus BAS que HIGH, ce qui surprend puis s'explique : les groupes qui
         // se sont scindés sont justement les cas difficiles, ceux qu'un visage médiocre
         // a mal ancrés. Leurs centroïdes sont donc mauvais, et se ressemblent moins que
         // deux vues nettes d'une même personne.
+        //
+        // ⚠ Limite mesurée que NUL seuil ne comble : 19 % des paires d'une même
+        // personne tombent SOUS ce plafond de 0,326 — profils, flou, visages lointains,
+        // indiscernables d'inconnus par la seule similarité. C'est la motivation
+        // chiffrée de la pondération par qualité + du max-sur-les-visages.
         const val DEFAULT_FACE_THRESHOLD_HIGH = 0.45f
         const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.40f
         const val DEFAULT_FACE_THRESHOLD_NEW = 0.32f
