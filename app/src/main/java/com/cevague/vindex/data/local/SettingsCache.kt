@@ -187,17 +187,24 @@ class SettingsCache @Inject constructor(
         const val DEFAULT_SHOW_HIDDEN_PEOPLE = false
 
         /**
-         * Plancher de qualité. Calibré le 2026-07-16 sur 102 visages étiquetés à la
-         * main : à 0,02 on rejette **34 rebuts sur 61 en ne perdant aucun** des 41
-         * vrais visages (dont 18/19 des silhouettes floues d'arrière-plan).
+         * Plancher de qualité, calibré le 2026-07-16 sur 102 visages étiquetés à la
+         * main, selon la règle de l'utilisateur : **~5 % de vrais visages perdus est
+         * acceptable si plus de 15 % du rebut disparaît**.
          *
-         * ⚠ Fixé par **un seul** point — un visage de Laurence à 0,021, le suivant
-         * étant à 0,189. C'est donc un plancher fragile, choisi par asymétrie des
-         * coûts : perdre un vrai visage est **silencieux** (une photo disparaît de
-         * « photos de Marie »), garder un rebut est **visible** et se corrige d'un
-         * clic. Dans le doute, on garde. À revoir sur une vraie galerie.
+         * À 0,18 : **1 seul vrai visage perdu sur 41** (2,4 %) pour **72 % du rebut
+         * éliminé** — cinq fois le gain demandé, pour la moitié du coût toléré. Et la
+         * falaise est juste après : 0,21 coûte 7,3 % pour 5 points de gain de plus.
+         *
+         * ⚠ Le visage perdu est instructif : un Laurence minuscule et lointain, que
+         * l'utilisateur **n'avait pas reconnu lui-même** à la première apparition. Un
+         * visage qu'un humain ne peut pas identifier n'a rien à faire dans une
+         * identité — d'où l'abandon d'un plancher « zéro perte » (0,02), qui protégeait
+         * un visage sans valeur au prix de 16 points de rebut.
+         *
+         * Le rebut qui survit : les **dessins** (imperméables à la qualité, cf.
+         * `faceQuality`) et 9 « rien à voir ». Ils restent manuels.
          */
-        const val DEFAULT_FACE_QUALITY_FLOOR = 0.02f
+        const val DEFAULT_FACE_QUALITY_FLOOR = 0.18f
 
         // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
         // la recherche : plus haut = plus proche.
