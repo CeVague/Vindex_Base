@@ -1,11 +1,15 @@
 package com.cevague.vindex.ui.people
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
+import android.widget.Filter
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -14,14 +18,18 @@ import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
+import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.DialogIdentifyFaceBinding
+import com.cevague.vindex.search.QueryParser
+import com.cevague.vindex.search.asFloatArray
+import com.cevague.vindex.search.dotProduct
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -30,19 +38,17 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     private var _binding: DialogIdentifyFaceBinding? = null
     private val binding get() = _binding!!
 
-    private var currentIndex = 0
-
-    // IDs des visages skippés PENDANT cette session
+    /** Visages passés PENDANT cette session : restent `pending` en base. */
     private val skippedIds = mutableSetOf<Long>()
 
-    // Visage actuellement affiché
     private var currentFace: FaceDao.FaceWithPhoto? = null
-
-    // Liste des personnes pour l'auto-complétion
     private var allPersons: List<Person> = emptyList()
 
     @Inject
     lateinit var personRepository: PersonRepository
+
+    @Inject
+    lateinit var settingsCache: SettingsCache
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,118 +63,234 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupAutoComplete()
-        setupSuggestionChips()
         setupButtons()
+        setupPreview()
         loadNextFace()
     }
 
     private fun setupAutoComplete() {
-        // 1. Observer les personnes existantes
         lifecycleScope.launch {
             personRepository.getAllPersons().collect { persons ->
                 allPersons = persons
-                // 2. Créer l'adapter pour l'AutoCompleteTextView
-                val names = persons.mapNotNull { it.name }
-                val adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
-                    names
-                )
-                binding.editName.setAdapter(adapter)
-
-                // Mettre à jour les suggestions quand les données arrivent
-                updateSuggestionChips(persons)
+                binding.editName.setAdapter(nameAdapter(persons.mapNotNull { it.name }))
             }
         }
 
-        // 3. Validation quand on appuie sur "Done" ou sélectionne une suggestion
         binding.editName.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
-                val name = binding.editName.text.toString().trim()
-                if (name.isNotEmpty()) {
-                    identifyCurrentFaceAs(name)
-                }
+                binding.editName.text.toString().trim()
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { identifyCurrentFaceAs(it) }
                 true
             } else false
         }
 
         binding.editName.setOnItemClickListener { _, _, position, _ ->
-            val name = binding.editName.adapter.getItem(position) as String
-            identifyCurrentFaceAs(name)
+            identifyCurrentFaceAs(binding.editName.adapter.getItem(position) as String)
         }
-    }
-
-    private fun setupSuggestionChips() {
-        // Cette méthode est maintenant appelée depuis setupAutoComplete pour garantir que les données sont prêtes
-    }
-
-    private fun updateSuggestionChips(persons: List<Person>) {
-        // Afficher les 5 personnes avec le plus de photos
-        val topPersons = persons
-            .filter { it.name != null }
-            .sortedByDescending { it.photoCount }
-            .take(5)
-
-        binding.chipGroupSuggestions.removeAllViews()
-
-        if (topPersons.isEmpty()) {
-            binding.textSuggestionsLabel.visibility = View.GONE
-            binding.chipGroupSuggestions.visibility = View.GONE
-        } else {
-            binding.textSuggestionsLabel.visibility = View.VISIBLE
-            binding.chipGroupSuggestions.visibility = View.VISIBLE
-
-            topPersons.forEach { person ->
-                val chip = Chip(requireContext()).apply {
-                    text = person.name
-                    isCheckable = true
-                    setOnClickListener {
-                        identifyCurrentFaceAs(person.name!!)
-                    }
-                }
-                binding.chipGroupSuggestions.addView(chip)
-            }
-        }
-    }
-
-    private fun setupButtons() {
-        binding.buttonSkip.setOnClickListener {
-            currentFace?.let { face ->
-                skippedIds.add(face.id)  // Mémorise localement, reste "pending" en DB
-            }
-            loadNextFace()
-        }
-
-        binding.buttonNotPerson.setOnClickListener { showExcludeDialog() }
     }
 
     /**
-     * Trois issues pour un visage qu'on ne nommera pas, et elles ne font pas la même
-     * chose : les deux premières l'**écartent** (avec la raison, qui sert à mesurer),
-     * la troisième en fait un **inconnu masqué** — une identité à part entière, qu'on
-     * ne veut simplement plus voir.
+     * Autocomplétion insensible à la **casse et aux accents** : le filtre par défaut
+     * d'`ArrayAdapter` ignore la casse mais pas les diacritiques, donc « gery » ne
+     * trouvait jamais « Géry ».
+     *
+     * Réutilise `QueryParser.normalize` — la même normalisation que la recherche, et
+     * délibérément la même : les deux répondent à « ce que l'utilisateur tape » contre
+     * « ce qui est stocké ». En avoir deux définitions les ferait diverger en silence.
      */
-    private fun showExcludeDialog() {
-        val face = currentFace ?: return
-        val choices = arrayOf(
-            getString(R.string.people_exclude_not_a_person),
-            getString(R.string.people_exclude_depiction),
-            getString(R.string.people_identify_stranger)
-        )
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.people_exclude_title)
-            .setItems(choices) { _, which ->
-                lifecycleScope.launch {
-                    when (which) {
-                        0 -> personRepository.markAsIgnored(face.id, Face.EXCLUDED_NOT_A_PERSON)
-                        1 -> personRepository.markAsIgnored(face.id, Face.EXCLUDED_DEPICTION)
-                        else -> hideAsStranger(face)
+    private fun nameAdapter(names: List<String>): ArrayAdapter<String> =
+        object : ArrayAdapter<String>(
+            requireContext(), android.R.layout.simple_dropdown_item_1line, names.toMutableList()
+        ) {
+            private val all = names
+
+            override fun getFilter(): Filter = object : Filter() {
+                override fun performFiltering(constraint: CharSequence?): FilterResults {
+                    val query = QueryParser.normalize(constraint?.toString().orEmpty())
+                    val matches = if (query.isEmpty()) all else all.filter {
+                        QueryParser.normalize(it).contains(query)
                     }
-                    loadNextFace()
+                    return FilterResults().apply {
+                        values = matches
+                        count = matches.size
+                    }
                 }
+
+                @Suppress("UNCHECKED_CAST")
+                override fun publishResults(constraint: CharSequence?, results: FilterResults) {
+                    clear()
+                    addAll(results.values as? List<String> ?: emptyList())
+                    notifyDataSetChanged()
+                }
+
+                override fun convertResultToString(resultValue: Any?): CharSequence =
+                    resultValue as? String ?: ""
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        }
+
+    private fun setupButtons() {
+        binding.buttonSkip.setOnClickListener {
+            currentFace?.let { skippedIds.add(it.id) }
+            loadNextFace()
+        }
+
+        // Un clic, pas de sous-question : la nuance animal/dessin a servi à la
+        // calibration, elle ne sert plus à l'usage.
+        binding.buttonNotPerson.setOnClickListener {
+            val face = currentFace ?: return@setOnClickListener
+            lifecycleScope.launch {
+                personRepository.markAsIgnored(face.id, Face.EXCLUDED_IRRELEVANT)
+                loadNextFace()
+            }
+        }
+
+        binding.buttonStranger.setOnClickListener {
+            val face = currentFace ?: return@setOnClickListener
+            lifecycleScope.launch {
+                hideAsStranger(face)
+                loadNextFace()
+            }
+        }
+    }
+
+    /**
+     * Appui long sur le visage → la photo entière, tant que le doigt reste.
+     *
+     * Le rond ne montre que le visage, or c'est souvent le **contexte** qui permet de
+     * reconnaître quelqu'un (qui est à côté, où, quand). Sans aller-retour vers un
+     * autre écran : la file d'identification est déjà assez longue comme ça.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupPreview() {
+        binding.imageFace.setOnLongClickListener {
+            val face = currentFace ?: return@setOnLongClickListener false
+            Glide.with(this).load(face.filePath.toUri()).into(binding.imagePreview)
+            binding.imagePreview.visibility = View.VISIBLE
+            true
+        }
+        // Le relâchement doit fermer l'aperçu même si le doigt a glissé hors de la
+        // vue : sans ACTION_CANCEL, l'aperçu resterait collé à l'écran.
+        binding.imageFace.setOnTouchListener { v, event ->
+            if (event.actionMasked == MotionEvent.ACTION_UP ||
+                event.actionMasked == MotionEvent.ACTION_CANCEL
+            ) {
+                binding.imagePreview.visibility = View.GONE
+            }
+            v.onTouchEvent(event)
+        }
+    }
+
+    private fun loadNextFace() {
+        lifecycleScope.launch {
+            currentFace = personRepository.getNextPendingFaceExcluding(skippedIds)
+            val face = currentFace
+            if (face == null) {
+                dismiss()
+                return@launch
+            }
+            displayFace(face)
+            updateSuggestions(face)
+            updateCounter()
+        }
+    }
+
+    private fun displayFace(face: FaceDao.FaceWithPhoto) {
+        val output = binding.imageFace.layoutParams.width
+        Glide.with(this)
+            .load(face.filePath)
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
+            .override(FaceCropTransformation.sourceSizeFor(face, output))
+            .transform(FaceCropTransformation(face, output))
+            .transition(DrawableTransitionOptions.withCrossFade())
+            .into(binding.imageFace)
+
+        binding.editName.text?.clear()
+        binding.chipGroupSuggestions.clearCheck()
+    }
+
+    /**
+     * Suggestions triées par **ressemblance au visage affiché**, et non par nombre de
+     * photos.
+     *
+     * L'ancien tri (les 5 personnes les plus photographiées) proposait toujours les
+     * mêmes noms, quel que soit le visage : l'information la plus utile — « ça
+     * ressemble à Marie » — était précisément celle qui manquait, alors que l'app la
+     * calcule déjà pour clusteriser.
+     */
+    private suspend fun updateSuggestions(face: FaceDao.FaceWithPhoto) {
+        val embedding = personRepository.getFaceByIdOnce(face.id)?.embedding
+        val ranked = if (embedding == null) {
+            // Sans vecteur, aucune ressemblance calculable : on retombe sur les plus
+            // photographiées plutôt que de ne rien proposer.
+            allPersons.filter { it.name != null }.sortedByDescending { it.photoCount }
+                .take(MAX_SUGGESTIONS).map { it to null }
+        } else {
+            val vector = embedding.asFloatArray(embedding.size / Float.SIZE_BYTES)
+            allPersons
+                .filter { it.name != null && it.centroidEmbedding != null && !it.isHidden }
+                .map { person ->
+                    val centroid = person.centroidEmbedding!!
+                    person to dotProduct(
+                        vector, centroid.asFloatArray(centroid.size / Float.SIZE_BYTES)
+                    )
+                }
+                .sortedByDescending { it.second }
+                .take(MAX_SUGGESTIONS)
+        }
+
+        binding.chipGroupSuggestions.removeAllViews()
+        val empty = ranked.isEmpty()
+        binding.textSuggestionsLabel.visibility = if (empty) View.GONE else View.VISIBLE
+        binding.scrollSuggestions.visibility = if (empty) View.GONE else View.VISIBLE
+
+        for ((person, similarity) in ranked) {
+            binding.chipGroupSuggestions.addView(suggestionChip(person, similarity))
+        }
+        binding.scrollSuggestions.scrollTo(0, 0)
+    }
+
+    /** Puce = la tête de la personne + son nom : un visage se reconnaît plus vite qu'un nom. */
+    private fun suggestionChip(person: Person, similarity: Float?): Chip {
+        val chip = Chip(requireContext()).apply {
+            text = if (similarity != null && settingsCache.showScores) {
+                String.format(Locale.US, "%s (%.2f)", person.name, similarity)
+            } else {
+                person.name
+            }
+            isCheckable = true
+            setOnClickListener { identifyCurrentFaceAs(person.name!!) }
+        }
+        lifecycleScope.launch {
+            personRepository.getPrimaryFaceWithPhoto(person.id)?.let { cover ->
+                Glide.with(this@IdentifyFaceBottomSheet)
+                    .load(cover.filePath)
+                    .override(CHIP_ICON_PX)
+                    .transform(FaceCropTransformation(cover, CHIP_ICON_PX))
+                    .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                        override fun onResourceReady(
+                            resource: android.graphics.drawable.Drawable,
+                            transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
+                        ) {
+                            chip.chipIcon = resource
+                            chip.isChipIconVisible = true
+                        }
+
+                        override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                            chip.chipIcon = null
+                        }
+                    })
+            }
+        }
+        return chip
+    }
+
+    private fun updateCounter() {
+        lifecycleScope.launch {
+            val remaining = personRepository.getPendingFaceCount().first() - skippedIds.size
+            binding.textCounter.text =
+                resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
+        }
     }
 
     /**
@@ -189,58 +311,11 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         personRepository.setPersonHidden(personId, true)
     }
 
-    private fun loadNextFace() {
-        lifecycleScope.launch {
-            // Récupère le prochain visage pending en excluant les skippés
-            currentFace = personRepository.getNextPendingFaceExcluding(skippedIds)
-
-            if (currentFace == null) {
-                dismiss()  // Plus rien à traiter
-                return@launch
-            }
-
-            // Afficher le visage
-            displayFace(currentFace!!)
-
-            // Mettre à jour le compteur
-            updateCounter()
-        }
-    }
-
-
-    private fun displayFace(face: FaceDao.FaceWithPhoto) {
-        val output = binding.imageFace.layoutParams.width
-        Glide.with(this)
-            .load(face.filePath)
-            .diskCacheStrategy(DiskCacheStrategy.NONE)
-            .override(FaceCropTransformation.sourceSizeFor(face, output))
-            .transform(FaceCropTransformation(face, output))
-            .transition(DrawableTransitionOptions.withCrossFade())
-            .into(binding.imageFace)
-
-        // Reset du champ texte
-        binding.editName.text?.clear()
-        binding.chipGroupSuggestions.clearCheck()
-    }
-
-    private fun updateCounter() {
-        lifecycleScope.launch {
-            val totalPending = personRepository.getPendingFaceCount().first()
-            val remaining = totalPending - skippedIds.size
-
-            binding.textCounter.text =
-                resources.getQuantityString(R.plurals.people_remaining, remaining, remaining)
-        }
-    }
-
     private fun identifyCurrentFaceAs(name: String) {
         val face = currentFace ?: return
 
         lifecycleScope.launch {
-            // 1. Créer ou récupérer la personne
             val personId = personRepository.getOrCreatePersonByName(name)
-
-            // 2. Assigner le visage
             personRepository.assignFaceToPerson(
                 faceId = face.id,
                 personId = personId,
@@ -248,17 +323,11 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
                 confidence = 1.0f,
                 weight = 1.0f
             )
-
-            // 3. Sans ça, une personne nommée à la main n'a **aucun centroïde** : elle
-            // est alors invisible pour `assignFace` comme pour les propositions de
-            // fusion, qui écartent toutes deux les centroïdes nuls. Nommer quelqu'un
-            // n'aurait donc appris strictement rien à l'automate — et c'est justement
-            // la seule vérité terrain dont il dispose.
+            // Sans ça, une personne nommée à la main n'a aucun centroïde : invisible
+            // pour `assignFace` comme pour les propositions de fusion, qui écartent
+            // tous deux les centroïdes nuls.
             personRepository.recomputeCentroid(personId)
-
-            // 4. Retirer des skippés si jamais il y était (ne devrait pas arriver)
             skippedIds.remove(face.id)
-
             loadNextFace()
         }
     }
@@ -266,5 +335,10 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private companion object {
+        const val MAX_SUGGESTIONS = 5
+        const val CHIP_ICON_PX = 64
     }
 }

@@ -150,7 +150,6 @@
     <string name="people_identify_new_name">Entrer un nouveau nom…</string>
     <string name="people_identify_suggestions">Suggestions</string>
     <string name="people_identify_skip">Ignorer</string>
-    <string name="people_identify_not_a_person">Ce n\'est pas une personne</string>
     <string name="people_pass">Passer</string>
     <plurals name="people_remaining">
         <item quantity="one">%d restant</item>
@@ -163,11 +162,9 @@
     <string name="people_delete">Supprimer</string>
     <string name="people_merge">Fusionner avec…</string>
     <string name="people_split">Séparer les visages</string>
-    <string name="people_identify_stranger">Un inconnu, à masquer</string>
-    <string name="people_exclude">Écarter…</string>
-    <string name="people_exclude_title">Écarter ce groupe</string>
-    <string name="people_exclude_not_a_person">Ce n\'est pas une personne (animal, statue)</string>
-    <string name="people_exclude_depiction">Une personne, mais en dessin ou sur une affiche</string>
+    <string name="people_identify_stranger">Je ne connais pas</string>
+    <string name="people_identify_preview_hint">Appui long : voir la photo</string>
+    <string name="people_exclude_irrelevant">Ça n\'a rien à voir</string>
     <plurals name="people_exclude_message">
         <item quantity="one">%d visage sera écarté et ce groupe disparaîtra. Sans retour possible.</item>
         <item quantity="many">%d visages seront écartés et ce groupe disparaîtra. Sans retour possible.</item>

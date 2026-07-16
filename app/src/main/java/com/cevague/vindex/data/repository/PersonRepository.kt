@@ -7,6 +7,7 @@ import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.search.asFloatArray
+import com.cevague.vindex.search.dotProduct
 import com.cevague.vindex.search.toEmbeddingBlob
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -281,14 +282,49 @@ class PersonRepository @Inject constructor(
         }
         if (faces.isEmpty()) return
 
-        val centroid = weightedCentroid(
-            faces.map { face ->
-                val blob = face.embedding!!
-                blob.asFloatArray(blob.size / Float.SIZE_BYTES)
-            },
-            faces.map { it.weight }
-        )
+        val vectors = faces.map { face ->
+            val blob = face.embedding!!
+            blob.asFloatArray(blob.size / Float.SIZE_BYTES)
+        }
+        val centroid = weightedCentroid(vectors, faces.map { it.weight })
         updateCentroid(personId, centroid.toEmbeddingBlob())
+        updatePrimaryFace(faces, vectors, centroid)
+    }
+
+    /**
+     * Élit la vignette de la personne : le visage le plus **proche du centroïde**,
+     * donc le plus typique — celui qui la représente le mieux.
+     *
+     * Les requêtes de couverture retombaient jusqu'ici sur `confidence DESC`, qui est
+     * la confiance du **détecteur** : la vignette était donc le visage le mieux *vu*,
+     * pas le plus *reconnaissable*. Un profil net gagnait contre un portrait de face
+     * légèrement moins bien détecté.
+     *
+     * Élu ici parce que c'est le seul endroit qui connaît le centroïde : la réponse
+     * change dès qu'il bouge, et la recalculer ailleurs le referait pour rien.
+     */
+    private suspend fun updatePrimaryFace(
+        faces: List<Face>,
+        vectors: List<FloatArray>,
+        centroid: FloatArray
+    ) {
+        var bestIndex = 0
+        var bestSimilarity = Float.NEGATIVE_INFINITY
+        for (i in faces.indices) {
+            val similarity = dotProduct(vectors[i], centroid)
+            if (similarity > bestSimilarity) {
+                bestSimilarity = similarity
+                bestIndex = i
+            }
+        }
+        // Un seul primaire par personne : l'ancien doit tomber, sinon deux vignettes
+        // se disputeraient le `LIMIT 1` et la couverture deviendrait arbitraire.
+        faces.forEachIndexed { i, face ->
+            val shouldBePrimary = i == bestIndex
+            if (face.isPrimary != shouldBePrimary) {
+                faceDao.setPrimary(face.id, shouldBePrimary)
+            }
+        }
     }
 
     companion object {

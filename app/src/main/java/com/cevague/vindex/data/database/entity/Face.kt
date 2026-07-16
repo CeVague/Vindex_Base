@@ -124,6 +124,19 @@ data class Face(
          */
         const val ASSIGNMENT_IGNORED = "ignored"
 
+        /**
+         * « Ça n'a rien à voir » : la seule raison que l'UI pose désormais, en **un
+         * clic**. Couvre animal, statue, main, reflet, dessin — tout ce qui n'a pas
+         * d'identité à revendiquer.
+         *
+         * A remplacé la sous-question animal/dessin ([EXCLUDED_NOT_A_PERSON] /
+         * [EXCLUDED_DEPICTION]), qui coûtait un clic à chaque visage. La distinction
+         * avait un but — mesurer — et il est atteint : on sait que la qualité
+         * n'attrape pas les dessins et qu'ils ne volent aucune identité. Les deux
+         * anciennes valeurs restent lisibles dans les données déjà écrites.
+         */
+        const val EXCLUDED_IRRELEVANT = "irrelevant"
+
         /** Ce n'est pas un visage humain : animal, statue. L'embedding est du bruit. */
         const val EXCLUDED_NOT_A_PERSON = "not_a_person"
 

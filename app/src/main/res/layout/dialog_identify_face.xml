@@ -32,7 +32,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="3 restants" />
 
-    <!-- Le visage à identifier -->
+    <!-- Le visage à identifier. Appui long = aperçu de la photo entière. -->
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/imageFace"
         android:layout_width="160dp"
@@ -47,29 +47,55 @@
         app:strokeWidth="4dp"
         tools:src="@tools:sample/avatars" />
 
-    <!-- Suggestions rapides (personnes les plus fréquentes) -->
+    <TextView
+        android:id="@+id/textPreviewHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/people_identify_preview_hint"
+        android:textAppearance="?attr/textAppearanceLabelSmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/imageFace" />
+
     <TextView
         android:id="@+id/textSuggestionsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="16dp"
         android:text="@string/people_identify_suggestions"
         android:textAppearance="?attr/textAppearanceLabelMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/imageFace" />
+        app:layout_constraintTop_toBottomOf="@id/textPreviewHint" />
 
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/chipGroupSuggestions"
-        android:layout_width="match_parent"
+    <!--
+        Une seule ligne qui défile, et non un ChipGroup qui se replie : avec des noms
+        de longueurs variables, le repli donnait tantôt une ligne tantôt deux, donc
+        une mise en page qui saute d'un visage à l'autre et des boutons qui bougent
+        sous le doigt. Hauteur fixe = repères stables.
+    -->
+    <HorizontalScrollView
+        android:id="@+id/scrollSuggestions"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/textSuggestionsLabel"
-        app:singleSelection="true">
-        <!-- Chips ajoutés dynamiquement -->
-    </com.google.android.material.chip.ChipGroup>
+        android:fillViewport="true"
+        android:scrollbars="none"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textSuggestionsLabel">
 
-    <!-- Saisie du nom avec auto-complétion -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupSuggestions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleLine="true"
+            app:singleSelection="true" />
+    </HorizontalScrollView>
+
+    <!-- Saisie du nom avec auto-complétion (insensible casse ET accents) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutName"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -77,7 +103,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:hint="@string/people_identify_new_name"
-        app:layout_constraintTop_toBottomOf="@id/chipGroupSuggestions">
+        app:layout_constraintTop_toBottomOf="@id/scrollSuggestions">
 
         <AutoCompleteTextView
             android:id="@+id/editName"
@@ -88,39 +114,72 @@
             android:inputType="textPersonName|textCapWords" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Actions -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonNotPerson"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/people_identify_not_a_person"
-        android:textColor="?attr/colorError"
-        app:icon="@drawable/vector_account_off"
-        app:iconTint="?attr/colorError"
-        app:layout_constraintStart_toEndOf="@id/buttonSkip"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/layoutName" />
-
-
+    <!--
+        Trois issues, un clic chacune : passer, « rien à voir » (écarté), « je ne
+        connais pas » (inconnu masqué, qui garde son groupe et absorbe ses futures
+        apparitions). Plus de sous-dialogue « pourquoi » : il coûtait un clic à
+        chaque visage pour une nuance déjà mesurée et désormais inutile.
+    -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSkip"
         style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:text="@string/people_identify_skip"
         app:icon="@drawable/vector_skip_next"
         app:iconGravity="end"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/buttonNotPerson"
         app:layout_constraintTop_toBottomOf="@id/layoutName" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonStranger"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/people_identify_stranger"
+        app:icon="@drawable/vector_account_off"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutName" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonNotPerson"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/people_exclude_irrelevant"
+        android:textColor="?attr/colorError"
+        app:icon="@drawable/vector_account_off"
+        app:iconTint="?attr/colorError"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonStranger" />
 
     <!-- Espacement pour le clavier -->
     <View
         android:layout_width="match_parent"
         android:layout_height="16dp"
-        app:layout_constraintTop_toBottomOf="@id/buttonSkip" />
+        app:layout_constraintTop_toBottomOf="@id/buttonNotPerson" />
+
+    <!--
+        Aperçu au doigt : par-dessus tout le reste, le temps de l'appui long. Non
+        cliquable, donc il ne vole jamais un geste.
+    -->
+    <ImageView
+        android:id="@+id/imagePreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="?attr/colorSurface"
+        android:clickable="false"
+        android:contentDescription="@string/people_identify_preview_hint"
+        android:elevation="8dp"
+        android:focusable="false"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

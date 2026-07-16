@@ -277,37 +277,19 @@ class PeopleFragment : Fragment() {
     }
 
     /**
-     * Écarter demande **pourquoi**, et pas seulement confirmation : l'effet est le
-     * même — les visages sortent du jeu — mais la raison sert à mesurer. Une affiche
-     * détectée à 0,9 n'est pas une erreur du détecteur, un chat à 0,65 en est une ;
-     * les confondre pollue la calibration du score de détection.
+     * « Ça n'a rien à voir » : un seul clic, plus de sous-question « pourquoi ».
      *
-     * Sans retour, d'où la confirmation qui suit : aucun écran ne ré-affiche un visage
-     * écarté, et une photo déjà analysée n'est jamais ré-analysée.
+     * La nuance animal/dessin avait un but — mesurer — et il est atteint : on sait
+     * désormais que la qualité n'attrape pas les dessins et qu'ils ne volent aucune
+     * identité. La garder coûterait un clic à chaque visage pour une information dont
+     * plus personne ne se sert.
+     *
+     * La confirmation reste, parce que l'action est **sans retour** : aucun écran ne
+     * ré-affiche un visage écarté, et une photo déjà analysée n'est jamais ré-analysée.
      */
     private fun showExcludeDialog(person: PersonDao.PersonWithCover) {
-        val reasons = arrayOf(
-            getString(R.string.people_exclude_not_a_person),
-            getString(R.string.people_exclude_depiction)
-        )
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.people_exclude_title)
-            .setItems(reasons) { _, which ->
-                val reason =
-                    if (which == 0) Face.EXCLUDED_NOT_A_PERSON else Face.EXCLUDED_DEPICTION
-                confirmExclude(person, reason, reasons[which])
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun confirmExclude(
-        person: PersonDao.PersonWithCover,
-        reason: String,
-        label: String
-    ) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(label)
+            .setTitle(R.string.people_exclude_irrelevant)
             .setMessage(
                 resources.getQuantityString(
                     R.plurals.people_exclude_message,
@@ -316,7 +298,9 @@ class PeopleFragment : Fragment() {
                 )
             )
             .setPositiveButton(R.string.people_exclude_confirm) { _, _ ->
-                lifecycleScope.launch { personRepository.excludePerson(person.id, reason) }
+                lifecycleScope.launch {
+                    personRepository.excludePerson(person.id, Face.EXCLUDED_IRRELEVANT)
+                }
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

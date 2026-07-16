@@ -24,6 +24,6 @@
     <item
         android:id="@+id/action_exclude"
         android:icon="@drawable/vector_account_off"
-        android:title="@string/people_exclude" />
+        android:title="@string/people_exclude_irrelevant" />
 
 </menu>
