@@ -160,10 +160,17 @@ class SettingsCache @Inject constructor(
         // millièmes), donc il posait des questions sur des inconnus.
         //
         // NEW n'est pas sur le même axe : il sert à proposer la fusion de deux groupes
-        // (décision groupe↔groupe), pas à placer un visage — jamais calibré, cf. la
-        // carte de proposition en mode debug.
+        // (décision groupe↔groupe), pas à placer un visage. Calibré le 2026-07-15 en
+        // répondant aux propositions, plancher désactivé : justes jusqu'à 0,32, faux
+        // en dessous — et faux d'une façon précise, ce sont les frères et sœurs qui
+        // apparaissent.
+        //
+        // Il est plus BAS que HIGH, ce qui surprend puis s'explique : les groupes qui
+        // se sont scindés sont justement les cas difficiles, ceux qu'un visage médiocre
+        // a mal ancrés. Leurs centroïdes sont donc mauvais, et se ressemblent moins que
+        // deux vues nettes d'une même personne.
         const val DEFAULT_FACE_THRESHOLD_HIGH = 0.45f
         const val DEFAULT_FACE_THRESHOLD_MEDIUM = 0.40f
-        const val DEFAULT_FACE_THRESHOLD_NEW = 0.40f
+        const val DEFAULT_FACE_THRESHOLD_NEW = 0.32f
     }
 }
