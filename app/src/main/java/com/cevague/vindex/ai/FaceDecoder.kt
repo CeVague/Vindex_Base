@@ -20,14 +20,25 @@ data class Candidate(
     val x1: Float, val y1: Float, val x2: Float, val y2: Float,
     val score: Float,
     /** 5 points (x, y) entrelacés, même repère que la boîte. */
-    val landmarks: FloatArray
+    val landmarks: FloatArray,
+    /**
+     * Les deux composantes de [score] avant fusion, transportées **pour le
+     * diagnostic seul** : la décision n'utilise que [score].
+     *
+     * Leur moyenne géométrique perd l'information qui explique une hésitation :
+     * « je vois bien un objet mais doute que ce soit un visage » (obj haut, cls
+     * bas) et l'inverse donnent le même score et n'ont pas la même cause.
+     */
+    val clsScore: Float = 0f,
+    val objScore: Float = 0f
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as Candidate
         return x1 == other.x1 && y1 == other.y1 && x2 == other.x2 && y2 == other.y2 &&
-                score == other.score && landmarks.contentEquals(other.landmarks)
+                score == other.score && landmarks.contentEquals(other.landmarks) &&
+                clsScore == other.clsScore && objScore == other.objScore
     }
 
     override fun hashCode(): Int {
@@ -37,6 +48,8 @@ data class Candidate(
         result = 31 * result + y2.hashCode()
         result = 31 * result + score.hashCode()
         result = 31 * result + landmarks.contentHashCode()
+        result = 31 * result + clsScore.hashCode()
+        result = 31 * result + objScore.hashCode()
         return result
     }
 }
@@ -46,7 +59,10 @@ data class DetectedFace(
     val boxLeft: Float, val boxTop: Float, val boxRight: Float, val boxBottom: Float,
     /** 5 points (x, y) entrelacés, normalisés 0-1, **non bornés** (cf. [toDetectedFaces]). */
     val landmarks: FloatArray,
-    val score: Float
+    val score: Float,
+    /** Composantes de [score], pour le diagnostic seul (cf. [Candidate]). */
+    val clsScore: Float = 0f,
+    val objScore: Float = 0f
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -54,7 +70,8 @@ data class DetectedFace(
         other as DetectedFace
         return boxLeft == other.boxLeft && boxTop == other.boxTop &&
                 boxRight == other.boxRight && boxBottom == other.boxBottom &&
-                score == other.score && landmarks.contentEquals(other.landmarks)
+                score == other.score && landmarks.contentEquals(other.landmarks) &&
+                clsScore == other.clsScore && objScore == other.objScore
     }
 
     override fun hashCode(): Int {
@@ -64,6 +81,8 @@ data class DetectedFace(
         result = 31 * result + boxBottom.hashCode()
         result = 31 * result + score.hashCode()
         result = 31 * result + landmarks.contentHashCode()
+        result = 31 * result + clsScore.hashCode()
+        result = 31 * result + objScore.hashCode()
         return result
     }
 }
@@ -122,7 +141,9 @@ fun decodeStride(
     val candidates = mutableListOf<Candidate>()
 
     for (a in cls.indices) {
-        val score = sqrt(cls[a].coerceIn(0f, 1f) * obj[a].coerceIn(0f, 1f))
+        val clsScore = cls[a].coerceIn(0f, 1f)
+        val objScore = obj[a].coerceIn(0f, 1f)
+        val score = sqrt(clsScore * objScore)
         if (score < scoreThreshold) continue
 
         val r = a / cols
@@ -141,7 +162,7 @@ fun decodeStride(
 
         val x1 = cx - w / 2
         val y1 = cy - h / 2
-        candidates.add(Candidate(x1, y1, x1 + w, y1 + h, score, landmarks))
+        candidates.add(Candidate(x1, y1, x1 + w, y1 + h, score, landmarks, clsScore, objScore))
     }
 
     return candidates
@@ -206,6 +227,8 @@ fun List<Candidate>.toDetectedFaces(contentWidth: Int, contentHeight: Int): List
             boxRight = (candidate.x2 / contentWidth).coerceIn(0f, 1f),
             boxBottom = (candidate.y2 / contentHeight).coerceIn(0f, 1f),
             landmarks = landmarks,
-            score = candidate.score
+            score = candidate.score,
+            clsScore = candidate.clsScore,
+            objScore = candidate.objScore
         )
     }

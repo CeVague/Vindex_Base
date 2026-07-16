@@ -335,6 +335,12 @@ class FaceEngine @Inject constructor(
         val alignRollDeg: Float,
         val yaw: Float,
         val blur: Float,
+        /**
+         * Netteté de la **photo entière**, à échelle fixe. Seule, [blur] ne distingue
+         * pas une photo globalement floue d'un visage hors mise au point sur une photo
+         * nette : le rapport des deux le dit.
+         */
+        val photoBlur: Float,
         val brightness: Float,
         val contrast: Float
     )
@@ -351,6 +357,16 @@ class FaceEngine @Inject constructor(
         return mutex.withLock {
             val size = ARCFACE_SIZE
             val source = loadForEmbedding(contentUri, faces, size)
+
+            // Décodé à taille FIXE, et non au `source` ci-dessus : la variance du
+            // laplacien dépend de la résolution, or `source` est décodé plus grand
+            // quand la photo contient un petit visage. Mesurer dessus rendrait deux
+            // photos incomparables — la netteté varierait avec la taille des visages.
+            val reference = decodeFitted(contentUri, EMBED_BASE_SIZE)
+            val photoBlur = laplacianVariance(
+                grayscale(reference), reference.width, reference.height
+            )
+
             faces.map { face ->
                 val src = face.landmarks.toPixels(source.width, source.height)
                 val transform = similarityTransform(src, ARCFACE_TEMPLATE_112)
@@ -364,6 +380,7 @@ class FaceEngine @Inject constructor(
                     alignRollDeg = transform.rollDegrees(),
                     yaw = yawProxy(face.landmarks),
                     blur = laplacianVariance(gray, size, size),
+                    photoBlur = photoBlur,
                     brightness = brightness,
                     contrast = contrast
                 )

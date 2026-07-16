@@ -213,6 +213,44 @@ class FaceDecoderTest {
         )
     }
 
+    // ------------------------------------------ composantes du score (diagnostic)
+
+    /**
+     * `score` reste la moyenne géométrique — c'est lui qui décide — mais ses deux
+     * composantes doivent survivre au décodage puis à la normalisation, sans quoi on
+     * ne peut pas savoir *pourquoi* le détecteur hésite.
+     */
+    @Test
+    fun `les composantes du score remontent jusqu'au visage`() {
+        val cls = floatArrayOf(0.81f)
+        val obj = floatArrayOf(0.49f)
+        val bbox = floatArrayOf(0.5f, 0.5f, ln(4f), ln(4f))
+        val kps = FloatArray(10) { 0.5f }
+
+        val candidate = decodeStride(cls, obj, bbox, kps, stride = 8, cols = 1, scoreThreshold = 0f)[0]
+
+        assertEquals(0.81f, candidate.clsScore, 0.001f)
+        assertEquals(0.49f, candidate.objScore, 0.001f)
+        assertEquals(0.63f, candidate.score, 0.001f) // sqrt(0.81 × 0.49)
+
+        val face = listOf(candidate).toDetectedFaces(contentWidth = 64, contentHeight = 64)[0]
+        assertEquals(0.81f, face.clsScore, 0.001f)
+        assertEquals(0.49f, face.objScore, 0.001f)
+    }
+
+    /** Bornées comme le score : une sortie hors [0,1] ne doit pas fuiter telle quelle. */
+    @Test
+    fun `les composantes sont bornees`() {
+        val candidate = decodeStride(
+            floatArrayOf(1.4f), floatArrayOf(-0.2f),
+            floatArrayOf(0.5f, 0.5f, ln(4f), ln(4f)), FloatArray(10) { 0.5f },
+            stride = 8, cols = 1, scoreThreshold = 0f
+        )[0]
+
+        assertEquals(1f, candidate.clsScore, 0.001f)
+        assertEquals(0f, candidate.objScore, 0.001f)
+    }
+
     // ---------------------------------------------------------- embedSourceSize
 
     private fun sourceSize(smallestBoxWidth: Float, baseWidth: Int = 1024) = embedSourceSize(
