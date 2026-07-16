@@ -292,6 +292,8 @@
     <string name="settings_advanced_summary">Score display and threshold calibration</string>
     <string name="settings_reanalyze_faces">Re-analyze faces</string>
     <string name="settings_reanalyze_faces_summary">Recompute every face with the current settings. Required for already-analyzed photos to benefit from an improvement.</string>
+    <string name="settings_face_quality_floor">Minimum face quality</string>
+    <string name="settings_face_quality_floor_summary">Below this quality a face is discarded outright (reflections, hands, blurry silhouettes). 0 = discard nothing. Does not catch drawings.</string>
     <string name="settings_auto_clustering">Automatic grouping</string>
     <string name="settings_auto_clustering_summary">When off, every face goes to the identification queue and grouping is entirely manual. Used to produce ground truth for threshold calibration.</string>
     <string name="settings_export_similarities">Export similarities</string>

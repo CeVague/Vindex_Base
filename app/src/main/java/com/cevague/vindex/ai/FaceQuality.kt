@@ -3,6 +3,7 @@ package com.cevague.vindex.ai
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.hypot
+import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
@@ -78,6 +79,75 @@ fun yawProxy(landmarks: FloatArray): Float {
     val noseDx = landmarks[4] - eyeMidX
     val noseDy = landmarks[5] - eyeMidY
     return (noseDx * axisX + noseDy * axisY) / eyeDist
+}
+
+/**
+ * **Tangage (pitch)** approché : décalage du nez **perpendiculairement** à l'axe des
+ * yeux, rapporté à l'écart des yeux, moins sa valeur au repos.
+ *
+ * [yawProxy] projette le nez *sur* l'axe des yeux et ne voit donc que la rotation
+ * horizontale — un visage renversé en arrière lui échappe complètement (mesuré :
+ * |yaw| = 0,23 sur une grimace tête en arrière, contre 3,58 sur une tête tournée).
+ * La composante perpendiculaire est la moitié manquante.
+ *
+ * Signé : négatif = menton relevé (nez remonte vers les yeux), positif = tête
+ * penchée en avant. Le zéro est calé sur le gabarit ArcFace, donc sur un visage de
+ * face, et non sur une valeur arbitraire.
+ */
+fun pitchProxy(landmarks: FloatArray): Float {
+    require(landmarks.size >= 6) { "5 ancres attendues" }
+    val eyeDist = eyeDistance(landmarks)
+    if (eyeDist <= 0f) return 0f
+    val eyeMidX = (landmarks[0] + landmarks[2]) / 2f
+    val eyeMidY = (landmarks[1] + landmarks[3]) / 2f
+    // Normale à l'axe des yeux (rotation de 90°) : insensible à l'inclinaison, comme
+    // le lacet — les deux se partagent le plan sans se recouvrir.
+    val normalX = -(landmarks[3] - landmarks[1]) / eyeDist
+    val normalY = (landmarks[2] - landmarks[0]) / eyeDist
+    val projected =
+        ((landmarks[4] - eyeMidX) * normalX + (landmarks[5] - eyeMidY) * normalY) / eyeDist
+    return projected - TEMPLATE_PITCH
+}
+
+/** Valeur de [pitchProxy] sur le gabarit : le zéro d'un visage de face. */
+private val TEMPLATE_PITCH: Float = run {
+    val l = ARCFACE_TEMPLATE_112
+    val eyeDist = eyeDistance(l)
+    val eyeMidX = (l[0] + l[2]) / 2f
+    val eyeMidY = (l[1] + l[3]) / 2f
+    val nx = -(l[3] - l[1]) / eyeDist
+    val ny = (l[2] - l[0]) / eyeDist
+    ((l[4] - eyeMidX) * nx + (l[5] - eyeMidY) * ny) / eyeDist
+}
+
+/**
+ * **Cette détection mérite-t-elle d'exister ?** 0 (rebut) à 1 (bon visage).
+ *
+ * ⚠ Ne répond **pas** à « ce visage est-il facile à reconnaître ? » — ce sont deux
+ * questions distinctes, et **leurs métriques ne se recouvrent pas** (mesuré le
+ * 2026-07-16 sur 102 visages étiquetés à la main) :
+ *  - garder ou jeter : `align_scale` (AUC 0,90), `blur` (0,86), `det_score` (0,86) ;
+ *    `|yaw|` et `align_rmse` y sont **inutiles** (0,59 / 0,54).
+ *  - difficile ou non : `|yaw|` (−0,58), `det_score` (+0,56), `align_rmse` (−0,43) ;
+ *    `blur` et la taille y sont **inutiles** (−0,09 / +0,01).
+ * Seul `det_score` sert aux deux, d'où sa présence ici.
+ *
+ * Produit et non moyenne : les trois signaux doivent être **tous** corrects. Une main
+ * bien nette et bien détectée reste une main — c'est `align_scale` qui la trahit.
+ *
+ * ⚠ **Ne détecte pas les dessins** : mesuré, 0/9 rejetés. Un dessin est frontal, net
+ * et bien détecté — géométriquement *plus* parfait qu'un vrai visage (son résidu
+ * d'alignement est meilleur). C'est un problème sémantique, pas de qualité ; il reste
+ * à l'utilisateur.
+ */
+fun faceQuality(detScore: Float, alignScale: Float, blur: Float): Float {
+    // Agrandissement pour tenir le gabarit : > 1 = le visage avait moins de 112 px,
+    // on a inventé les pixels manquants. Le signal le plus fort (AUC 0,90).
+    val scale = (1f / alignScale.coerceAtLeast(1e-3f)).coerceAtMost(2f) / 2f
+    // En ordres de grandeur : le flou s'étale sur 3 décades (rebut ~3, visage ~400),
+    // une échelle linéaire y écraserait tout.
+    val sharp = ((log10(blur.coerceAtLeast(0.01f)) - 0.5f) / 2f).coerceIn(0f, 1f)
+    return detScore.coerceIn(0f, 1f) * scale * sharp
 }
 
 /** Écart inter-oculaire, dans l'unité des ancres fournies. */

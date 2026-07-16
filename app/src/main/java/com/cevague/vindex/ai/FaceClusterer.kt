@@ -147,11 +147,17 @@ private fun preferAsKeep(a: PersonCentroid, b: PersonCentroid): Boolean = when {
 /**
  * Centroïde d'une personne : moyenne **pondérée** de ses vecteurs, renormalisée L2.
  *
- * Le poids traduit la confiance — un visage confirmé à la main est la seule
- * vérité terrain, il doit peser plus qu'une assignation automatique, elle-même
- * pondérée par sa similarité. Seuls les visages `auto` et `manual` doivent
- * arriver ici : un `pending` est une **question**, pas une réponse, et
- * corromprait la personne avant qu'on y ait répondu.
+ * Le poids est la **qualité du visage** (cf. `faceQuality`), et non la confiance de
+ * l'assignation. La nuance a coûté un bug : le centroïde répond à « à quoi cette
+ * personne ressemble-t-elle », donc un vecteur flou ou de profil doit y peser moins,
+ * **même confirmé à la main** — la certitude de l'étiquette ne rend pas l'embedding
+ * meilleur. La certitude, elle, est déjà traitée en amont par le filtre `auto`/
+ * `manual` : un `pending` est une **question**, pas une réponse, et corromprait la
+ * personne avant qu'on y ait répondu.
+ *
+ * Ce que ça répare : `NewPerson` posait `weight = 1f`, donc le visage qui **crée** un
+ * groupe — celui que rien n'a corroboré — y pesait le **maximum**. C'est le mécanisme
+ * exact du « premier visage flou qui ancre mal un groupe ».
  *
  * Pas de division par la somme des poids : la renormalisation L2 qui suit
  * absorbe toute échelle. On somme, on normalise.

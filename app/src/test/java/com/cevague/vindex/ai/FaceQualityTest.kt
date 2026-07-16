@@ -106,6 +106,85 @@ class FaceQualityTest {
         assertEquals(yawProxy(droit), yawProxy(incline), 0.001f)
     }
 
+    // ------------------------------------------------------------------ tangage
+
+    /** Le gabarit EST le visage de face : son tangage est le zéro par construction. */
+    @Test
+    fun `le gabarit a un tangage nul`() {
+        assertEquals(0f, pitchProxy(ARCFACE_TEMPLATE_112), 0.001f)
+    }
+
+    /**
+     * Le cas qui motive la mesure : la grimace tête en arrière, invisible au lacet.
+     * Le nez remonte vers les yeux → tangage négatif, lacet inchangé.
+     */
+    @Test
+    fun `le tangage voit ce que le lacet ignore`() {
+        val teteEnArriere = ARCFACE_TEMPLATE_112.copyOf()
+        teteEnArriere[5] -= 12f // nez remonté de 12 px vers les yeux
+
+        assertTrue(
+            "attendu un tangage négatif, obtenu ${pitchProxy(teteEnArriere)}",
+            pitchProxy(teteEnArriere) < -0.1f
+        )
+        // le lacet, lui, n'y voit rien : c'est bien deux axes distincts
+        assertEquals(yawProxy(ARCFACE_TEMPLATE_112), yawProxy(teteEnArriere), 0.01f)
+    }
+
+    /** Comme le lacet, insensible à l'inclinaison : les deux se partagent le plan. */
+    @Test
+    fun `le tangage ignore l'inclinaison`() {
+        val incline = FloatArray(10)
+        for (i in 0 until 5) {
+            incline[2 * i] = -ARCFACE_TEMPLATE_112[2 * i + 1]
+            incline[2 * i + 1] = ARCFACE_TEMPLATE_112[2 * i]
+        }
+
+        assertEquals(0f, pitchProxy(incline), 0.001f)
+    }
+
+    // ------------------------------------------------------- score « garder ? »
+
+    /**
+     * Nourri des **médianes réelles** de chaque groupe étiqueté à la main
+     * (2026-07-16), pour que la formule Kotlin reproduise celle validée en analyse.
+     * Une divergence ici invaliderait le seuil calibré **sans rien casser de visible**.
+     *
+     * (Le score des médianes, 0,667, n'est pas la médiane des scores, 0,626 : une
+     * médiane ne traverse pas un produit. C'est bien le premier qu'on vérifie ici.)
+     */
+    @Test
+    fun `le score reproduit les valeurs mesurees`() {
+        // vraies personnes : det 0.88, scale 0.66, blur 410
+        assertEquals(0.667f, faceQuality(0.88f, 0.66f, 410f), 0.01f)
+        // « Très Flou » : det 0.72, scale 5.82, blur 3.69 -> 0.002
+        assertTrue("Très Flou doit s'effondrer", faceQuality(0.72f, 5.82f, 3.69f) < 0.01f)
+        // « Rien à Voir » : det 0.65, scale 2.13, blur 12.65 -> 0.046
+        assertTrue("Rien à Voir doit s'effondrer", faceQuality(0.65f, 2.13f, 12.65f) < 0.06f)
+        // et l'écart entre les deux mondes doit rester d'un ordre de grandeur
+        assertTrue(
+            faceQuality(0.88f, 0.66f, 410f) > 10 * faceQuality(0.65f, 2.13f, 12.65f)
+        )
+    }
+
+    /**
+     * Produit et non moyenne : un seul facteur au plancher doit suffire à condamner.
+     * C'est ce qui attrape une main nette et bien détectée — son `align_scale` la trahit.
+     */
+    @Test
+    fun `un seul facteur au plancher condamne`() {
+        assertTrue("flou nul", faceQuality(0.99f, 0.5f, 0.01f) < 0.01f)
+        assertTrue("agrandi 10x", faceQuality(0.99f, 10f, 1000f) < 0.06f)
+        assertTrue("non détecté", faceQuality(0f, 0.5f, 1000f) < 0.01f)
+    }
+
+    /** Bornes : jamais hors [0,1], quelles que soient les entrées. */
+    @Test
+    fun `le score reste borne`() {
+        assertTrue(faceQuality(2f, 0.001f, 1e9f) <= 1f)
+        assertTrue(faceQuality(-1f, -5f, -100f) >= 0f)
+    }
+
     // ------------------------------------------------------------------ netteté
 
     /** Une image uniforme n'a aucun bord : variance du laplacien nulle. */

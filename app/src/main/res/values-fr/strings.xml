@@ -299,6 +299,8 @@
     <string name="settings_advanced_summary">Affichage des scores et calibration des seuils</string>
     <string name="settings_reanalyze_faces">Ré-analyser les visages</string>
     <string name="settings_reanalyze_faces_summary">Recalculer tous les visages avec les réglages actuels. Nécessaire pour que les photos déjà analysées profitent d\'une amélioration.</string>
+    <string name="settings_face_quality_floor">Qualité minimale d\'un visage</string>
+    <string name="settings_face_quality_floor_summary">Sous cette qualité, un visage est écarté d\'office (reflets, mains, silhouettes floues). 0 = ne rien écarter. Ne détecte pas les dessins.</string>
     <string name="settings_auto_clustering">Regroupement automatique</string>
     <string name="settings_auto_clustering_summary">Désactivé, tous les visages partent en attente d\'identification et le regroupement se fait entièrement à la main. Sert à produire une vérité terrain pour calibrer les seuils.</string>
     <string name="settings_export_similarities">Exporter les similarités</string>

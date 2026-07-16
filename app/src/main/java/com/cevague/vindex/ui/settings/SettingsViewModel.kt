@@ -236,9 +236,9 @@ class SettingsViewModel @Inject constructor(
         var rows = 0
         file.bufferedWriter().use { out ->
             out.write(
-                "face_id,person_id,name,det_score,det_cls,det_obj,box_w,box_h,box_aspect," +
-                        "face_px,eye_dist_px,photo_px,edge_margin," +
-                        "align_rmse,align_scale,align_roll_deg,yaw," +
+                "face_id,person_id,name,quality,det_score,det_cls,det_obj," +
+                        "box_w,box_h,box_aspect,face_px,eye_dist_px,photo_px,edge_margin," +
+                        "align_rmse,align_scale,align_roll_deg,yaw,pitch," +
                         "blur,photo_blur,brightness,contrast\n"
             )
             for ((uri, stored) in byPhoto) {
@@ -261,12 +261,12 @@ class SettingsViewModel @Inject constructor(
                     val eyePx = eyeDistance(d.landmarks) * pw
                     out.write(
                         "${face.id},${face.personId},${names[face.personId] ?: ""}," +
-                                "${d.score},${d.clsScore},${d.objScore}," +
+                                "${m.quality},${d.score},${d.clsScore},${d.objScore}," +
                                 "${d.boxRight - d.boxLeft},${d.boxBottom - d.boxTop}," +
                                 "${boxAspect(d.boxLeft, d.boxTop, d.boxRight, d.boxBottom)}," +
                                 "$facePx,$eyePx,${pw.toLong() * ph}," +
                                 "${edgeMargin(d.boxLeft, d.boxTop, d.boxRight, d.boxBottom)}," +
-                                "${m.alignRmse},${m.alignScale},${m.alignRollDeg},${m.yaw}," +
+                                "${m.alignRmse},${m.alignScale},${m.alignRollDeg},${m.yaw},${m.pitch}," +
                                 "${m.blur},${m.photoBlur},${m.brightness},${m.contrast}\n"
                     )
                     rows++

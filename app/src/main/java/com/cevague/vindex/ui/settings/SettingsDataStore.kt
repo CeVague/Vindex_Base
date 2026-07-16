@@ -27,6 +27,7 @@ class SettingsDataStore(private val settingsCache: SettingsCache) : PreferenceDa
         Setting.KEY_FACE_THRESHOLD_HIGH -> settingsCache.faceThresholdHigh.toString()
         Setting.KEY_FACE_THRESHOLD_MEDIUM -> settingsCache.faceThresholdMedium.toString()
         Setting.KEY_FACE_THRESHOLD_NEW -> settingsCache.faceThresholdNew.toString()
+        Setting.KEY_FACE_QUALITY_FLOOR -> settingsCache.faceQualityFloor.toString()
         else -> {
             Log.w(TAG, "Lecture d'une clé inconnue « $key » : valeur par défaut renvoyée")
             defValue
@@ -49,6 +50,9 @@ class SettingsDataStore(private val settingsCache: SettingsCache) : PreferenceDa
 
             Setting.KEY_FACE_THRESHOLD_NEW -> text.toFloatOrNull()
                 ?.let { settingsCache.faceThresholdNew = it }
+
+            Setting.KEY_FACE_QUALITY_FLOOR -> text.toFloatOrNull()
+                ?.let { settingsCache.faceQualityFloor = it }
 
             else -> Log.w(TAG, "Réglage String non persisté : clé inconnue « $key »")
         }

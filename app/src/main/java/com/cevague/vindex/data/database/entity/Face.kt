@@ -136,5 +136,15 @@ data class Face(
          * centroïde — un chat, lui, ne ressemble à personne.
          */
         const val EXCLUDED_DEPICTION = "depiction"
+
+        /**
+         * Écarté **automatiquement** : détection trop mauvaise pour valoir une
+         * identité (cf. `faceQuality`). Reflets, mains, silhouettes floues d'arrière-plan.
+         *
+         * La ligne est **conservée**, pas supprimée : la décision est ainsi auditable
+         * (l'export de calibration la voit), réversible, et un seuil mal réglé se
+         * constate au lieu de se deviner.
+         */
+        const val EXCLUDED_LOW_QUALITY = "low_quality"
     }
 }

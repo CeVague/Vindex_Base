@@ -64,6 +64,13 @@
             app:summary="@string/settings_threshold_new_summary"
             app:title="@string/settings_threshold_new" />
 
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            app:icon="@drawable/vector_percent"
+            app:key="face_quality_floor"
+            app:summary="@string/settings_face_quality_floor_summary"
+            app:title="@string/settings_face_quality_floor" />
+
         <SwitchPreferenceCompat
             app:icon="@drawable/vector_account_off"
             app:key="auto_clustering"

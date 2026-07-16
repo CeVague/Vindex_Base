@@ -136,8 +136,22 @@ class FaceAnalysisWorker @AssistedInject constructor(
         analyzed: List<FaceEngine.AnalyzedFace>,
         dim: Int
     ) {
+        // Écartés d'office : une main, un reflet, une silhouette floue d'arrière-plan
+        // n'ont pas d'identité à disputer. Fait AVANT le mode manuel, sinon le tri à la
+        // main hériterait de tout le rebut — c'est justement lui qu'on épargne.
+        val floor = settingsCache.faceQualityFloor
+        val kept = mutableListOf<Int>()
+        for (i in faceIds.indices) {
+            if (analyzed[i].quality < floor) {
+                personRepository.markAsIgnored(faceIds[i], Face.EXCLUDED_LOW_QUALITY)
+            } else {
+                kept += i
+            }
+        }
+        if (kept.isEmpty()) return
+
         if (!settingsCache.autoClusteringEnabled) {
-            leaveForManualIdentification(faceIds)
+            leaveForManualIdentification(kept.map { faceIds[it] })
             return
         }
 
@@ -158,8 +172,9 @@ class FaceAnalysisWorker @AssistedInject constructor(
         // de créer : elles ne peuvent pas réapparaître sur la même image.
         val takenInThisPhoto = mutableSetOf<Long>()
 
-        for (i in faceIds.indices) {
+        for (i in kept) {
             val embedding = analyzed[i].embedding
+            val quality = analyzed[i].quality
 
             logBestSimilarity(embedding, centroids, takenInThisPhoto)
 
@@ -170,7 +185,7 @@ class FaceAnalysisWorker @AssistedInject constructor(
                         personId = assignment.personId,
                         assignmentType = Face.ASSIGNMENT_AUTO,
                         confidence = assignment.similarity,
-                        weight = assignment.similarity
+                        weight = quality
                     )
                     touched += assignment.personId
                     takenInThisPhoto += assignment.personId
@@ -182,7 +197,7 @@ class FaceAnalysisWorker @AssistedInject constructor(
                         personId = assignment.personId,
                         assignmentType = Face.ASSIGNMENT_PENDING,
                         confidence = assignment.similarity,
-                        weight = assignment.similarity
+                        weight = quality
                     )
                     takenInThisPhoto += assignment.personId
                 }
@@ -194,7 +209,7 @@ class FaceAnalysisWorker @AssistedInject constructor(
                         personId = personId,
                         assignmentType = Face.ASSIGNMENT_AUTO,
                         confidence = 1f,
-                        weight = 1f
+                        weight = quality
                     )
                     // Moyenne d'un seul vecteur : lui-même, déjà normalisé L2.
                     personRepository.updateCentroid(personId, embedding.toEmbeddingBlob())

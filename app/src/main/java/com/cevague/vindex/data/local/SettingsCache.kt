@@ -153,6 +153,14 @@ class SettingsCache @Inject constructor(
         get() = prefs.getBoolean(Setting.KEY_AUTO_CLUSTERING, DEFAULT_AUTO_CLUSTERING)
         set(value) = prefs.edit { putBoolean(Setting.KEY_AUTO_CLUSTERING, value) }
 
+    /**
+     * Sous cette qualité (cf. `faceQuality`), un visage est écarté d'office.
+     * 0 = ne rien écarter.
+     */
+    var faceQualityFloor: Float
+        get() = prefs.getFloat(Setting.KEY_FACE_QUALITY_FLOOR, DEFAULT_FACE_QUALITY_FLOOR)
+        set(value) = prefs.edit { putFloat(Setting.KEY_FACE_QUALITY_FLOOR, value) }
+
     // ════════════════════════════════════════════════════════════════════════
     // Méthodes utilitaires
     // ════════════════════════════════════════════════════════════════════════
@@ -177,6 +185,19 @@ class SettingsCache @Inject constructor(
         const val DEFAULT_SHOW_SCORES = false
         const val DEFAULT_AUTO_CLUSTERING = true
         const val DEFAULT_SHOW_HIDDEN_PEOPLE = false
+
+        /**
+         * Plancher de qualité. Calibré le 2026-07-16 sur 102 visages étiquetés à la
+         * main : à 0,02 on rejette **34 rebuts sur 61 en ne perdant aucun** des 41
+         * vrais visages (dont 18/19 des silhouettes floues d'arrière-plan).
+         *
+         * ⚠ Fixé par **un seul** point — un visage de Laurence à 0,021, le suivant
+         * étant à 0,189. C'est donc un plancher fragile, choisi par asymétrie des
+         * coûts : perdre un vrai visage est **silencieux** (une photo disparaît de
+         * « photos de Marie »), garder un rebut est **visible** et se corrige d'un
+         * clic. Dans le doute, on garde. À revoir sur une vraie galerie.
+         */
+        const val DEFAULT_FACE_QUALITY_FLOOR = 0.02f
 
         // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
         // la recherche : plus haut = plus proche.

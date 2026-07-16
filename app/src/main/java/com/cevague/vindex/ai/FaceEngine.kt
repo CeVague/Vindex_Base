@@ -53,7 +53,12 @@ class FaceEngine @Inject constructor(
         val embeddingDim: Int
     )
 
-    data class AnalyzedFace(val detected: DetectedFace, val embedding: FloatArray) {
+    data class AnalyzedFace(
+        val detected: DetectedFace,
+        val embedding: FloatArray,
+        /** Cf. `faceQuality` : 0 (rebut) à 1 (bon visage). */
+        val quality: Float = 1f
+    ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -61,6 +66,7 @@ class FaceEngine @Inject constructor(
             other as AnalyzedFace
 
             if (detected != other.detected) return false
+            if (quality != other.quality) return false
             if (!embedding.contentEquals(other.embedding)) return false
 
             return true
@@ -69,6 +75,7 @@ class FaceEngine @Inject constructor(
         override fun hashCode(): Int {
             var result = detected.hashCode()
             result = 31 * result + embedding.contentHashCode()
+            result = 31 * result + quality.hashCode()
             return result
         }
     }
@@ -334,6 +341,8 @@ class FaceEngine @Inject constructor(
         val alignScale: Float,
         val alignRollDeg: Float,
         val yaw: Float,
+        /** Cf. `pitchProxy` : la moitié que le lacet ne voit pas (tête en arrière). */
+        val pitch: Float,
         val blur: Float,
         /**
          * Netteté de la **photo entière**, à échelle fixe. Seule, [blur] ne distingue
@@ -342,7 +351,9 @@ class FaceEngine @Inject constructor(
          */
         val photoBlur: Float,
         val brightness: Float,
-        val contrast: Float
+        val contrast: Float,
+        /** Le score qui décide de garder (cf. `faceQuality`), pour l'inspecter. */
+        val quality: Float
     )
 
     /**
@@ -373,16 +384,19 @@ class FaceEngine @Inject constructor(
                 val crop = alignFace(source, face.landmarks, size)
                 val gray = grayscale(crop)
                 val (brightness, contrast) = meanStd(gray)
+                val blur = laplacianVariance(gray, size, size)
                 FaceMetrics(
                     detected = face,
                     alignRmse = alignmentResidual(src, ARCFACE_TEMPLATE_112, transform),
                     alignScale = transform.scale(),
                     alignRollDeg = transform.rollDegrees(),
                     yaw = yawProxy(face.landmarks),
-                    blur = laplacianVariance(gray, size, size),
+                    pitch = pitchProxy(face.landmarks),
+                    blur = blur,
                     photoBlur = photoBlur,
                     brightness = brightness,
-                    contrast = contrast
+                    contrast = contrast,
+                    quality = faceQuality(face.score, transform.scale(), blur)
                 )
             }
         }
@@ -464,10 +478,29 @@ class FaceEngine @Inject constructor(
             val source = loadForEmbedding(contentUri, faces, size)
             faces.map { face ->
                 val crop = alignFace(source, face.landmarks, size)
-                val embeding = embedFace(loaded, crop)
-                AnalyzedFace(face, embeding)
+                AnalyzedFace(
+                    detected = face,
+                    embedding = embedFace(loaded, crop),
+                    quality = qualityOf(face, source, crop)
+                )
             }
         }
+    }
+
+    /**
+     * Qualité d'un visage, calculée au passage de l'embarquement : les deux entrées
+     * dont `faceQuality` a besoin (l'échelle de la transformation, la netteté du crop)
+     * sont déjà là — les recalculer ailleurs coûterait un second décodage.
+     */
+    private fun qualityOf(face: DetectedFace, source: Bitmap, crop: Bitmap): Float {
+        val src = face.landmarks.toPixels(source.width, source.height)
+        val transform = similarityTransform(src, ARCFACE_TEMPLATE_112)
+        val gray = grayscale(crop)
+        return faceQuality(
+            detScore = face.score,
+            alignScale = transform.scale(),
+            blur = laplacianVariance(gray, crop.width, crop.height)
+        )
     }
 
     /**
