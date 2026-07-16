@@ -23,6 +23,13 @@ interface PersonDao {
         val id: Long,
         val name: String?,
         val photoCount: Int,
+        /**
+         * Le visage qui sert de couverture. C'est **lui** qui identifie la vignette,
+         * et rien d'autre : le cache image doit être clé sur cet id, sans quoi une
+         * fusion (qui change `photoCount`) ferait re-décoder toute la grille pour une
+         * image inchangée.
+         */
+        val coverFaceId: Long?,
         val coverPath: String?,
         val boxLeft: Float?,
         val boxTop: Float?,
@@ -60,7 +67,9 @@ interface PersonDao {
      */
     @Query(
         """
-    SELECT p.id, p.name, p.photo_count as photoCount, ph.file_path as coverPath, f.box_left as boxLeft, f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom,
+    SELECT p.id, p.name, p.photo_count as photoCount,
+           f.id as coverFaceId, ph.file_path as coverPath,
+           f.box_left as boxLeft, f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom,
            (SELECT MAX(confidence) FROM faces WHERE person_id = p.id) as bestScore,
            p.is_hidden as isHidden
     FROM persons p

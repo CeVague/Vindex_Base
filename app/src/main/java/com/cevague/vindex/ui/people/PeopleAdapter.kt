@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
@@ -63,10 +64,11 @@ class PeopleAdapter(
             }
 
             val coverPath = person.coverPath
+            val coverFaceId = person.coverFaceId
 
-            if (coverPath != null) {
+            if (coverPath != null && coverFaceId != null) {
                 val faceData = FaceDao.FaceWithPhoto(
-                    id = person.id,
+                    id = coverFaceId,
                     filePath = coverPath,
                     boxLeft = person.boxLeft ?: 0f,
                     boxTop = person.boxTop ?: 0f,
@@ -79,9 +81,20 @@ class PeopleAdapter(
                 val output = binding.imagePerson.layoutParams.width
                 Glide.with(binding.imagePerson)
                     .load(coverPath)
-                    .signature(ObjectKey(person.id.toString() + person.photoCount))
+                    // Clé sur le VISAGE de couverture, et rien d'autre : c'est lui,
+                    // et lui seul, qui détermine l'image. La clé portait avant le
+                    // nombre de photos — donc chaque fusion la faisait changer et
+                    // Glide re-décodait toute la grille pour des images inchangées.
+                    .signature(ObjectKey(coverFaceId))
                     .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                    .override(FaceCropTransformation.sourceSizeFor(faceData, output))
+                    // 565 : une vignette n'a pas de transparence, et c'est deux fois
+                    // moins d'octets à décoder puis à ramasser.
+                    .format(DecodeFormat.PREFER_RGB_565)
+                    .override(
+                        FaceCropTransformation.sourceSizeFor(
+                            faceData, output, FaceCropTransformation.GRID_MAX_SOURCE
+                        )
+                    )
                     .placeholder(R.drawable.vector_peoples)
                     .error(R.drawable.vector_peoples)
                     .transform(FaceCropTransformation(faceData, output))

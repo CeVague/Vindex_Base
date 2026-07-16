@@ -169,7 +169,7 @@
     <string name="people_unhidden_done">Shown again.</string>
     <string name="settings_show_hidden_people">Show hidden people</string>
     <string name="settings_show_hidden_people_summary">Shows hidden strangers at the end of the people grid, greyed out, so you can unhide them.</string>
-    <string name="people_merge_suggest_question">%1$s?</string>
+    <string name="people_merge_suggest_question">Is this %1$s?</string>
     <string name="people_merge_suggest_dismiss">Not now</string>
     <string name="people_merge_suggest_confirm">Merge</string>
     <string name="people_merge_suggest_detail">%1$s · %2$s</string>

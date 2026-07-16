@@ -18,6 +18,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
@@ -146,12 +148,19 @@ class PeopleFragment : Fragment() {
         binding.buttonMergeDismiss.setOnClickListener { viewModel.dismissMerge(suggestion) }
     }
 
+    /** Mêmes bornes que la grille : deux vignettes de 64 dp ne valent pas 32 Mo de décodage. */
     private fun loadFaceCrop(view: ImageView, face: FaceDao.FaceWithPhoto) {
         val output = view.layoutParams.width
         Glide.with(view)
             .load(face.filePath)
             .signature(ObjectKey(face.id))
-            .override(FaceCropTransformation.sourceSizeFor(face, output))
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .format(DecodeFormat.PREFER_RGB_565)
+            .override(
+                FaceCropTransformation.sourceSizeFor(
+                    face, output, FaceCropTransformation.GRID_MAX_SOURCE
+                )
+            )
             .transform(FaceCropTransformation(face, output))
             .placeholder(R.drawable.vector_peoples)
             .error(R.drawable.vector_peoples)

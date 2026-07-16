@@ -14,7 +14,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.entity.Face
@@ -280,10 +280,13 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         val output = binding.imageFace.layoutParams.width
         Glide.with(this)
             .load(face.filePath)
-            .diskCacheStrategy(DiskCacheStrategy.NONE)
+            // Pas de fondu : on enchaîne des dizaines de visages, et une transition
+            // fait ressembler chaque passage à une attente. Le cache disque, lui, est
+            // gardé — un visage déjà vu doit revenir instantanément.
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .signature(ObjectKey(face.id))
             .override(FaceCropTransformation.sourceSizeFor(face, output))
             .transform(FaceCropTransformation(face, output))
-            .transition(DrawableTransitionOptions.withCrossFade())
             .into(binding.imageFace)
 
         binding.editName.text?.clear()
@@ -300,6 +303,12 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
      * calcule déjà pour clusteriser.
      */
     private suspend fun updateSuggestions(target: Target) {
+        // Lu à la demande, et non pris dans le champ alimenté par le Flow : celui-ci
+        // est encore vide au premier visage (la collecte démarre en parallèle de
+        // `loadNext`), et la toute première question s'affichait donc SANS aucune
+        // suggestion — la course était invisible et arrivait à chaque ouverture.
+        val persons = personRepository.getAllPersonsOnce()
+
         // Un groupe se compare par son centroïde — le résumé de tous ses visages —
         // plutôt que par le seul visage affiché : c'est plus fidèle et déjà calculé.
         val embedding = when (target) {
@@ -309,11 +318,12 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         val ranked = if (embedding == null) {
             // Sans vecteur, aucune ressemblance calculable : on retombe sur les plus
             // photographiées plutôt que de ne rien proposer.
-            allPersons.filter { it.name != null }.sortedByDescending { it.photoCount }
+            persons.filter { it.name != null && !it.isHidden }
+                .sortedByDescending { it.photoCount }
                 .take(MAX_SUGGESTIONS).map { it to null }
         } else {
             val vector = embedding.asFloatArray(embedding.size / Float.SIZE_BYTES)
-            allPersons
+            persons
                 .filter { it.name != null && it.centroidEmbedding != null && !it.isHidden }
                 .map { person ->
                     val centroid = person.centroidEmbedding!!
@@ -336,9 +346,15 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
         binding.scrollSuggestions.scrollTo(0, 0)
     }
 
-    /** Puce = la tête de la personne + son nom : un visage se reconnaît plus vite qu'un nom. */
-    private fun suggestionChip(person: Person, similarity: Float?): Chip {
-        val chip = Chip(requireContext()).apply {
+    /**
+     * Puce = le nom seul.
+     *
+     * Elle a porté la tête de la personne, et c'était une erreur : à cette taille le
+     * visage était illisible, tout en coûtant de la largeur — donc une liste qui
+     * débordait — et un décodage par puce. Le nom seul en dit plus, en moins de place.
+     */
+    private fun suggestionChip(person: Person, similarity: Float?): Chip =
+        Chip(requireContext()).apply {
             text = if (similarity != null && settingsCache.showScores) {
                 String.format(Locale.US, "%s (%.2f)", person.name, similarity)
             } else {
@@ -347,29 +363,6 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             isCheckable = true
             setOnClickListener { identifyCurrentFaceAs(person.name!!) }
         }
-        lifecycleScope.launch {
-            personRepository.getPrimaryFaceWithPhoto(person.id)?.let { cover ->
-                Glide.with(this@IdentifyFaceBottomSheet)
-                    .load(cover.filePath)
-                    .override(CHIP_ICON_PX)
-                    .transform(FaceCropTransformation(cover, CHIP_ICON_PX))
-                    .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                        override fun onResourceReady(
-                            resource: android.graphics.drawable.Drawable,
-                            transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?
-                        ) {
-                            chip.chipIcon = resource
-                            chip.isChipIconVisible = true
-                        }
-
-                        override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                            chip.chipIcon = null
-                        }
-                    })
-            }
-        }
-        return chip
-    }
 
     private fun updateCounter(target: Target) {
         lifecycleScope.launch {
@@ -463,7 +456,12 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
     }
 
     private companion object {
-        const val MAX_SUGGESTIONS = 5
-        const val CHIP_ICON_PX = 64
+        /**
+         * Trois, et non cinq : sans vignette, trois noms tiennent dans la largeur d'un
+         * téléphone. Au-delà, la liste débordait et il fallait la faire défiler pour
+         * voir des suggestions de moins en moins ressemblantes — donc de moins en
+         * moins utiles.
+         */
+        const val MAX_SUGGESTIONS = 3
     }
 }

@@ -101,25 +101,34 @@ class FaceCropTransformation(
 
         private val FILTER = Paint(Paint.FILTER_BITMAP_FLAG)
 
+        /** Plafond par défaut : un écran unique, où l'on peut payer la netteté. */
+        const val MAX_SOURCE = 2048
+
         /**
-         * Plafond du décodage. Un visage plus petit que ~9 % de la photo restera un
-         * peu mou en vignette : c'est assumé, la seule alternative serait de décoder
-         * plusieurs mégapixels **par tuile** d'une grille qui en affiche vingt.
+         * Plafond d'une **grille**. Vingt tuiles à 2048² en ARGB_8888 feraient 320 Mo
+         * de bitmaps transitoires — le décodage n'est pas le problème, la tempête de
+         * GC qui suit l'est. Un visage minuscule y sera donc un peu mou : c'est le prix
+         * du défilement fluide, et une vignette de 88 dp le pardonne — contrairement au
+         * visage de 160 dp qu'on demande d'identifier.
          */
-        private const val MAX_SOURCE = 2048
+        const val GRID_MAX_SOURCE = 1024
 
         /**
          * Taille à demander à Glide (`override`) pour que le visage fasse au moins
-         * [outputSize] pixels une fois découpé.
+         * [outputSize] pixels une fois découpé, sans dépasser [maxSource].
          *
          * Approximation assumée : la boîte est normalisée par axe alors qu'on ne
          * demande qu'un carré à Glide. L'erreur vaut le ratio de la photo, et se paie
          * en pixels décodés en trop — jamais en netteté.
          */
-        fun sourceSizeFor(face: FaceDao.FaceWithPhoto, outputSize: Int): Int {
+        fun sourceSizeFor(
+            face: FaceDao.FaceWithPhoto,
+            outputSize: Int,
+            maxSource: Int = MAX_SOURCE
+        ): Int {
             val span = max(face.boxRight - face.boxLeft, face.boxBottom - face.boxTop) * MARGIN
             if (span <= 0f) return outputSize
-            return ceil(outputSize / span).toInt().coerceIn(outputSize, MAX_SOURCE)
+            return ceil(outputSize / span).toInt().coerceIn(outputSize, maxSource)
         }
     }
 }

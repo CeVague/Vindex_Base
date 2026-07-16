@@ -49,8 +49,14 @@
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="6dp">
 
+                <!--
+                    La personne NOMMÉE d'abord, l'anonyme ensuite : on lit « est-ce
+                    Marie ? » de gauche à droite, donc la référence connue vient en
+                    premier. `layout_marginStart` (et non `Left`) suit la direction du
+                    texte, l'ordre s'inversera donc de lui-même en écriture RTL.
+                -->
                 <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/imageMergeOther"
+                    android:id="@+id/imageMergeKeep"
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:scaleType="centerCrop"
@@ -59,7 +65,7 @@
                     app:strokeWidth="1dp" />
 
                 <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/imageMergeKeep"
+                    android:id="@+id/imageMergeOther"
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:layout_marginStart="6dp"
