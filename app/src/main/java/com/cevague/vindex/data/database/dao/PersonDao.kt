@@ -35,10 +35,16 @@ interface PersonDao {
          * la vignette est faible mais qui a par ailleurs un visage net est une vraie
          * personne. Pour un groupe-poubelle (un seul visage), les deux coïncident.
          */
-        val bestScore: Float?
+        val bestScore: Float?,
+        /** Inconnu masqué : grisé, et le clic long propose de le ré-afficher. */
+        val isHidden: Boolean
     )
 
     // Queries - reactive
+
+    /** Masque ou ré-affiche une personne sans toucher à ses visages. */
+    @Query("UPDATE persons SET is_hidden = :hidden WHERE id = :id")
+    suspend fun setHidden(id: Long, hidden: Boolean)
 
     /**
      * [suspectBelow] : sous ce **meilleur** score de détection, un groupe anonyme est
@@ -47,11 +53,16 @@ interface PersonDao {
      * `score_threshold` de YuNet). Les groupes **nommés** ne sont jamais relégués :
      * une personne nommée n'est pas un faux positif, et leur ordre alphabétique doit
      * rester stable.
+     *
+     * [includeHidden] : les inconnus masqués sont sortis de la liste par défaut, mais
+     * jamais de la base — sans quoi « masquer » serait irréversible, et un réglage
+     * d'affichage deviendrait une suppression.
      */
     @Query(
         """
     SELECT p.id, p.name, p.photo_count as photoCount, ph.file_path as coverPath, f.box_left as boxLeft, f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom,
-           (SELECT MAX(confidence) FROM faces WHERE person_id = p.id) as bestScore
+           (SELECT MAX(confidence) FROM faces WHERE person_id = p.id) as bestScore,
+           p.is_hidden as isHidden
     FROM persons p
     LEFT JOIN faces f ON f.id = (
         SELECT id FROM faces
@@ -60,7 +71,9 @@ interface PersonDao {
         LIMIT 1
     )
     LEFT JOIN photos ph ON f.photo_id = ph.id
-    ORDER BY (p.name IS NULL),     -- les personnes nommées d'abord
+    WHERE :includeHidden OR p.is_hidden = 0
+    ORDER BY p.is_hidden,          -- les masqués tout en fin, quand on les affiche
+             (p.name IS NULL),     -- les personnes nommées d'abord
              (p.photo_count = 0),  -- les vides en fin de leur groupe
              -- anonymes douteux en fin : score inconnu = non jugé, donc non relégué
              (p.name IS NULL AND bestScore IS NOT NULL AND bestScore < :suspectBelow),
@@ -68,7 +81,10 @@ interface PersonDao {
              p.photo_count DESC    -- anonymes : les plus gros groupes d'abord
 """
     )
-    fun getPeopleForTrombinoscope(suspectBelow: Float): Flow<List<PersonWithCover>>
+    fun getPeopleForTrombinoscope(
+        suspectBelow: Float,
+        includeHidden: Boolean
+    ): Flow<List<PersonWithCover>>
 
     /**
      * Un centroïde n'a de sens que dans l'espace vectoriel qui l'a produit : changer

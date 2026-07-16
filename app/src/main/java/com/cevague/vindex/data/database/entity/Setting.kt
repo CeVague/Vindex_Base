@@ -22,6 +22,7 @@ object Setting {
     const val KEY_FACE_THRESHOLD_MEDIUM = "face_threshold_medium"
     const val KEY_FACE_THRESHOLD_NEW = "face_threshold_new"
     const val KEY_AUTO_CLUSTERING = "auto_clustering"
+    const val KEY_SHOW_HIDDEN_PEOPLE = "show_hidden_people"
     const val KEY_LAST_SCAN_TIMESTAMP = "last_scan_timestamp"
     const val THEME_SYSTEM = "system"
     const val THEME_LIGHT = "light"

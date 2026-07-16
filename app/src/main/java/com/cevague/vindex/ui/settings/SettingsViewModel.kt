@@ -134,7 +134,11 @@ class SettingsViewModel @Inject constructor(
      * O(n²) assumé : c'est un outil de galerie de test, d'où le garde-fou.
      */
     suspend fun exportFaceSimilarities(): String? = withContext(Dispatchers.IO) {
-        val faces = personRepository.getAllIdentifiedFacesWithEmbedding()
+        // Hors personnes masquées : deux visages du même passant peuvent finir dans
+        // deux groupes masqués distincts, ce qui inscrirait « personnes différentes »
+        // dans la vérité terrain alors que c'est la même. Mieux vaut ne pas les
+        // compter que compter faux.
+        val faces = personRepository.getFacesForCalibration()
         if (faces.size < 2) return@withContext null
         if (faces.size > MAX_EXPORT_FACES) {
             Log.w(TAG, "Export refusé : ${faces.size} visages, ${MAX_EXPORT_FACES} max")

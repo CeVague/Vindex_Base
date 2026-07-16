@@ -156,12 +156,22 @@
     <string name="people_delete">Delete</string>
     <string name="people_merge">Merge with…</string>
     <string name="people_split">Separate faces</string>
-    <string name="people_not_a_person_title">Not a person?</string>
-    <plurals name="people_not_a_person_message">
-        <item quantity="one">%d face will be discarded and this group will disappear. Use this for an animal, a statue or a portrait.</item>
-        <item quantity="other">%d faces will be discarded and this group will disappear. Use this for an animal, a statue or a portrait.</item>
+    <string name="people_identify_stranger">A stranger, to hide</string>
+    <string name="people_exclude">Discard…</string>
+    <string name="people_exclude_title">Discard this group</string>
+    <string name="people_exclude_not_a_person">Not a person (animal, statue)</string>
+    <string name="people_exclude_depiction">A person, but drawn or on a poster</string>
+    <plurals name="people_exclude_message">
+        <item quantity="one">%d face will be discarded and this group will disappear. This cannot be undone.</item>
+        <item quantity="other">%d faces will be discarded and this group will disappear. This cannot be undone.</item>
     </plurals>
-    <string name="people_not_a_person_confirm">Discard</string>
+    <string name="people_exclude_confirm">Discard</string>
+    <string name="people_hide">Hide (stranger)</string>
+    <string name="people_unhide">Stop hiding</string>
+    <string name="people_hidden_done">Hidden. New photos will join it without reappearing.</string>
+    <string name="people_unhidden_done">Shown again.</string>
+    <string name="settings_show_hidden_people">Show hidden people</string>
+    <string name="settings_show_hidden_people_summary">Shows hidden strangers at the end of the people grid, greyed out, so you can unhide them.</string>
     <string name="people_merge_suggest_title">Is this the same person?</string>
     <string name="people_merge_suggest_separator">+</string>
     <string name="people_merge_suggest_dismiss">Not now</string>

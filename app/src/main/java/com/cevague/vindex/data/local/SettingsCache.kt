@@ -72,6 +72,26 @@ class SettingsCache @Inject constructor(
         get() = prefs.getInt(Setting.KEY_GRID_COLUMNS, Setting.DEFAULT_GRID_COLUMNS)
         set(value) = prefs.edit { putInt(Setting.KEY_GRID_COLUMNS, value) }
 
+    /**
+     * Affiche les inconnus masqués en fin de trombinoscope, grisés.
+     *
+     * C'est un réglage d'**affichage**, pas de debug : sans lui, masquer serait
+     * irréversible faute de pouvoir jamais revoir ce qu'on a masqué.
+     */
+    var showHiddenPeople: Boolean
+        get() = prefs.getBoolean(Setting.KEY_SHOW_HIDDEN_PEOPLE, DEFAULT_SHOW_HIDDEN_PEOPLE)
+        set(value) = prefs.edit { putBoolean(Setting.KEY_SHOW_HIDDEN_PEOPLE, value) }
+
+    /** Émet l'état courant puis chaque changement : le trombinoscope se recompose. */
+    val showHiddenPeopleFlow: Flow<Boolean> = callbackFlow {
+        trySend(showHiddenPeople)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == Setting.KEY_SHOW_HIDDEN_PEOPLE) trySend(showHiddenPeople)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+
     /** Émet le nombre de colonnes courant puis chaque changement (grille réactive). */
     val gridColumnsFlow: Flow<Int> = callbackFlow {
         trySend(gridColumns)
@@ -156,6 +176,7 @@ class SettingsCache @Inject constructor(
     companion object {
         const val DEFAULT_SHOW_SCORES = false
         const val DEFAULT_AUTO_CLUSTERING = true
+        const val DEFAULT_SHOW_HIDDEN_PEOPLE = false
 
         // Similarités cosinus (produit scalaire de vecteurs L2), même convention que
         // la recherche : plus haut = plus proche.

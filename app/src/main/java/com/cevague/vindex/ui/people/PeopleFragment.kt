@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -21,6 +22,7 @@ import com.bumptech.glide.signature.ObjectKey
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao
+import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.PersonRepository
@@ -162,6 +164,10 @@ class PeopleFragment : Fragment() {
     private fun showPersonOptionsMenu(person: PersonDao.PersonWithCover, anchorView: View) {
         val popup = PopupMenu(requireContext(), anchorView)
         popup.menuInflater.inflate(R.menu.menu_person_options, popup.menu)
+        // Masquer et ré-afficher sont la même décision, prise dans un sens ou dans
+        // l'autre : jamais les deux à la fois.
+        popup.menu.findItem(R.id.action_hide).isVisible = !person.isHidden
+        popup.menu.findItem(R.id.action_unhide).isVisible = person.isHidden
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -175,8 +181,18 @@ class PeopleFragment : Fragment() {
                     true
                 }
 
-                R.id.action_not_a_person -> {
-                    showNotAPersonConfirmation(person)
+                R.id.action_hide -> {
+                    setHidden(person, true)
+                    true
+                }
+
+                R.id.action_unhide -> {
+                    setHidden(person, false)
+                    true
+                }
+
+                R.id.action_exclude -> {
+                    showExcludeDialog(person)
                     true
                 }
 
@@ -184,6 +200,19 @@ class PeopleFragment : Fragment() {
             }
         }
         popup.show()
+    }
+
+    /**
+     * Masquer n'est pas une suppression : les visages restent, le groupe reste vivant
+     * et continue d'absorber ses nouvelles apparitions. C'est précisément ce qui fait
+     * qu'on ne le revoit plus — le supprimer le ferait revenir à chaque analyse.
+     */
+    private fun setHidden(person: PersonDao.PersonWithCover, hidden: Boolean) {
+        lifecycleScope.launch {
+            personRepository.setPersonHidden(person.id, hidden)
+            val message = if (hidden) R.string.people_hidden_done else R.string.people_unhidden_done
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showRenameDialog(person: PersonDao.PersonWithCover) {
@@ -248,25 +277,46 @@ class PeopleFragment : Fragment() {
     }
 
     /**
-     * Confirmation demandée bien que l'action soit anodine à décrire : elle est
-     * **sans retour**. Aucun écran ne ré-affiche un visage écarté, et le clustering
-     * ne repassera pas dessus (une photo déjà analysée n'est jamais ré-analysée) —
-     * un clic long malheureux sur une vraie personne coûterait tous ses visages.
+     * Écarter demande **pourquoi**, et pas seulement confirmation : l'effet est le
+     * même — les visages sortent du jeu — mais la raison sert à mesurer. Une affiche
+     * détectée à 0,9 n'est pas une erreur du détecteur, un chat à 0,65 en est une ;
+     * les confondre pollue la calibration du score de détection.
+     *
+     * Sans retour, d'où la confirmation qui suit : aucun écran ne ré-affiche un visage
+     * écarté, et une photo déjà analysée n'est jamais ré-analysée.
      */
-    private fun showNotAPersonConfirmation(person: PersonDao.PersonWithCover) {
+    private fun showExcludeDialog(person: PersonDao.PersonWithCover) {
+        val reasons = arrayOf(
+            getString(R.string.people_exclude_not_a_person),
+            getString(R.string.people_exclude_depiction)
+        )
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.people_not_a_person_title)
+            .setTitle(R.string.people_exclude_title)
+            .setItems(reasons) { _, which ->
+                val reason =
+                    if (which == 0) Face.EXCLUDED_NOT_A_PERSON else Face.EXCLUDED_DEPICTION
+                confirmExclude(person, reason, reasons[which])
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun confirmExclude(
+        person: PersonDao.PersonWithCover,
+        reason: String,
+        label: String
+    ) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(label)
             .setMessage(
                 resources.getQuantityString(
-                    R.plurals.people_not_a_person_message,
+                    R.plurals.people_exclude_message,
                     person.photoCount,
                     person.photoCount
                 )
             )
-            .setPositiveButton(R.string.people_not_a_person_confirm) { _, _ ->
-                lifecycleScope.launch {
-                    personRepository.ignorePersonAsNotAPerson(person.id)
-                }
+            .setPositiveButton(R.string.people_exclude_confirm) { _, _ ->
+                lifecycleScope.launch { personRepository.excludePerson(person.id, reason) }
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

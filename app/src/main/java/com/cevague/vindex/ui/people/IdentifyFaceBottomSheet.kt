@@ -18,6 +18,7 @@ import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.DialogIdentifyFaceBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -138,14 +139,54 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             loadNextFace()
         }
 
-        binding.buttonNotPerson.setOnClickListener {
-            currentFace?.let { face ->
+        binding.buttonNotPerson.setOnClickListener { showExcludeDialog() }
+    }
+
+    /**
+     * Trois issues pour un visage qu'on ne nommera pas, et elles ne font pas la même
+     * chose : les deux premières l'**écartent** (avec la raison, qui sert à mesurer),
+     * la troisième en fait un **inconnu masqué** — une identité à part entière, qu'on
+     * ne veut simplement plus voir.
+     */
+    private fun showExcludeDialog() {
+        val face = currentFace ?: return
+        val choices = arrayOf(
+            getString(R.string.people_exclude_not_a_person),
+            getString(R.string.people_exclude_depiction),
+            getString(R.string.people_identify_stranger)
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.people_exclude_title)
+            .setItems(choices) { _, which ->
                 lifecycleScope.launch {
-                    personRepository.markAsIgnored(face.id)  // Marque comme "ignored" en DB
+                    when (which) {
+                        0 -> personRepository.markAsIgnored(face.id, Face.EXCLUDED_NOT_A_PERSON)
+                        1 -> personRepository.markAsIgnored(face.id, Face.EXCLUDED_DEPICTION)
+                        else -> hideAsStranger(face)
+                    }
                     loadNextFace()
                 }
             }
-        }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Un inconnu est une **personne**, pas un rebut : il lui faut donc un groupe, même
+     * si on ne le regardera jamais. Masqué dès sa création, il absorbera ses futures
+     * apparitions sans jamais remonter à l'écran.
+     */
+    private suspend fun hideAsStranger(face: FaceDao.FaceWithPhoto) {
+        val personId = personRepository.createPerson()
+        personRepository.assignFaceToPerson(
+            faceId = face.id,
+            personId = personId,
+            assignmentType = Face.ASSIGNMENT_MANUAL,
+            confidence = 1.0f,
+            weight = 1.0f
+        )
+        personRepository.recomputeCentroid(personId)
+        personRepository.setPersonHidden(personId, true)
     }
 
     private fun loadNextFace() {

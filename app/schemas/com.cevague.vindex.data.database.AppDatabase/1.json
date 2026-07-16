@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "7d8923a5db46529912f0ef2cf7e0ab93",
+    "identityHash": "a0ae4821871662017edc225f2a81d31e",
     "entities": [
       {
         "tableName": "photos",
@@ -320,7 +320,7 @@
       },
       {
         "tableName": "persons",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT COLLATE NOCASE, `created_at` INTEGER NOT NULL, `photo_count` INTEGER NOT NULL DEFAULT 0, `centroid_embedding` BLOB, `centroid_updated_at` INTEGER)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT COLLATE NOCASE, `created_at` INTEGER NOT NULL, `photo_count` INTEGER NOT NULL DEFAULT 0, `is_hidden` INTEGER NOT NULL DEFAULT 0, `centroid_embedding` BLOB, `centroid_updated_at` INTEGER)",
         "fields": [
           {
             "fieldPath": "id",
@@ -343,6 +343,13 @@
           {
             "fieldPath": "photoCount",
             "columnName": "photo_count",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isHidden",
+            "columnName": "is_hidden",
             "affinity": "INTEGER",
             "notNull": true,
             "defaultValue": "0"
@@ -381,7 +388,7 @@
       },
       {
         "tableName": "faces",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `photo_id` INTEGER NOT NULL, `person_id` INTEGER, `box_left` REAL NOT NULL, `box_top` REAL NOT NULL, `box_right` REAL NOT NULL, `box_bottom` REAL NOT NULL, `embedding` BLOB, `embedding_model` TEXT, `confidence` REAL, `is_primary` INTEGER NOT NULL DEFAULT 0, `assignment_type` TEXT, `assignment_confidence` REAL, `assigned_at` INTEGER, `weight` REAL NOT NULL DEFAULT 1.0, FOREIGN KEY(`photo_id`) REFERENCES `photos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`person_id`) REFERENCES `persons`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `photo_id` INTEGER NOT NULL, `person_id` INTEGER, `box_left` REAL NOT NULL, `box_top` REAL NOT NULL, `box_right` REAL NOT NULL, `box_bottom` REAL NOT NULL, `embedding` BLOB, `embedding_model` TEXT, `confidence` REAL, `is_primary` INTEGER NOT NULL DEFAULT 0, `assignment_type` TEXT, `exclusion_reason` TEXT, `assignment_confidence` REAL, `assigned_at` INTEGER, `weight` REAL NOT NULL DEFAULT 1.0, FOREIGN KEY(`photo_id`) REFERENCES `photos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`person_id`) REFERENCES `persons`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -453,6 +460,12 @@
           {
             "fieldPath": "assignmentType",
             "columnName": "assignment_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "exclusionReason",
+            "columnName": "exclusion_reason",
             "affinity": "TEXT",
             "notNull": false
           },
@@ -1016,7 +1029,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7d8923a5db46529912f0ef2cf7e0ab93')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a0ae4821871662017edc225f2a81d31e')"
     ]
   }
 }

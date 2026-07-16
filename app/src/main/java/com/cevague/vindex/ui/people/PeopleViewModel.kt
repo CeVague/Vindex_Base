@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -36,7 +37,9 @@ class PeopleViewModel @Inject constructor(
     private val repository: PersonRepository,
     private val settingsCache: SettingsCache
 ) : ViewModel() {
-    val allPeople = repository.getPeopleForTrombinoscope()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val allPeople = settingsCache.showHiddenPeopleFlow
+        .flatMapLatest { repository.getPeopleForTrombinoscope(includeHidden = it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val unnamedCount = repository.getUnnamedPersonCount()
@@ -61,13 +64,15 @@ class PeopleViewModel @Inject constructor(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val mergeSuggestion: StateFlow<MergeSuggestion?> =
-        combine(repository.getPeopleForTrombinoscope(), dismissed) { _, refused -> refused }
+        combine(repository.getPeopleForTrombinoscope(includeHidden = false), dismissed) { _, refused -> refused }
             .mapLatest { refused -> bestSuggestion(refused) }
             .flowOn(Dispatchers.IO)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private suspend fun bestSuggestion(refused: Set<Pair<Long, Long>>): MergeSuggestion? {
-        val centroids = repository.getAllPersonsOnce().mapNotNull { person ->
+        // Un inconnu masqué ne fait l'objet d'aucune question : on ne demande pas si
+        // deux personnes dont on a dit se moquer sont la même.
+        val centroids = repository.getAllPersonsOnce().filterNot { it.isHidden }.mapNotNull { person ->
             person.centroidEmbedding?.let { blob ->
                 PersonCentroid(
                     personId = person.id,

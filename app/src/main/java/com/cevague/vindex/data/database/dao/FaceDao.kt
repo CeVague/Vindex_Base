@@ -142,11 +142,25 @@ interface FaceDao {
     suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceWithPhoto?
 
     // Pour marquer comme "ignored" (Face.ASSIGNMENT_IGNORED — @Query n'accepte pas de const)
-    @Query("UPDATE faces SET assignment_type = 'ignored', assigned_at = :timestamp WHERE id = :id")
-    suspend fun markAsIgnored(id: Long, timestamp: Long = System.currentTimeMillis())
+    @Query(
+        """
+        UPDATE faces SET
+            assignment_type = 'ignored',
+            exclusion_reason = :reason,
+            assigned_at = :timestamp
+        WHERE id = :id
+    """
+    )
+    suspend fun markAsIgnored(
+        id: Long,
+        reason: String,
+        timestamp: Long = System.currentTimeMillis()
+    )
 
     /**
-     * Écarte d'un coup tous les visages d'un groupe (« ce n'est pas une personne »).
+     * Écarte d'un coup tous les visages d'un groupe, avec la raison ([reason] =
+     * `Face.EXCLUDED_*`).
+     *
      * `person_id` est remis à NULL ici même : le groupe est supprimé juste après, et
      * les visages ne doivent appartenir à personne — pas plus qu'ils ne doivent
      * retomber dans la file d'identification, d'où `ignored` plutôt que `pending`.
@@ -155,13 +169,35 @@ interface FaceDao {
         """
         UPDATE faces SET
             assignment_type = 'ignored',
+            exclusion_reason = :reason,
             person_id = NULL,
             assignment_confidence = NULL,
             assigned_at = :timestamp
         WHERE person_id = :personId
     """
     )
-    suspend fun markAllAsIgnoredForPerson(personId: Long, timestamp: Long = System.currentTimeMillis())
+    suspend fun markAllAsIgnoredForPerson(
+        personId: Long,
+        reason: String,
+        timestamp: Long = System.currentTimeMillis()
+    )
+
+    /**
+     * Visages identifiés, hors personnes **masquées** : le jeu de mesure.
+     *
+     * Les masquées en sont exclues parce qu'un inconnu n'est jamais regroupé
+     * sérieusement — deux visages du même passant peuvent finir dans deux groupes
+     * masqués distincts, ce qui inscrirait « personnes différentes » dans la vérité
+     * terrain alors que c'est la même. Mieux vaut ne pas les compter que compter faux.
+     */
+    @Query(
+        """
+        SELECT f.* FROM faces f
+        JOIN persons p ON p.id = f.person_id
+        WHERE f.embedding IS NOT NULL AND p.is_hidden = 0
+    """
+    )
+    suspend fun getFacesForCalibration(): List<Face>
 
     // Insert
 

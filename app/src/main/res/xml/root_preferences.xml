@@ -64,6 +64,12 @@
             app:showSeekBarValue="true"
             app:title="@string/settings_grid_columns" />
 
+        <SwitchPreferenceCompat
+            app:icon="@drawable/vector_peoples"
+            app:key="show_hidden_people"
+            app:summary="@string/settings_show_hidden_people_summary"
+            app:title="@string/settings_show_hidden_people" />
+
     </PreferenceCategory>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->

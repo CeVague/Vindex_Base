@@ -69,6 +69,19 @@ data class Face(
     @ColumnInfo(name = "assignment_type")
     val assignmentType: String? = null,
 
+    /**
+     * Pourquoi le visage a été écarté, quand [assignmentType] vaut `ignored` — et
+     * `null` sinon : c'est une union discriminée, la raison n'existe pas sans
+     * l'exclusion.
+     *
+     * L'effet est le même dans les deux cas (le visage sort du jeu), mais pas la
+     * signification, et elle sert dès maintenant : pour calibrer le `score_threshold`
+     * du détecteur, une **affiche à 0,9 n'est pas une erreur** alors qu'un chat à 0,65
+     * en est une. Les confondre reviendrait à mesurer deux populations pour une.
+     */
+    @ColumnInfo(name = "exclusion_reason")
+    val exclusionReason: String? = null,
+
     @ColumnInfo(name = "assignment_confidence")
     val assignmentConfidence: Float? = null,
 
@@ -102,13 +115,26 @@ data class Face(
         const val ASSIGNMENT_MANUAL = "manual"
 
         /**
-         * Écarté par l'utilisateur (« ce n'est pas une personne ») : animal, statue,
-         * portrait peint. Sort définitivement de la file d'identification et des
-         * centroïdes, sans effacer la détection.
+         * Écarté par l'utilisateur : sort définitivement de la file d'identification
+         * et des centroïdes, sans effacer la détection. La raison vit dans
+         * [exclusionReason].
          *
          * Room n'accepte que des littéraux dans `@Query` : la valeur est donc répétée
          * en dur dans les requêtes de FaceDao — c'est ici qu'elle est déclarée.
          */
         const val ASSIGNMENT_IGNORED = "ignored"
+
+        /** Ce n'est pas un visage humain : animal, statue. L'embedding est du bruit. */
+        const val EXCLUDED_NOT_A_PERSON = "not_a_person"
+
+        /**
+         * Une personne, mais **représentée** : dessin, affiche, écran, photo de photo.
+         *
+         * Plus dangereux qu'un animal, justement parce que le détecteur a raison :
+         * l'embedding est un vrai embedding de visage, seulement biaisé par la
+         * stylisation. Il **peut** donc matcher la vraie personne et tirer son
+         * centroïde — un chat, lui, ne ressemble à personne.
+         */
+        const val EXCLUDED_DEPICTION = "depiction"
     }
 }

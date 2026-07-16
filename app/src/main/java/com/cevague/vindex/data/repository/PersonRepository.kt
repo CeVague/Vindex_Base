@@ -27,8 +27,8 @@ class PersonRepository @Inject constructor(
 
     fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
 
-    fun getPeopleForTrombinoscope(): Flow<List<PersonDao.PersonWithCover>> =
-        personDao.getPeopleForTrombinoscope(SUSPECT_SCORE_BELOW)
+    fun getPeopleForTrombinoscope(includeHidden: Boolean): Flow<List<PersonDao.PersonWithCover>> =
+        personDao.getPeopleForTrombinoscope(SUSPECT_SCORE_BELOW, includeHidden)
 
 
     fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
@@ -105,8 +105,8 @@ class PersonRepository @Inject constructor(
     }
 
     /**
-     * « Ce n'est pas une personne » sur un groupe entier : ses visages passent en
-     * `ignored` et le groupe disparaît.
+     * Écarte un groupe entier : ses visages passent en `ignored` avec [reason]
+     * (`Face.EXCLUDED_*`) et le groupe disparaît.
      *
      * L'ordre compte. Marquer d'abord, supprimer ensuite : la FK `person_id` est en
      * `SET_NULL`, donc supprimer la personne en premier effacerait le lien qui sert
@@ -116,10 +116,21 @@ class PersonRepository @Inject constructor(
      * visages un par un dans la file d'identification.
      */
     @Transaction
-    suspend fun ignorePersonAsNotAPerson(personId: Long) {
-        faceDao.markAllAsIgnoredForPerson(personId)
+    suspend fun excludePerson(personId: Long, reason: String) {
+        faceDao.markAllAsIgnoredForPerson(personId, reason)
         personDao.deleteById(personId)
     }
+
+    /**
+     * Masque un inconnu — ou le ré-affiche.
+     *
+     * Ne touche **pas** à ses visages, délibérément : le groupe reste vivant et
+     * continue d'absorber ses nouvelles apparitions. C'est ce qui fait qu'on ne le
+     * revoit jamais. Le supprimer aurait l'effet inverse : ses visages, relâchés,
+     * reformeraient un groupe visible à chaque analyse.
+     */
+    suspend fun setPersonHidden(personId: Long, hidden: Boolean) =
+        personDao.setHidden(personId, hidden)
 
     suspend fun deleteAllPersons() = personDao.deleteAll()
 
@@ -184,6 +195,9 @@ class PersonRepository @Inject constructor(
     suspend fun getAllIdentifiedFacesWithEmbedding(): List<Face> =
         faceDao.getAllIdentifiedFacesWithEmbedding()
 
+    /** Jeu de mesure : visages identifiés, hors personnes masquées (cf. le DAO). */
+    suspend fun getFacesForCalibration(): List<Face> = faceDao.getFacesForCalibration()
+
     suspend fun getCoverPhotoPathForPerson(personId: Long): String? =
         faceDao.getCoverPhotoPathForPerson(personId)
 
@@ -200,7 +214,7 @@ class PersonRepository @Inject constructor(
     suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceDao.FaceWithPhoto? =
         faceDao.getNextPendingFaceExcluding(excludeIds)
 
-    suspend fun markAsIgnored(id: Long) = faceDao.markAsIgnored(id)
+    suspend fun markAsIgnored(id: Long, reason: String) = faceDao.markAsIgnored(id, reason)
 
 
     // Face insert/update/delete

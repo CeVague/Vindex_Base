@@ -72,6 +72,7 @@ class SettingsDataStore(private val settingsCache: SettingsCache) : PreferenceDa
     override fun getBoolean(key: String, defValue: Boolean): Boolean = when (key) {
         Setting.KEY_SHOW_SCORES -> settingsCache.showScores
         Setting.KEY_AUTO_CLUSTERING -> settingsCache.autoClusteringEnabled
+        Setting.KEY_SHOW_HIDDEN_PEOPLE -> settingsCache.showHiddenPeople
         else -> {
             Log.w(TAG, "Lecture d'une clé inconnue « $key » : valeur par défaut renvoyée")
             defValue
@@ -82,6 +83,7 @@ class SettingsDataStore(private val settingsCache: SettingsCache) : PreferenceDa
         when (key) {
             Setting.KEY_SHOW_SCORES -> settingsCache.showScores = value
             Setting.KEY_AUTO_CLUSTERING -> settingsCache.autoClusteringEnabled = value
+            Setting.KEY_SHOW_HIDDEN_PEOPLE -> settingsCache.showHiddenPeople = value
             else -> Log.w(TAG, "Réglage Boolean non persisté : clé inconnue « $key »")
         }
     }

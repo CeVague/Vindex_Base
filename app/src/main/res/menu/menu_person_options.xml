@@ -12,8 +12,18 @@
         android:title="@string/people_delete" />
 
     <item
-        android:id="@+id/action_not_a_person"
+        android:id="@+id/action_hide"
         android:icon="@drawable/vector_account_off"
-        android:title="@string/people_identify_not_a_person" />
+        android:title="@string/people_hide" />
+
+    <item
+        android:id="@+id/action_unhide"
+        android:icon="@drawable/vector_peoples"
+        android:title="@string/people_unhide" />
+
+    <item
+        android:id="@+id/action_exclude"
+        android:icon="@drawable/vector_account_off"
+        android:title="@string/people_exclude" />
 
 </menu>

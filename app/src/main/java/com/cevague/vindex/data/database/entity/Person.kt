@@ -24,6 +24,21 @@ data class Person(
     @ColumnInfo(name = "photo_count", defaultValue = "0")
     val photoCount: Int = 0,
 
+    /**
+     * Quelqu'un d'identifié mais sans intérêt : un passant, une silhouette d'arrière-plan.
+     *
+     * Propriété de l'**identité**, pas des visages — ils sont bons, le regroupement est
+     * bon, c'est l'intérêt qui est nul. D'où un drapeau ici et non une exclusion sur
+     * `faces`.
+     *
+     * ⚠ Le groupe reste **vivant** : le clustering continue de lui assigner ses
+     * nouveaux visages. C'est contre-intuitif, mais c'est ce qui débarrasse de lui —
+     * le supprimer relâcherait ses visages, qui reformeraient un groupe visible à
+     * chaque analyse, et de plus en plus fragmenté.
+     */
+    @ColumnInfo(name = "is_hidden", defaultValue = "0")
+    val isHidden: Boolean = false,
+
     @ColumnInfo(name = "centroid_embedding", typeAffinity = ColumnInfo.BLOB)
     val centroidEmbedding: ByteArray? = null,
 
