@@ -12,6 +12,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.cevague.vindex.R
 import com.cevague.vindex.data.database.dao.FaceDao
+import com.cevague.vindex.data.database.entity.Face
 import com.cevague.vindex.data.database.entity.Person
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.databinding.DialogIdentifyFaceBinding
@@ -202,15 +203,21 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             personRepository.assignFaceToPerson(
                 faceId = face.id,
                 personId = personId,
-                assignmentType = "manual",
+                assignmentType = Face.ASSIGNMENT_MANUAL,
                 confidence = 1.0f,
                 weight = 1.0f
             )
 
-            // 3. Retirer des skippés si jamais il y était (ne devrait pas arriver)
+            // 3. Sans ça, une personne nommée à la main n'a **aucun centroïde** : elle
+            // est alors invisible pour `assignFace` comme pour les propositions de
+            // fusion, qui écartent toutes deux les centroïdes nuls. Nommer quelqu'un
+            // n'aurait donc appris strictement rien à l'automate — et c'est justement
+            // la seule vérité terrain dont il dispose.
+            personRepository.recomputeCentroid(personId)
+
+            // 4. Retirer des skippés si jamais il y était (ne devrait pas arriver)
             skippedIds.remove(face.id)
 
-            // 4. Passer au suivant
             loadNextFace()
         }
     }
