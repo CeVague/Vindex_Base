@@ -4,9 +4,11 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.cevague.vindex.R
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ActivityWelcomeBinding
 import com.cevague.vindex.ui.common.FolderPickerDialog
@@ -45,13 +47,24 @@ class WelcomeActivity : AppCompatActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (allGranted) {
+        if (hasMediaAccess(permissions)) {
             loadFoldersAndShowPicker()
         } else {
-            // Afficher un message
+            Toast.makeText(this, R.string.welcome_permission_needed, Toast.LENGTH_LONG).show()
         }
     }
+
+    /**
+     * Seul l'accès aux images est bloquant : ACCESS_MEDIA_LOCATION ne sert qu'au
+     * GPS EXIF et son refus ne doit pas empêcher l'app de fonctionner. Sur
+     * Android 14, « Autoriser une sélection » refuse READ_MEDIA_IMAGES mais
+     * accorde READ_MEDIA_VISUAL_USER_SELECTED — un accès partiel est un accès.
+     */
+    private fun hasMediaAccess(results: Map<String, Boolean>): Boolean =
+        results[Manifest.permission.READ_MEDIA_IMAGES] == true ||
+                results[Manifest.permission.READ_EXTERNAL_STORAGE] == true ||
+                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+                        results[Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED] == true)
 
     private fun checkAndRequestPermissions() {
         val permissions = mutableListOf<String>()
@@ -60,6 +73,10 @@ class WelcomeActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
         } else {
             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            permissions.add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

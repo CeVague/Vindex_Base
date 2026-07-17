@@ -54,9 +54,6 @@ interface PhotoAnalysisDao {
     @Query("SELECT * FROM photo_analyses WHERE photo_id = :photoId AND analysis_type = :type AND model_name = :modelName LIMIT 1")
     suspend fun getAnalysis(photoId: Long, type: String, modelName: String): PhotoAnalysis?
 
-    @Query("SELECT * FROM photo_analyses WHERE analysis_type = :type AND model_name = :modelName")
-    fun getAnalysesByTypeAndModel(type: String, modelName: String): Flow<List<PhotoAnalysis>>
-
     @Upsert
     suspend fun upsertAnalysis(analysis: PhotoAnalysis)
 
@@ -68,7 +65,4 @@ interface PhotoAnalysisDao {
 
     @Query("DELETE FROM photo_analyses WHERE analysis_type = :type")
     suspend fun deleteAnalysesByType(type: String)
-
-    @Query("DELETE FROM photo_analyses")
-    suspend fun deleteAllAnalyses()
 }

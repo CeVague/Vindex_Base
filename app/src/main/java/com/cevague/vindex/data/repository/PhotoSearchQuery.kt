@@ -72,8 +72,11 @@ internal fun buildPhotoSearchQuery(criteria: PhotoSearchCriteria): Pair<String, 
     }
 
     for (person in criteria.persons) {
+        // Visages engagés seulement : une suggestion `pending` non confirmée ne
+        // fait pas d'une photo une photo « avec Marie ».
         val exists =
-            "EXISTS (SELECT 1 FROM faces WHERE faces.photo_id = photos.id AND faces.person_id = ?)"
+            "EXISTS (SELECT 1 FROM faces WHERE faces.photo_id = photos.id AND faces.person_id = ? " +
+                    "AND faces.assignment_type IN ('auto', 'manual'))"
         sql.append(if (person.negated) " AND NOT $exists" else " AND $exists")
         args += person.personId
     }

@@ -120,24 +120,13 @@ class SearchFragment : Fragment() {
             }
         }
 
-        // Recherche partagée (Personnes -> Recherche)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.searchQuery.collect { query ->
-                    if (!query.isNullOrEmpty()) {
-                        binding.inputSearch.post {
-                            binding.inputSearch.setQuery(query, true)
-                            sharedViewModel.clearSearchQuery()
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private fun getTargetSize(spanCount: Int): Int {
+        // Même taille de décodage que la galerie : à colonnes égales, les
+        // vignettes de recherche étaient décodées à demi-résolution, donc floues.
         val screenWidth = requireContext().resources.displayMetrics.widthPixels
-        return screenWidth / (spanCount * 2)
+        return screenWidth / spanCount
     }
 
     private fun loadingLabel(loading: SearchViewModel.Loading?): String? = when (loading) {

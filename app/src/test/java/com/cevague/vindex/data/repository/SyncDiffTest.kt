@@ -101,6 +101,38 @@ class SyncDiffTest {
         assertTrue(SyncDiff.photosToUpsert(emptyList(), mapOf(uri(1) to dbRow(1))).isEmpty())
     }
 
+    // --- modifiedPhotoIds ---
+
+    @Test
+    fun `photo modifiee est signalee pour invalidation de ses analyses`() {
+        val db = mapOf(uri(1) to dbRow(1, fileSize = 1_000L))
+        val result = SyncDiff.modifiedPhotoIds(listOf(scanned(1, fileSize = 2_000L)), db)
+        assertEquals(listOf(1L), result)
+    }
+
+    @Test
+    fun `nouvelle photo n est pas signalee comme modifiee`() {
+        // Une nouvelle photo n'a rien à invalider : elle n'a encore aucune analyse.
+        val result = SyncDiff.modifiedPhotoIds(listOf(scanned(1)), emptyMap())
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `photo inchangee n est pas signalee comme modifiee`() {
+        val db = mapOf(uri(1) to dbRow(1))
+        assertTrue(SyncDiff.modifiedPhotoIds(listOf(scanned(1)), db).isEmpty())
+    }
+
+    @Test
+    fun `batch mixte ne signale que les modifiees`() {
+        val db = mapOf(
+            uri(1) to dbRow(1),                        // inchangée
+            uri(2) to dbRow(2, fileLastModified = 50L) // modifiée (date)
+        )
+        val batch = listOf(scanned(1), scanned(2), scanned(3))
+        assertEquals(listOf(2L), SyncDiff.modifiedPhotoIds(batch, db))
+    }
+
     // --- urisToDelete ---
 
     @Test

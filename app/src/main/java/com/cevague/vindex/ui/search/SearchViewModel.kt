@@ -62,9 +62,17 @@ class SearchViewModel @Inject constructor(
 
     fun onSearchFocused() {
         viewModelScope.launch {
-            _uiState.update { it.copy(loading = Loading.MODEL) }
+            // Ne touche à l'indicateur que s'il est libre : reprendre le focus
+            // pendant une recherche effaçait son libellé « recherche en cours »
+            // dès la fin (instantanée) du preload, alors qu'elle tournait encore.
+            val claimed = _uiState.value.loading == null
+            if (claimed) _uiState.update { it.copy(loading = Loading.MODEL) }
             pipeline.preload()
-            _uiState.update { it.copy(loading = null) }
+            if (claimed) {
+                _uiState.update { state ->
+                    if (state.loading == Loading.MODEL) state.copy(loading = null) else state
+                }
+            }
         }
     }
 

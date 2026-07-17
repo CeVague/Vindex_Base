@@ -72,7 +72,9 @@ data class ModelConfig(
     /** JSON d'origine, stocké verbatim dans ai_models.config_json. */
     val rawJson: String,
     /** Configuration pour la détection de visage **/
-    val detection: DetectionConfig?
+    val detection: DetectionConfig?,
+    /** Configuration pour la traduction de requêtes (seq2seq ONNX). */
+    val translation: TranslationConfig?
 ) {
 
     /** L'encodeur texte comprend-il [languageCode] sans traduction préalable ? */
@@ -90,6 +92,8 @@ data class ModelConfig(
         const val FILE_TOKENIZER_JSON = "tokenizer_json"
         const val FILE_FACE_EMBEDDER = "face_embedder"
         const val FILE_FACE_DETECTOR = "face_detector"
+        const val FILE_TRANSLATION_ENCODER = "translation_encoder"
+        const val FILE_TRANSLATION_DECODER = "translation_decoder"
 
 
         // Tokenizers implémentés
@@ -155,11 +159,27 @@ data class ModelConfig(
                 similarityFloor = root.optDouble("similarity_floor")
                     .takeIf { !it.isNaN() }?.toFloat(),
                 rawJson = json,
-                detection = root.optJSONObject("detection")?.let { parseDetection(it) }
+                detection = root.optJSONObject("detection")?.let { parseDetection(it) },
+                translation = root.optJSONObject("translation")?.let { parseTranslation(it) }
             )
             config.validate()
             return config
         }
+
+        private fun parseTranslation(translation: JSONObject): TranslationConfig {
+            return TranslationConfig(
+                sourceLanguages = translation.optJSONArray("source_languages")?.toStringList()
+                    ?: emptyList(),
+                targetLanguage = translation.optString("target_language"),
+                decoderStartTokenId = translation.optInt("decoder_start_token_id", -1),
+                eosTokenId = translation.optInt("eos_token_id", -1),
+                maxOutputTokens = translation.optInt("max_output_tokens")
+                    .takeIf { it > 0 } ?: DEFAULT_MAX_OUTPUT_TOKENS
+            )
+        }
+
+        /** Une requête traduite tient largement là-dedans ; borne la boucle de décodage. */
+        const val DEFAULT_MAX_OUTPUT_TOKENS = 48
 
         private fun parseDetection(detection: JSONObject): DetectionConfig {
             return DetectionConfig(
@@ -226,6 +246,27 @@ data class ModelConfig(
 
                 }
 
+                AiModel.TYPE_TRANSLATION -> {
+                    requireFile(FILE_TRANSLATION_ENCODER)
+                    requireFile(FILE_TRANSLATION_DECODER)
+                    requireFile(FILE_TOKENIZER_JSON)
+                    requireNotNull(translation) { "translation manquant" }
+                    require(translation.sourceLanguages.isNotEmpty()) {
+                        "translation.source_languages doit contenir au moins une langue"
+                    }
+                    require(translation.targetLanguage.isNotBlank()) {
+                        "translation.target_language manquant"
+                    }
+                    // Les conventions seq2seq varient trop pour être devinées :
+                    // les ids sont déclarés par le modèle, pas déduits.
+                    require(translation.decoderStartTokenId >= 0) {
+                        "translation.decoder_start_token_id manquant"
+                    }
+                    require(translation.eosTokenId >= 0) {
+                        "translation.eos_token_id manquant"
+                    }
+                }
+
                 else -> throw IllegalArgumentException("model_type inconnu : $modelType")
             }
         }
@@ -243,6 +284,20 @@ data class ModelConfig(
             (0 until length()).map { getInt(it) }
     }
 }
+
+/**
+ * Config d'un modèle de traduction seq2seq ONNX (encodeur + décodeur exportés
+ * séparément, style Marian/OPUS-MT). Les ids spéciaux viennent du config.json
+ * HuggingFace du modèle d'origine (`decoder_start_token_id`, `eos_token_id`).
+ */
+data class TranslationConfig(
+    /** Langues source comprises (ISO 639-1) — un modèle bilingue en liste une. */
+    val sourceLanguages: List<String>,
+    val targetLanguage: String,
+    val decoderStartTokenId: Int,
+    val eosTokenId: Int,
+    val maxOutputTokens: Int
+)
 
 data class DetectionConfig(
     val strides: List<Int>,

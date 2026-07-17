@@ -75,7 +75,7 @@ interface PersonDao {
     FROM persons p
     LEFT JOIN faces f ON f.id = (
         SELECT id FROM faces
-        WHERE person_id = p.id
+        WHERE person_id = p.id AND assignment_type IN ('auto', 'manual')
         ORDER BY is_primary DESC, id ASC
         LIMIT 1
     )
@@ -106,30 +106,20 @@ interface PersonDao {
     @Query("SELECT * FROM persons ORDER BY name ASC")
     fun getAllPersons(): Flow<List<Person>>
 
-    @Query("SELECT id, name, photo_count FROM persons ORDER BY name ASC")
-    fun getAllPersonsSummary(): Flow<List<PersonSummary>>
-
-    @Query("SELECT * FROM persons WHERE name IS NOT NULL ORDER BY name ASC")
-    fun getNamedPersons(): Flow<List<Person>>
-
-    @Query("SELECT id, name, photo_count FROM persons WHERE name IS NOT NULL ORDER BY name ASC")
-    fun getNamedPersonsSummary(): Flow<List<PersonSummary>>
-
-    @Query("SELECT * FROM persons WHERE name IS NULL")
-    fun getUnnamedPersons(): Flow<List<Person>>
-
-    @Query("SELECT id, name, photo_count FROM persons WHERE name IS NULL")
-    fun getUnnamedPersonsSummary(): Flow<List<PersonSummary>>
-
     @Query("SELECT * FROM persons WHERE id = :id")
     fun getPersonById(id: Long): Flow<Person?>
 
-    /** Noms des personnes identifiées sur une photo (fiche du viewer). */
+    /**
+     * Noms des personnes identifiées sur une photo (fiche du viewer). Visages
+     * engagés seulement : le viewer ne doit pas affirmer « Marie » sur la foi
+     * d'une suggestion `pending` à laquelle personne n'a répondu.
+     */
     @Query(
         """
         SELECT DISTINCT p.name FROM persons p
         JOIN faces f ON f.person_id = p.id
         WHERE f.photo_id = :photoId AND p.name IS NOT NULL
+          AND f.assignment_type IN ('auto', 'manual')
         ORDER BY p.name
     """
     )
@@ -223,10 +213,13 @@ interface PersonDao {
     @Query("UPDATE persons SET centroid_embedding = :embedding, centroid_updated_at = :timestamp WHERE id = :id")
     suspend fun updateCentroid(id: Long, embedding: ByteArray?, timestamp: Long)
 
+    // Compteurs sur les seuls visages engagés (auto/manual) : une suggestion
+    // `pending` ne doit pas gonfler le nombre de photos affiché.
     @Query(
         """
         UPDATE persons SET photo_count = (
-            SELECT COUNT(DISTINCT f.photo_id) FROM faces f WHERE f.person_id = persons.id
+            SELECT COUNT(DISTINCT f.photo_id) FROM faces f
+            WHERE f.person_id = persons.id AND f.assignment_type IN ('auto', 'manual')
         )
     """
     )
@@ -235,7 +228,8 @@ interface PersonDao {
     @Query(
         """
         UPDATE persons SET photo_count = (
-            SELECT COUNT(DISTINCT f.photo_id) FROM faces f WHERE f.person_id = :id
+            SELECT COUNT(DISTINCT f.photo_id) FROM faces f
+            WHERE f.person_id = :id AND f.assignment_type IN ('auto', 'manual')
         ) WHERE id = :id
     """
     )

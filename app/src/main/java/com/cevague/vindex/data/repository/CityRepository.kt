@@ -12,19 +12,6 @@ class CityRepository @Inject constructor(
     private val settingsCache: SettingsCache
 ) {
 
-    suspend fun isDatabasePopulated(): Boolean {
-        if (settingsCache.isCitiesLoaded) return true
-
-        val count = cityDao.getCount()
-        val isPopulated = count > 0
-
-        if (isPopulated) {
-            settingsCache.isCitiesLoaded = true
-        }
-
-        return isPopulated
-    }
-
     suspend fun getCityById(id: Long): City? = cityDao.getCityById(id)
 
     suspend fun getCityByNameAndCountry(name: String, countryCode: String): City? =
@@ -37,19 +24,8 @@ class CityRepository @Inject constructor(
 
     suspend fun getCount(): Int = cityDao.getCount()
 
-    suspend fun insert(city: City) {
-        cityDao.insert(city)
-        settingsCache.isCitiesLoaded = true
-    }
-
-    suspend fun insertAll(cities: List<City>) {
-        cityDao.insertAll(cities)
-        settingsCache.isCitiesLoaded = true
-    }
-
     suspend fun deleteAll() {
         cityDao.deleteAll()
         settingsCache.isCitiesLoaded = false
     }
-
 }

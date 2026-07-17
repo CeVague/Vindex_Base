@@ -2,6 +2,7 @@ package com.cevague.vindex.worker
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -50,12 +51,19 @@ class AIAnalysisWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: IOException) {
+            Log.e(TAG, "Analyse IA échouée (IO)", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         } catch (e: SQLiteException) {
+            Log.e(TAG, "Analyse IA échouée (SQLite)", e)
             Result.failure()
         } catch (e: Exception) {
+            Log.e(TAG, "Analyse IA échouée", e)
             Result.failure()
         }
+    }
+
+    private companion object {
+        const val TAG = "AIAnalysisWorker"
     }
 
     /**

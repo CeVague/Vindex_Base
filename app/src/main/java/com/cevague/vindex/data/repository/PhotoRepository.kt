@@ -6,6 +6,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.cevague.vindex.data.database.dao.EmbeddingRow
+import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.FolderSummary
 import com.cevague.vindex.data.database.dao.PhotoAnalysisDao
 import com.cevague.vindex.data.database.dao.PhotoDao
@@ -40,6 +41,7 @@ internal fun reorderByIds(ids: List<Long>, summaries: List<PhotoSummary>): List<
 class PhotoRepository @Inject constructor(
     private val photoDao: PhotoDao,
     private val photoAnalysisDao: PhotoAnalysisDao,
+    private val faceDao: FaceDao,
     private val settingsCache: SettingsCache,
     private val mediaScanner: MediaScanner
 ) {
@@ -48,9 +50,7 @@ class PhotoRepository @Inject constructor(
         const val TAG = "PhotoRepository"
     }
 
-    fun getAllPhotos(): Flow<List<Photo>> = photoDao.getAllPhotos()
     fun getAllPhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getAllPhotosSummary()
-    fun getVisiblePhotos(): Flow<List<Photo>> = photoDao.getVisiblePhotos()
     fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>> = photoDao.getVisiblePhotosSummary()
     fun getVisiblePhotosSummaryPaged(): Flow<PagingData<PhotoSummary>> {
         return Pager(
@@ -96,9 +96,6 @@ class PhotoRepository @Inject constructor(
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo> =
         photoDao.getPhotosNeedingMetadataExtraction()
 
-    fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>> =
-        photoDao.searchByFileNameSummary(query.escapeLikePattern())
-
     suspend fun getDistinctLocationNames(): List<String> =
         photoDao.getDistinctLocationNames()
 
@@ -120,6 +117,14 @@ class PhotoRepository @Inject constructor(
         mediaScanner.scanMediaStore(includedFolders, lastSync).collect { batch ->
             val toUpsert = SyncDiff.photosToUpsert(batch, dbPhotosMap)
             if (toUpsert.isNotEmpty()) photoDao.upsertAll(toUpsert)
+            // Photo modifiée (retouche, rotation en place) : embedding et visages
+            // décrivent l'ancienne image, et la file NOT EXISTS ne les referait
+            // jamais tant que les lignes existent. On les supprime, les workers
+            // de la chaîne re-analysent.
+            SyncDiff.modifiedPhotoIds(batch, dbPhotosMap).forEach { photoId ->
+                photoAnalysisDao.deleteAnalysesForPhoto(photoId)
+                faceDao.deleteByPhoto(photoId)
+            }
             totalProcessed += batch.size
             onProgress(totalProcessed)
         }
@@ -139,7 +144,6 @@ class PhotoRepository @Inject constructor(
         settingsCache.lastScanTimestamp = newSync
     }
 
-    suspend fun update(photo: Photo) = photoDao.update(photo)
     suspend fun upsertAll(photos: List<Photo>) = photoDao.upsertAll(photos)
     suspend fun deleteByContentUris(contentUris: List<String>) =
         contentUris.chunked(CHUNK_SIZE).forEach { photoDao.deleteByContentUris(it) }

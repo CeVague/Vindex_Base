@@ -178,6 +178,11 @@ class SettingsCache @Inject constructor(
             putFloat(Setting.KEY_FACE_THRESHOLD_HIGH, DEFAULT_FACE_THRESHOLD_HIGH)
             putFloat(Setting.KEY_FACE_THRESHOLD_MEDIUM, DEFAULT_FACE_THRESHOLD_MEDIUM)
             putFloat(Setting.KEY_FACE_THRESHOLD_NEW, DEFAULT_FACE_THRESHOLD_NEW)
+            // Ajoutés après coup et longtemps oubliés ici : le mode manuel du
+            // clustering survivait au reset, un état fantôme pénible à diagnostiquer.
+            putFloat(Setting.KEY_FACE_QUALITY_FLOOR, DEFAULT_FACE_QUALITY_FLOOR)
+            putBoolean(Setting.KEY_AUTO_CLUSTERING, DEFAULT_AUTO_CLUSTERING)
+            putBoolean(Setting.KEY_SHOW_HIDDEN_PEOPLE, DEFAULT_SHOW_HIDDEN_PEOPLE)
         }
     }
 

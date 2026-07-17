@@ -2,10 +2,8 @@ package com.cevague.vindex.data.database.dao
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
 import com.cevague.vindex.data.database.entity.Face
 import kotlinx.coroutines.flow.Flow
 
@@ -21,36 +19,7 @@ interface FaceDao {
         val boxBottom: Float
     )
 
-    // Face sans ByteArray (trop lourd)
-    data class FaceSummary(
-        @ColumnInfo(name = "id") val id: Long,
-        @ColumnInfo(name = "photo_id") val photoId: Long,
-        @ColumnInfo(name = "box_left") val boxLeft: Float,
-        @ColumnInfo(name = "box_top") val boxTop: Float,
-        @ColumnInfo(name = "box_right") val boxRight: Float,
-        @ColumnInfo(name = "box_bottom") val boxBottom: Float,
-        @ColumnInfo(name = "person_id") val personId: Long?
-    )
-
     // Queries - reactive
-
-    @Query("SELECT * FROM faces WHERE photo_id = :photoId")
-    fun getFacesByPhoto(photoId: Long): Flow<List<Face>>
-
-    @Query("SELECT id, photo_id, box_left, box_top, box_right, box_bottom, person_id FROM faces WHERE photo_id = :photoId")
-    fun getFaceSummariesByPhoto(photoId: Long): Flow<List<FaceSummary>>
-
-    @Query("SELECT * FROM faces WHERE person_id = :personId")
-    fun getFacesByPerson(personId: Long): Flow<List<Face>>
-
-    @Query("SELECT id, photo_id, box_left, box_top, box_right, box_bottom, person_id FROM faces WHERE person_id = :personId")
-    fun getFacesSummaryByPerson(personId: Long): Flow<List<FaceSummary>>
-
-    @Query("SELECT * FROM faces WHERE person_id IS NULL")
-    fun getUnidentifiedFaces(): Flow<List<Face>>
-
-    @Query("SELECT * FROM faces WHERE assignment_type = 'pending'")
-    fun getPendingFaces(): Flow<List<Face>>
 
     @Query("SELECT COUNT(*) FROM faces WHERE assignment_type = 'pending'")
     fun getPendingFaceCount(): Flow<Int>
@@ -59,9 +28,6 @@ interface FaceDao {
     fun getFaceById(id: Long): Flow<Face?>
 
     // Queries - one-shot
-
-    @Query("SELECT * FROM faces WHERE photo_id = :photoId")
-    suspend fun getFacesByPhotoOnce(photoId: Long): List<Face>
 
     @Query("SELECT * FROM faces WHERE person_id = :personId")
     suspend fun getFacesByPersonOnce(personId: Long): List<Face>
@@ -72,22 +38,10 @@ interface FaceDao {
     @Query("SELECT * FROM faces WHERE person_id IS NOT NULL AND embedding IS NOT NULL")
     suspend fun getAllIdentifiedFacesWithEmbedding(): List<Face>
 
+    // Réservé au futur « max-sur-les-visages » (cf. backlog), comme
+    // getAllIdentifiedFacesWithEmbedding.
     @Query("SELECT * FROM faces WHERE person_id = :personId AND embedding IS NOT NULL")
     suspend fun getFacesWithEmbeddingByPerson(personId: Long): List<Face>
-
-    @Query("SELECT * FROM faces WHERE is_primary = 1 AND person_id = :personId LIMIT 1")
-    suspend fun getPrimaryFaceForPerson(personId: Long): Face?
-
-    @Query(
-        """
-        SELECT ph.file_path FROM faces f
-        JOIN photos ph ON f.photo_id = ph.id
-        WHERE f.person_id = :personId
-        ORDER BY f.is_primary DESC, f.confidence DESC
-        LIMIT 1
-    """
-    )
-    suspend fun getCoverPhotoPathForPerson(personId: Long): String?
 
     @Query(
         """
@@ -102,33 +56,6 @@ interface FaceDao {
     )
     suspend fun getPrimaryFaceWithPhoto(personId: Long): FaceWithPhoto?
 
-    @Query("SELECT COUNT(*) FROM faces WHERE photo_id = :photoId")
-    suspend fun getFaceCountForPhoto(photoId: Long): Int
-
-    @Query(
-        """
-    SELECT f.id as id, ph.file_path as filePath, f.box_left as boxLeft, 
-           f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom
-    FROM faces f
-    JOIN photos ph ON f.photo_id = ph.id
-    WHERE f.assignment_type = 'pending'
-"""
-    )
-    suspend fun getPendingFaceWithPhoto(): List<FaceWithPhoto>
-
-    @Query(
-        """
-    SELECT f.id as id, ph.file_path as filePath, f.box_left as boxLeft, 
-           f.box_top as boxTop, f.box_right as boxRight, f.box_bottom as boxBottom
-    FROM faces f
-    JOIN photos ph ON f.photo_id = ph.id
-    WHERE f.assignment_type = 'pending'
-    LIMIT 1
-"""
-    )
-    suspend fun getNextPendingFaceWithPhoto(): FaceWithPhoto?
-
-
     @Query(
         """
     SELECT f.id, p.file_path AS filePath, f.box_left AS boxLeft, 
@@ -141,12 +68,17 @@ interface FaceDao {
     )
     suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceWithPhoto?
 
-    // Pour marquer comme "ignored" (Face.ASSIGNMENT_IGNORED — @Query n'accepte pas de const)
+    // Pour marquer comme "ignored" (Face.ASSIGNMENT_IGNORED — @Query n'accepte pas de const).
+    // `person_id` est remis à NULL comme dans la variante groupe : un visage `pending`
+    // porte la personne *suggérée*, et l'y laisser après « rien à voir » ferait compter
+    // sa photo chez elle (fiche, viewer, recherche, exports de calibration).
     @Query(
         """
         UPDATE faces SET
             assignment_type = 'ignored',
             exclusion_reason = :reason,
+            person_id = NULL,
+            assignment_confidence = NULL,
             assigned_at = :timestamp
         WHERE id = :id
     """
@@ -235,15 +167,9 @@ interface FaceDao {
     // Insert
 
     @Insert
-    suspend fun insert(face: Face): Long
-
-    @Insert
     suspend fun insertAll(faces: List<Face>): List<Long>
 
     // Update
-
-    @Update
-    suspend fun update(face: Face)
 
     @Query(
         """
@@ -274,19 +200,10 @@ interface FaceDao {
     @Query("UPDATE faces SET is_primary = :isPrimary WHERE id = :id")
     suspend fun setPrimary(id: Long, isPrimary: Boolean)
 
-    @Query("UPDATE faces SET embedding = :embedding, embedding_model = :model WHERE id = :id")
-    suspend fun updateEmbedding(id: Long, embedding: ByteArray?, model: String?)
-
     // Delete
-
-    @Delete
-    suspend fun delete(face: Face)
 
     @Query("DELETE FROM faces")
     suspend fun deleteAll()
-
-    @Query("DELETE FROM faces WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM faces WHERE photo_id = :photoId")
     suspend fun deleteByPhoto(photoId: Long)

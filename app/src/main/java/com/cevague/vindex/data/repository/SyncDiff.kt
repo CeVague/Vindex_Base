@@ -36,4 +36,22 @@ internal object SyncDiff {
         dbUris: Set<String>,
         liveUris: Set<String>
     ): List<String> = (dbUris - liveUris).toList()
+
+    /**
+     * Photos du batch **déjà connues** dont le contenu a changé (taille ou date).
+     * Leurs analyses IA et leurs visages sont périmés : l'embedding décrit
+     * l'ancienne image et les boîtes sont normalisées sur elle — or la file
+     * `NOT EXISTS` ne les recalculerait jamais tant que la ligne existe. C'est à
+     * l'appelant de les supprimer pour que l'indexation incrémentale reprenne.
+     */
+    fun modifiedPhotoIds(
+        batch: List<Photo>,
+        dbPhotosByUri: Map<String, FilePathAndSize>
+    ): List<Long> = batch.mapNotNull { scanned ->
+        val existing = dbPhotosByUri[scanned.contentUri] ?: return@mapNotNull null
+        scanned.id.takeIf {
+            existing.fileSize != scanned.fileSize ||
+                    existing.fileLastModified != scanned.fileLastModified
+        }
+    }
 }

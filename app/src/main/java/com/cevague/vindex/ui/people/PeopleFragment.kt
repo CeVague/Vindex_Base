@@ -225,19 +225,19 @@ class PeopleFragment : Fragment() {
         val editText = EditText(requireContext()).apply {
             setText(person.name)
             inputType = InputType.TYPE_TEXT_FLAG_CAP_WORDS or InputType.TYPE_CLASS_TEXT
-            hint = "Nom de la personne"
+            hint = getString(R.string.people_rename_hint)
         }
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Renommer")
+            .setTitle(R.string.people_rename)
             .setView(editText)
-            .setPositiveButton("Renommer") { _, _ ->
+            .setPositiveButton(R.string.people_rename) { _, _ ->
                 val newName = editText.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     handleRename(person, newName)
                 }
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.action_cancel, null)
             .show()
     }
 
@@ -258,27 +258,42 @@ class PeopleFragment : Fragment() {
 
     private fun showMergeConfirmation(source: PersonDao.PersonWithCover, target: Person) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Fusionner ?")
-            .setMessage("\"${target.name}\" existe déjà. Voulez-vous fusionner ${source.photoCount} photos avec cette personne ?")
-            .setPositiveButton("Fusionner") { _, _ ->
+            .setTitle(R.string.people_merge_confirm_title)
+            .setMessage(
+                resources.getQuantityString(
+                    R.plurals.people_merge_confirm_message,
+                    source.photoCount,
+                    target.name,
+                    source.photoCount
+                )
+            )
+            .setPositiveButton(R.string.people_merge_suggest_confirm) { _, _ ->
                 lifecycleScope.launch {
                     personRepository.mergePersons(keepId = target.id, mergeId = source.id)
                 }
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.action_cancel, null)
             .show()
     }
 
     private fun showDeleteConfirmation(person: PersonDao.PersonWithCover) {
+        val displayName = person.name ?: getString(R.string.people_unknown)
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Supprimer ?")
-            .setMessage("Supprimer \"${person.name}\" ? Les ${person.photoCount} visages associés seront remis en attente d'identification.")
-            .setPositiveButton("Supprimer") { _, _ ->
+            .setTitle(R.string.people_delete_confirm_title)
+            .setMessage(
+                resources.getQuantityString(
+                    R.plurals.people_delete_confirm_message,
+                    person.photoCount,
+                    displayName,
+                    person.photoCount
+                )
+            )
+            .setPositiveButton(R.string.action_delete) { _, _ ->
                 lifecycleScope.launch {
                     personRepository.deletePersonAndResetFaces(person.id)
                 }
             }
-            .setNegativeButton("Annuler", null)
+            .setNegativeButton(R.string.action_cancel, null)
             .show()
     }
 

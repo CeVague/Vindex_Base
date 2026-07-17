@@ -181,6 +181,17 @@
     <string name="people_merge_suggest_dismiss">Pas maintenant</string>
     <string name="people_merge_suggest_confirm">Fusionner</string>
     <string name="people_merge_suggest_detail">%1$s · %2$s</string>
+    <string name="people_rename_hint">Nom de la personne</string>
+    <string name="people_merge_confirm_title">Fusionner ?</string>
+    <plurals name="people_merge_confirm_message">
+        <item quantity="one">« %1$s » existe déjà. Fusionner %2$d photo avec cette personne ?</item>
+        <item quantity="other">« %1$s » existe déjà. Fusionner %2$d photos avec cette personne ?</item>
+    </plurals>
+    <string name="people_delete_confirm_title">Supprimer ?</string>
+    <plurals name="people_delete_confirm_message">
+        <item quantity="one">Supprimer « %1$s » ? Le visage associé repartira dans la file d\'identification.</item>
+        <item quantity="other">Supprimer « %1$s » ? Ses %2$d visages associés repartiront dans la file d\'identification.</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="settings_title">Paramètres</string>

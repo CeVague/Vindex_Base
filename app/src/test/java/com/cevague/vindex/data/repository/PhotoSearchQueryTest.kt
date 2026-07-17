@@ -71,6 +71,8 @@ class PhotoSearchQueryTest {
         )
         assertTrue(sql.contains("AND EXISTS (SELECT 1 FROM faces"))
         assertTrue(sql.contains("AND NOT EXISTS (SELECT 1 FROM faces"))
+        // Seuls les visages engagés comptent : un `pending` n'est pas « avec Marie ».
+        assertTrue(sql.contains("assignment_type IN ('auto', 'manual')"))
         assertEquals(listOf<Any>(7L, 8L), args)
     }
 

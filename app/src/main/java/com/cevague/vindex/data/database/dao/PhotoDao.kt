@@ -5,7 +5,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.RawQuery
-import androidx.room.Update
 import androidx.room.Upsert
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.cevague.vindex.data.database.entity.Photo
@@ -52,17 +51,11 @@ fun List<Photo>.toSummaryList(): List<PhotoSummary> {
 @Dao
 interface PhotoDao {
 
-    @Query("SELECT * FROM photos ORDER BY date_taken DESC")
-    fun getAllPhotos(): Flow<List<Photo>>
-
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos ORDER BY date_taken DESC")
     fun getAllPhotosSummary(): Flow<List<PhotoSummary>>
 
     @Query("SELECT id, file_path, file_size, file_last_modified FROM photos")
     fun getAllPathsAndSizes(): Flow<List<FilePathAndSize>>
-
-    @Query("SELECT * FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
-    fun getVisiblePhotos(): Flow<List<Photo>>
 
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
     fun getVisiblePhotosSummary(): Flow<List<PhotoSummary>>
@@ -70,19 +63,20 @@ interface PhotoDao {
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE is_hidden = 0 ORDER BY date_taken DESC")
     fun getVisiblePhotosSummaryPaged(): PagingSource<Int, PhotoSummary>
 
-    @Query("SELECT * FROM photos WHERE relative_path = :relativePath ORDER BY date_taken DESC")
-    fun getPhotosByRelativePath(relativePath: String): Flow<List<Photo>>
-
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE relative_path = :folderPath AND is_hidden = 0 ORDER BY date_taken DESC")
     fun getPhotosSummaryByFolder(folderPath: String): Flow<List<PhotoSummary>>
 
     @Query("SELECT id, file_path, file_name, date_added, date_taken, is_favorite FROM photos WHERE relative_path = :folderPath AND is_hidden = 0 ORDER BY date_taken DESC")
     suspend fun getPhotosSummaryByFolderOnce(folderPath: String): List<PhotoSummary>
 
+    // Seuls les visages engagés (auto/manual) font apparaître une photo dans la
+    // fiche : un `pending` est une question, pas une réponse — la photo n'entre
+    // qu'une fois la suggestion confirmée.
     @Query(
         "SELECT DISTINCT p.id, p.file_path, p.file_name, p.date_added, p.date_taken, p.is_favorite " +
                 "FROM photos p JOIN faces f ON f.photo_id = p.id " +
-                "WHERE f.person_id = :personId AND p.is_hidden = 0 ORDER BY p.date_taken DESC"
+                "WHERE f.person_id = :personId AND f.assignment_type IN ('auto', 'manual') " +
+                "AND p.is_hidden = 0 ORDER BY p.date_taken DESC"
     )
     fun getPhotosSummaryByPerson(personId: Long): Flow<List<PhotoSummary>>
 
@@ -117,17 +111,6 @@ interface PhotoDao {
 
     @Query("SELECT * FROM photos WHERE is_metadata_extracted = 0")
     suspend fun getPhotosNeedingMetadataExtraction(): List<Photo>
-
-    @Query(
-        """
-    SELECT id, file_path, file_name, date_added, date_taken, is_favorite 
-    FROM photos 
-    WHERE file_name LIKE '%' || :query || '%' ESCAPE '\'
-       OR relative_path LIKE '%' || :query || '%' ESCAPE '\'
-    ORDER BY date_taken DESC
-"""
-    )
-    fun searchByFileNameSummary(query: String): Flow<List<PhotoSummary>>
 
     /**
      * File de travail de l'indexation IA (reprise incrémentale, ARCHITECTURE §4.2) :
@@ -174,9 +157,6 @@ interface PhotoDao {
      */
     @RawQuery
     suspend fun searchFilteredSummary(query: SupportSQLiteQuery): List<PhotoSummary>
-
-    @Update
-    suspend fun update(photo: Photo)
 
     @Upsert
     suspend fun upsertAll(photos: List<Photo>)

@@ -232,7 +232,9 @@ class MediaScanner @Inject constructor(
         var longitude = photo.longitude
         var cameraMake: String? = null
         var cameraModel: String? = null
-        var orientation: Int? = null
+        // Initialisée à la valeur du scan (degrés MediaStore) : un échec EXIF ne
+        // doit pas l'effacer.
+        var orientation: Int? = photo.orientation
 
         try {
             val uriToRead = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -252,10 +254,10 @@ class MediaScanner @Inject constructor(
                 }
                 cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE)?.trim()
                 cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)?.trim()
-                orientation = exif.getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_NORMAL
-                )
+                // En DEGRÉS (0/90/180/270), comme la colonne ORIENTATION de
+                // MediaStore écrite par le scan : la colonne mélangeait deux unités
+                // (degrés au scan, code EXIF 1-8 ici) selon le dernier écrivain.
+                orientation = exif.rotationDegrees
             }
         } catch (e: Exception) {
             Log.e("MediaScanner", "Erreur EXIF pour ${photo.fileName}", e)

@@ -72,7 +72,15 @@ class SearchPipeline @Inject constructor(
         // filtres durs (plus de LIKE ni de replis textuels dans ce mode).
         if (parsed.freeText.isNotBlank()) {
             val semantic = searchSemantic(parsed, hasFilters)
-            if (semantic != null) return semantic
+            if (semantic != null) {
+                if (semantic.photos.isNotEmpty()) return semantic
+                // Même arbitrage qu'en mode dégradé : un filtre ville/pays qui
+                // vide les résultats rend son mot au texte (« nice sunset » sans
+                // photo à Nice doit scorer « nice » comme adjectif, pas renvoyer
+                // zéro). Seuls géo et pays sont ambigus — dates et personnes ne
+                // sont jamais des mots de description.
+                return semanticAmbiguityFallback(parsed) ?: semantic
+            }
         }
 
         val photos = runFilters(parsed)
@@ -156,7 +164,12 @@ class SearchPipeline @Inject constructor(
 
         if (candidateIds != null) {
             if (candidateIds.isEmpty()) return Result(parsed, emptyList())
-            score(photoRepository.getEmbeddingsForPhotos(type, active.modelName, candidateIds))
+            // Chunk par chunk : accumuler tous les BLOBs d'un filtre large
+            // (« 2024 » = des dizaines de milliers de photos) coûtait des dizaines
+            // de Mo transitoires ; le TopK n'a besoin que d'un chunk à la fois.
+            candidateIds.chunked(CANDIDATE_CHUNK_SIZE).forEach { chunk ->
+                score(photoRepository.getEmbeddingsForPhotos(type, active.modelName, chunk))
+            }
         } else {
             var afterPhotoId = 0L
             while (true) {
@@ -176,6 +189,36 @@ class SearchPipeline @Inject constructor(
             photoRepository.getPhotosSummaryByIdsOrdered(orderedIds),
             ranked.associate { it.id to it.score }
         )
+    }
+
+    /**
+     * Rejoue la recherche sémantique en rendant au texte libre le mot d'un filtre
+     * ville puis pays (non niés) ; null si aucune variante ne produit de résultat.
+     */
+    private suspend fun semanticAmbiguityFallback(parsed: ParsedQuery): Result? {
+        if (parsed.geoFilter != null && !parsed.geoFilter.negated) {
+            val retry = parsed.copy(
+                freeText = "${parsed.freeText} ${parsed.geoFilter.sourceText}".trim(),
+                geoFilter = null
+            )
+            val stillFiltered = retry.dateRange != null || retry.typeFilter != null ||
+                    retry.persons.isNotEmpty() || retry.countryFilter != null
+            searchSemantic(retry, stillFiltered)
+                ?.takeIf { it.photos.isNotEmpty() }
+                ?.let { return it }
+        }
+        if (parsed.countryFilter != null && !parsed.countryFilter.negated) {
+            val retry = parsed.copy(
+                freeText = "${parsed.freeText} ${parsed.countryFilter.sourceText}".trim(),
+                countryFilter = null
+            )
+            val stillFiltered = retry.dateRange != null || retry.geoFilter != null ||
+                    retry.typeFilter != null || retry.persons.isNotEmpty()
+            searchSemantic(retry, stillFiltered)
+                ?.takeIf { it.photos.isNotEmpty() }
+                ?.let { return it }
+        }
+        return null
     }
 
     private suspend fun runFilters(parsed: ParsedQuery): List<PhotoSummary> {
@@ -276,5 +319,9 @@ class SearchPipeline @Inject constructor(
         const val DEFAULT_SIMILARITY_FLOOR = 0.2f
         const val MAX_SEMANTIC_RESULTS = 200
         const val SCAN_CHUNK_SIZE = 2000
+
+        // Aligné sur la limite de variables SQLite (le repository chunke déjà à
+        // 900) : un appel = une requête = un paquet borné en mémoire.
+        const val CANDIDATE_CHUNK_SIZE = 900
     }
 }

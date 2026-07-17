@@ -40,8 +40,6 @@ class PhotoViewerActivity : AppCompatActivity() {
     // État UI
     private var isUiVisible = true
 
-    var isFirstLoad = true
-
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -107,11 +105,11 @@ class PhotoViewerActivity : AppCompatActivity() {
                 launch {
                     viewModel.photos.collect { photos ->
                         pagerAdapter.submitList(photos) {
-                            if (isFirstLoad && photos.isNotEmpty()) {
+                            if (!viewModel.initialScrollDone && photos.isNotEmpty()) {
                                 binding.viewPagerPhotos.setCurrentItem(
                                     viewModel.initialIndex.value, false
                                 )
-                                isFirstLoad = false
+                                viewModel.initialScrollDone = true
                             }
                         }
                     }

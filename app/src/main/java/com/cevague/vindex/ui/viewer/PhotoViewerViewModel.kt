@@ -42,6 +42,14 @@ class PhotoViewerViewModel @Inject constructor(
 
     private var initialized = false
 
+    /**
+     * Le saut vers la photo de départ ne doit se faire qu'UNE fois par session de
+     * viewer. Porté par le ViewModel et non par l'activité : un champ d'activité
+     * renaît à `true` à chaque rotation, et le callback de `submitList` ramenait
+     * alors la grille à la photo initiale en écrasant la position restaurée.
+     */
+    var initialScrollDone = false
+
     fun init(source: ViewerSource) {
         if (initialized) return
         initialized = true

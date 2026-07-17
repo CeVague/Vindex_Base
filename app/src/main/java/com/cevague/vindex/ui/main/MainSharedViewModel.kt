@@ -1,17 +1,17 @@
 package com.cevague.vindex.ui.main
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
+/**
+ * État partagé entre MainActivity et ses fragments. L'ancienne plomberie
+ * recherche-depuis-un-onglet (`searchQuery`, `navigateToTab`) a été retirée avec
+ * son dernier émetteur ; elle se réintroduira avec le raccourci « rechercher à
+ * partir de cette personne » prévu au backlog.
+ */
 class MainSharedViewModel : ViewModel() {
-    private val _searchQuery = MutableStateFlow<String?>("")
-    val searchQuery: StateFlow<String?> = _searchQuery
 
     /**
      * Libellé d'un chargement transitoire (non piloté par WorkManager, ex. modèle
@@ -24,21 +24,5 @@ class MainSharedViewModel : ViewModel() {
 
     fun setTransientLoading(label: String?) {
         _transientLoading.value = label
-    }
-
-    fun triggerSearch(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun clearSearchQuery() {
-        _searchQuery.value = null
-    }
-
-    // Le signal pour changer d'onglet
-    private val _navigateToTab = MutableSharedFlow<Int>(replay = 0)
-    val navigateToTab = _navigateToTab.asSharedFlow()
-
-    fun selectTab(menuItemId: Int) {
-        viewModelScope.launch { _navigateToTab.emit(menuItemId) }
     }
 }

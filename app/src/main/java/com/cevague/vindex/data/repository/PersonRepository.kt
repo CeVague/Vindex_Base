@@ -1,7 +1,8 @@
 package com.cevague.vindex.data.repository
 
-import androidx.room.Transaction
+import androidx.room.withTransaction
 import com.cevague.vindex.ai.weightedCentroid
+import com.cevague.vindex.data.database.AppDatabase
 import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao
 import com.cevague.vindex.data.database.entity.Face
@@ -13,8 +14,13 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// ⚠ Les séquences multi-étapes passent par `database.withTransaction` et non par
+// l'annotation @Transaction : Room ne l'honore que sur les méthodes d'un DAO —
+// posée sur un repository ordinaire, elle est silencieusement inerte, et aucune
+// de ces séquences n'était réellement atomique.
 @Singleton
 class PersonRepository @Inject constructor(
+    private val database: AppDatabase,
     private val personDao: PersonDao,
     private val faceDao: FaceDao
 ) {
@@ -23,22 +29,8 @@ class PersonRepository @Inject constructor(
 
     fun getAllPersons(): Flow<List<Person>> = personDao.getAllPersons()
 
-    fun getAllPersonSummary(): Flow<List<PersonDao.PersonSummary>> =
-        personDao.getAllPersonsSummary()
-
-    fun getNamedPersons(): Flow<List<Person>> = personDao.getNamedPersons()
-
     fun getPeopleForTrombinoscope(includeHidden: Boolean): Flow<List<PersonDao.PersonWithCover>> =
         personDao.getPeopleForTrombinoscope(SUSPECT_SCORE_BELOW, includeHidden)
-
-
-    fun getNamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
-        personDao.getNamedPersonsSummary()
-
-    fun getUnnamedPersons(): Flow<List<Person>> = personDao.getUnnamedPersons()
-
-    fun getUnnamedPersonsSummary(): Flow<List<PersonDao.PersonSummary>> =
-        personDao.getUnnamedPersonsSummary()
 
     fun getPersonById(id: Long): Flow<Person?> = personDao.getPersonById(id)
 
@@ -73,17 +65,18 @@ class PersonRepository @Inject constructor(
         return personDao.insert(person.copy(name = formattedName))
     }
 
-    @Transaction
     suspend fun getOrCreatePersonByName(name: String?): Long {
         val formattedName = formatName(name) ?: return createPerson(null)
 
-        val existing = personDao.getPersonByName(formattedName)
-        return existing?.id ?: personDao.insert(
-            Person(
-                name = formattedName,
-                createdAt = System.currentTimeMillis()
+        return database.withTransaction {
+            val existing = personDao.getPersonByName(formattedName)
+            existing?.id ?: personDao.insert(
+                Person(
+                    name = formattedName,
+                    createdAt = System.currentTimeMillis()
+                )
             )
-        )
+        }
     }
 
     suspend fun createPerson(name: String? = null): Long {
@@ -105,8 +98,7 @@ class PersonRepository @Inject constructor(
 
     suspend fun delete(person: Person) = personDao.delete(person)
 
-    @Transaction
-    suspend fun deletePersonAndResetFaces(personId: Long) {
+    suspend fun deletePersonAndResetFaces(personId: Long) = database.withTransaction {
         faceDao.unassignFromPerson(personId)
         personDao.deleteById(personId)
     }
@@ -122,8 +114,7 @@ class PersonRepository @Inject constructor(
      * Sans ça, écarter un chat imposait de supprimer le groupe puis d'écarter ses
      * visages un par un dans la file d'identification.
      */
-    @Transaction
-    suspend fun excludePerson(personId: Long, reason: String) {
+    suspend fun excludePerson(personId: Long, reason: String) = database.withTransaction {
         faceDao.markAllAsIgnoredForPerson(personId, reason)
         personDao.deleteById(personId)
     }
@@ -156,8 +147,7 @@ class PersonRepository @Inject constructor(
      * `CleanupWorker` en fin de chaîne, les nommées restent (vides) — leur nom est
      * la seule chose qu'un changement de modèle ne périme pas.
      */
-    @Transaction
-    suspend fun resetFaceData() {
+    suspend fun resetFaceData() = database.withTransaction {
         faceDao.deleteAll()
         personDao.clearAllCentroids()
     }
@@ -172,27 +162,9 @@ class PersonRepository @Inject constructor(
 
     // Face queries - reactive
 
-    fun getFacesByPhoto(photoId: Long): Flow<List<Face>> = faceDao.getFacesByPhoto(photoId)
-
-    fun getFaceSummariesByPhoto(photoId: Long): Flow<List<FaceDao.FaceSummary>> =
-        faceDao.getFaceSummariesByPhoto(photoId)
-
-
-    fun getFacesByPerson(personId: Long): Flow<List<Face>> = faceDao.getFacesByPerson(personId)
-
-    fun getFacesSummaryByPerson(personId: Long): Flow<List<FaceDao.FaceSummary>> =
-        faceDao.getFacesSummaryByPerson(personId)
-
-    fun getUnidentifiedFaces(): Flow<List<Face>> = faceDao.getUnidentifiedFaces()
-
-    fun getPendingFaces(): Flow<List<Face>> = faceDao.getPendingFaces()
-
     fun getPendingFaceCount(): Flow<Int> = faceDao.getPendingFaceCount()
 
     // Face queries - one-shot
-
-    suspend fun getFacesByPhotoOnce(photoId: Long): List<Face> =
-        faceDao.getFacesByPhotoOnce(photoId)
 
     suspend fun getFacesByPersonOnce(personId: Long): List<Face> =
         faceDao.getFacesByPersonOnce(personId)
@@ -209,28 +181,24 @@ class PersonRepository @Inject constructor(
     suspend fun getLabeledFacesWithPhoto(): List<FaceDao.LabeledFace> =
         faceDao.getLabeledFacesWithPhoto()
 
-    suspend fun getCoverPhotoPathForPerson(personId: Long): String? =
-        faceDao.getCoverPhotoPathForPerson(personId)
-
     suspend fun getPrimaryFaceWithPhoto(personId: Long): FaceDao.FaceWithPhoto? =
         faceDao.getPrimaryFaceWithPhoto(personId)
-
-    suspend fun getPendingFaceWithPhoto(): List<FaceDao.FaceWithPhoto> =
-        faceDao.getPendingFaceWithPhoto()
-
-    suspend fun getNextPendingFaceWithPhoto(): FaceDao.FaceWithPhoto? =
-        faceDao.getNextPendingFaceWithPhoto()
-
 
     suspend fun getNextPendingFaceExcluding(excludeIds: Set<Long>): FaceDao.FaceWithPhoto? =
         faceDao.getNextPendingFaceExcluding(excludeIds)
 
-    suspend fun markAsIgnored(id: Long, reason: String) = faceDao.markAsIgnored(id, reason)
+    /**
+     * Écarte un visage isolé. S'il portait une personne suggérée (`pending`), le
+     * DAO le détache et le compteur de cette personne est recalé dans la foulée.
+     */
+    suspend fun markAsIgnored(id: Long, reason: String) = database.withTransaction {
+        val previousPersonId = faceDao.getFaceByIdOnce(id)?.personId
+        faceDao.markAsIgnored(id, reason)
+        previousPersonId?.let { personDao.recalculatePhotoCount(it) }
+    }
 
 
     // Face insert/update/delete
-
-    suspend fun insertFace(face: Face): Long = faceDao.insert(face)
 
     suspend fun insertFaces(faces: List<Face>): List<Long> = faceDao.insertAll(faces)
 
@@ -240,7 +208,7 @@ class PersonRepository @Inject constructor(
         assignmentType: String,
         confidence: Float?,
         weight: Float
-    ) {
+    ) = database.withTransaction {
         faceDao.assignToPerson(
             id = faceId,
             personId = personId,
@@ -252,18 +220,10 @@ class PersonRepository @Inject constructor(
         personId?.let { personDao.recalculatePhotoCount(it) }
     }
 
-    suspend fun updateFaceEmbedding(id: Long, embedding: ByteArray?, model: String?) =
-        faceDao.updateEmbedding(id, embedding, model)
-
-    suspend fun deleteFace(face: Face) = faceDao.delete(face)
-
-    suspend fun deleteFaceById(id: Long) = faceDao.deleteById(id)
-
     suspend fun deleteFacesByPhoto(photoId: Long) = faceDao.deleteByPhoto(photoId)
 
     // Merge two persons into one
-    @Transaction
-    suspend fun mergePersons(keepId: Long, mergeId: Long) {
+    suspend fun mergePersons(keepId: Long, mergeId: Long) = database.withTransaction {
         faceDao.reassignAllFaces(oldPersonId = mergeId, newPersonId = keepId)
         personDao.recalculatePhotoCount(keepId)
         personDao.deleteById(mergeId)

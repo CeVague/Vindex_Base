@@ -402,11 +402,20 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             personId = personId,
             assignmentType = Face.ASSIGNMENT_MANUAL,
             confidence = 1.0f,
-            weight = 1.0f
+            weight = storedWeight(face.id)
         )
         personRepository.recomputeCentroid(personId)
         personRepository.setPersonHidden(personId, true)
     }
+
+    /**
+     * Le poids d'un visage dans le centroïde est sa **qualité**, même confirmé à la
+     * main : la certitude porte sur l'étiquette, pas sur l'embedding (cf.
+     * `weightedCentroid`). Écraser par 1,0 referait du « premier visage flou qui
+     * pèse le maximum » — on relit donc le poids posé à l'analyse.
+     */
+    private suspend fun storedWeight(faceId: Long): Float =
+        personRepository.getFaceByIdOnce(faceId)?.weight ?: 1f
 
     private fun identifyCurrentFaceAs(name: String) {
         val target = current ?: return
@@ -441,7 +450,7 @@ class IdentifyFaceBottomSheet : BottomSheetDialogFragment() {
             personId = personId,
             assignmentType = Face.ASSIGNMENT_MANUAL,
             confidence = 1.0f,
-            weight = 1.0f
+            weight = storedWeight(face.id)
         )
         // Sans ça, une personne nommée à la main n'a aucun centroïde : invisible pour
         // `assignFace` comme pour les propositions de fusion, qui écartent tous deux

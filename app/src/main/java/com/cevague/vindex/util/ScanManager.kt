@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.await
 import com.cevague.vindex.data.database.entity.PhotoAnalysis
 import com.cevague.vindex.data.repository.PersonRepository
 import com.cevague.vindex.data.repository.PhotoRepository
@@ -55,7 +56,7 @@ class ScanManager @Inject constructor(
             .build()
 
         workManager
-            .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.KEEP, discoveryReq)
+            .beginUniqueWork(UNIQUE_CHAIN, ExistingWorkPolicy.KEEP, discoveryReq)
             .then(metadataReq)
             .then(clipReq)
             .then(faceReq)
@@ -107,7 +108,7 @@ class ScanManager @Inject constructor(
             .build()
 
         workManager
-            .beginUniqueWork("VINDEX_SCAN_PROCESS", ExistingWorkPolicy.REPLACE, discoveryReq)
+            .beginUniqueWork(UNIQUE_CHAIN, ExistingWorkPolicy.REPLACE, discoveryReq)
             .then(citiesReq)
             .then(metadataReq)
             .then(clipReq)
@@ -121,12 +122,19 @@ class ScanManager @Inject constructor(
         workManager.cancelAllWorkByTag("SCAN_TAG")
     }
 
+    /**
+     * Ré-indexation CLIP après changement de modèle. Chaîne annulée **et attendue**
+     * avant la suppression : un ClipIndexWorker encore vivant écrirait des vecteurs
+     * de l'ancien modèle après le vidage. Même nom unique que les scans — deux
+     * chaînes de noms différents tourneraient en parallèle sur la même file.
+     */
     suspend fun startClipReindexing() {
+        cancelRunningChain()
         photoRepository.deleteAnalysesByType(PhotoAnalysis.TYPE_CLIP_EMBEDDING)
         val clipReq = OneTimeWorkRequestBuilder<ClipIndexWorker>()
             .addTag("SCAN_TAG")
             .build()
-        workManager.enqueueUniqueWork("VINDEX_CLIP_INDEX", ExistingWorkPolicy.REPLACE, clipReq)
+        workManager.enqueueUniqueWork(UNIQUE_CHAIN, ExistingWorkPolicy.REPLACE, clipReq)
     }
 
     /**
@@ -142,6 +150,10 @@ class ScanManager @Inject constructor(
      * personnes non nommées sont devenues vides.
      */
     suspend fun startFaceReanalysis() {
+        // L'annulation est attendue AVANT le reset : un FaceAnalysisWorker de la
+        // chaîne précédente encore vivant réinsérerait des visages de l'ancien
+        // espace vectoriel juste après le vidage.
+        cancelRunningChain()
         photoRepository.deleteAnalysesByType(PhotoAnalysis.TYPE_FACES)
         personRepository.resetFaceData()
 
@@ -154,7 +166,7 @@ class ScanManager @Inject constructor(
             .build()
 
         workManager
-            .beginUniqueWork("VINDEX_FACE_ANALYSIS", ExistingWorkPolicy.REPLACE, faceReq)
+            .beginUniqueWork(UNIQUE_CHAIN, ExistingWorkPolicy.REPLACE, faceReq)
             .then(cleanupReq)
             .enqueue()
     }
@@ -165,9 +177,31 @@ class ScanManager @Inject constructor(
      * donc seuls les nouveaux éléments sont calculés.
      */
     fun startClipIndexing() {
+        // KEEP sous le nom commun : si une chaîne tourne déjà, elle contient de
+        // toute façon un ClipIndexWorker — jeter la demande est le bon comportement.
         val clipReq = OneTimeWorkRequestBuilder<ClipIndexWorker>()
             .addTag("SCAN_TAG")
             .build()
-        workManager.enqueueUniqueWork("VINDEX_CLIP_INDEX", ExistingWorkPolicy.KEEP, clipReq)
+        workManager.enqueueUniqueWork(UNIQUE_CHAIN, ExistingWorkPolicy.KEEP, clipReq)
+    }
+
+    /**
+     * Annule la chaîne unique et **attend** que l'annulation soit effective.
+     * `Operation.await()` ne garantit pas que la dernière coroutine soit
+     * entièrement déroulée, mais réduit la fenêtre à presque rien — contre une
+     * fenêtre de plusieurs secondes si l'on enchaînait reset puis REPLACE.
+     */
+    private suspend fun cancelRunningChain() {
+        workManager.cancelUniqueWork(UNIQUE_CHAIN).await()
+    }
+
+    private companion object {
+        /**
+         * Un seul nom unique pour toutes les chaînes de workers : scans, ré-index
+         * CLIP, ré-analyse visages. Avec des noms distincts, deux FaceAnalysisWorker
+         * pouvaient tourner en même temps sur la même file `NOT EXISTS` et se
+         * marcher dessus (visages en double via delete/insert entrelacés).
+         */
+        const val UNIQUE_CHAIN = "VINDEX_SCAN_PROCESS"
     }
 }

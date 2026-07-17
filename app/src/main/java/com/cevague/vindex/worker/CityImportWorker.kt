@@ -38,7 +38,13 @@ class CityImportWorker @AssistedInject constructor(
             // Comparé à une version explicite et non à un simple booléen : cf.
             // SettingsCache.citiesAssetLoaded — les préférences survivent à une
             // migration destructive, un booléen ferait sauter l'import à jamais.
-            if (settingsCache.citiesAssetLoaded == CITIES_VERSION && settingsCache.isCitiesLoaded) {
+            // Le COUNT ferme le cas restant : migration destructive SANS changement
+            // d'asset (les drapeaux restent vrais sur une table vidée, et la
+            // recherche géo mourrait en silence).
+            if (settingsCache.citiesAssetLoaded == CITIES_VERSION &&
+                settingsCache.isCitiesLoaded &&
+                cityRepository.getCount() > 0
+            ) {
                 return Result.success()
             }
 

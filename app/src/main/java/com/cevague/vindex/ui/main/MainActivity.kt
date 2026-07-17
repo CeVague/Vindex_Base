@@ -79,7 +79,6 @@ class MainActivity : AppCompatActivity() {
             invalidateOptionsMenu()
         }
 
-        observeNavigateToTab()
         observeSyncProgress()
     }
 
@@ -165,13 +164,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun observeNavigateToTab() {
-        val sharedViewModel: MainSharedViewModel by viewModels()
-
-        lifecycleScope.launch {
-            sharedViewModel.navigateToTab.collect { itemId ->
-                binding.bottomNav.selectedItemId = itemId
-            }
-        }
-    }
 }

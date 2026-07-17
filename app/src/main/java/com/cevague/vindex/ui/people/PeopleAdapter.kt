@@ -15,7 +15,6 @@ import com.cevague.vindex.data.database.dao.FaceDao
 import com.cevague.vindex.data.database.dao.PersonDao.PersonWithCover
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.databinding.ItemPersonBinding
-import kotlinx.coroutines.Job
 import java.util.Locale
 
 class PeopleAdapter(
@@ -35,8 +34,6 @@ class PeopleAdapter(
 
     inner class ViewHolder(private val binding: ItemPersonBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        private var loadJob: Job? = null
-
 
         fun bind(person: PersonWithCover) {
             // Grisé : personne nommée sans photo (dossier retiré), ou inconnu masqué
