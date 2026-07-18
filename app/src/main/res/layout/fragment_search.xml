@@ -29,6 +29,21 @@
         app:singleLine="true"
         tools:visibility="visible" />
 
+    <!-- Requête traduite (mode debug) ou astuce du mode dégradé sans traducteur. -->
+    <TextView
+        android:id="@+id/textTranslation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chipsFilters"
+        tools:text="Traduit : dog on the beach"
+        tools:visibility="visible" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerSearch"
         android:layout_width="0dp"
@@ -37,7 +52,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/chipsFilters"
+        app:layout_constraintTop_toBottomOf="@id/textTranslation"
         tools:listitem="@layout/item_photo" />
 
     <TextView

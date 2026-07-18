@@ -1,9 +1,11 @@
 package com.cevague.vindex.search
 
 import com.cevague.vindex.ai.ClipEngine
+import com.cevague.vindex.ai.TranslationEngine
 import com.cevague.vindex.data.database.dao.EmbeddingRow
 import com.cevague.vindex.data.database.dao.PhotoSummary
 import com.cevague.vindex.data.database.entity.PhotoAnalysis
+import com.cevague.vindex.data.database.entity.Setting
 import com.cevague.vindex.data.local.SettingsCache
 import com.cevague.vindex.data.repository.CityRepository
 import com.cevague.vindex.data.repository.PersonRepository
@@ -27,6 +29,7 @@ class SearchPipeline @Inject constructor(
     private val cityRepository: CityRepository,
     private val personRepository: PersonRepository,
     private val clipEngine: ClipEngine,
+    private val translationEngine: TranslationEngine,
     private val settingsCache: SettingsCache
 ) {
 
@@ -36,7 +39,14 @@ class SearchPipeline @Inject constructor(
         val parsed: ParsedQuery,
         val photos: List<PhotoSummary>,
         /** Similarités CLIP par photo (vide hors chemin sémantique) ; mode debug. */
-        val scores: Map<Long, Float> = emptyMap()
+        val scores: Map<Long, Float> = emptyMap(),
+        /** Texte réellement encodé quand la requête a été traduite (mode debug). */
+        val translatedQuery: String? = null,
+        /**
+         * La langue de requête n'est pas couverte par l'encodeur et aucun
+         * traducteur ne l'a prise : l'UI affiche l'astuce du mode dégradé.
+         */
+        val translationMissing: Boolean = false
     )
 
     /**
@@ -52,7 +62,32 @@ class SearchPipeline @Inject constructor(
         removedPersonIds: Set<Long> = emptySet(),
         useCountryFilter: Boolean = true
     ): Result {
-        val fullParsed = parser.parse(rawQuery, knownCities(), knownPersons(), knownCountries())
+        // 1) Personnes d'abord, sur le texte BRUT : ensemble fermé de noms
+        //    propres qu'un traducteur pourrait « traduire ».
+        val personPass = parser.extractPersonsOnly(rawQuery, knownPersons())
+
+        // 2) Traduction AVANT le parsing (décision utilisateur 2026-07-18) :
+        //    même avec un encodeur multilingue, tout est ramené vers la langue
+        //    du traducteur pour que les mots-clefs (dates, lieux, types) n'aient
+        //    qu'UNE langue effective à gérer — l'anglais du lexique. Sans
+        //    traducteur, le texte brut continue sur les lexiques fr+en, comme
+        //    avant : rien ne casse, on parse juste dans la langue d'origine.
+        val queryLanguage = queryLanguage()
+        val translated = personPass.remainingText.takeIf { it.isNotBlank() }?.let {
+            translationEngine.translate(it, queryLanguage)
+        }
+        val textToParse = translated ?: personPass.remainingText
+        // L'astuce du mode dégradé ne vaut que si l'encodeur non plus ne
+        // comprend pas la langue : lexiques fr + encodeur multilingue = rien
+        // n'est perdu, on n'affiche rien.
+        val translationMissing = translated == null &&
+                clipEngine.activeClip()?.languages
+                    ?.none { it.equals(queryLanguage, ignoreCase = true) } == true
+
+        // 3) Parse du texte (traduit) : dates, type, villes, pays.
+        val fullParsed = parser
+            .parse(textToParse, knownCities(), emptyList(), knownCountries())
+            .copy(persons = personPass.persons)
         val parsed = fullParsed.copy(
             dateRange = fullParsed.dateRange?.takeIf { useDateFilter },
             geoFilter = fullParsed.geoFilter?.takeIf { useGeoFilter },
@@ -61,6 +96,13 @@ class SearchPipeline @Inject constructor(
             countryFilter = fullParsed.countryFilter?.takeIf { useCountryFilter }
         )
 
+        return searchParsed(parsed).copy(
+            translatedQuery = translated,
+            translationMissing = translationMissing
+        )
+    }
+
+    private suspend fun searchParsed(parsed: ParsedQuery): Result {
         val hasFilters = parsed.dateRange != null || parsed.geoFilter != null ||
                 parsed.typeFilter != null || parsed.persons.isNotEmpty() ||
                 parsed.countryFilter != null
@@ -133,6 +175,7 @@ class SearchPipeline @Inject constructor(
      */
     private suspend fun searchSemantic(parsed: ParsedQuery, hasFilters: Boolean): Result? {
         val active = clipEngine.activeClip() ?: return null
+        // Le texte libre arrive déjà traduit (cf. search) : on encode tel quel.
         val queryVector = clipEngine.encodeText(parsed.freeText) ?: return null
 
         val candidateIds: List<Long>? = if (hasFilters) {
@@ -189,6 +232,16 @@ class SearchPipeline @Inject constructor(
             photoRepository.getPhotosSummaryByIdsOrdered(orderedIds),
             ranked.associate { it.id to it.score }
         )
+    }
+
+    /** Langue des requêtes : le réglage, ou la locale de l'app (`system`). */
+    private fun queryLanguage(): String {
+        val setting = settingsCache.queryLanguage
+        return if (setting == Setting.QUERY_LANGUAGE_SYSTEM) {
+            Locale.getDefault().language
+        } else {
+            setting
+        }
     }
 
     /**

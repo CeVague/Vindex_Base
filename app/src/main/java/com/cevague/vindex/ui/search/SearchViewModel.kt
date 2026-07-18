@@ -33,6 +33,10 @@ class SearchViewModel @Inject constructor(
         val personChips: List<PersonChip> = emptyList(),
         val hasSearched: Boolean = false,
         val loading: Loading? = null,
+        /** Texte réellement encodé quand la requête a été traduite (affiché en debug). */
+        val translatedQuery: String? = null,
+        /** Langue non couverte et pas de traducteur : afficher l'astuce du mode dégradé. */
+        val translationMissing: Boolean = false,
         /** Incrémenté à chaque nouvelle recherche : signale un jeu de résultats
          *  frais qui doit ramener la grille en haut (comparé côté fragment). */
         val generation: Int = 0
@@ -129,6 +133,8 @@ class SearchViewModel @Inject constructor(
                 },
                 hasSearched = true,
                 loading = null,
+                translatedQuery = result.translatedQuery,
+                translationMissing = result.translationMissing,
                 generation = gen
             )
         }

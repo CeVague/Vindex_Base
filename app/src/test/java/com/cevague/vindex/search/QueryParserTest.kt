@@ -392,6 +392,33 @@ class QueryParserTest {
         assertEquals("photos de charlie", parsed.freeText)
     }
 
+    // ---------------------------------- première passe (avant traduction)
+
+    @Test
+    fun `extractPersonsOnly - personne consommee, reste intact pour la traduction`() {
+        val pass = parser.extractPersonsOnly("chien avec alice sur la plage", persons)
+        assertEquals(listOf(1L), pass.persons.map { it.personId })
+        // Le reste part au traducteur : rien d'autre ne doit être consommé,
+        // pas même une date ou une ville.
+        assertEquals("chien sur la plage", pass.remainingText)
+    }
+
+    @Test
+    fun `extractPersonsOnly - negation consommee avec la personne`() {
+        val pass = parser.extractPersonsOnly("plage sans alice en 2024", persons)
+        assertEquals(true, pass.persons[0].negated)
+        assertEquals("sans alice", pass.persons[0].sourceText)
+        // La date n'est PAS extraite ici : elle se parse après traduction.
+        assertEquals("plage en 2024", pass.remainingText)
+    }
+
+    @Test
+    fun `extractPersonsOnly - sans personne, texte inchange`() {
+        val pass = parser.extractPersonsOnly("coucher de soleil en montagne", persons)
+        assertTrue(pass.persons.isEmpty())
+        assertEquals("coucher de soleil en montagne", pass.remainingText)
+    }
+
     // -------------------------------------------------------------- négations
 
     @Test

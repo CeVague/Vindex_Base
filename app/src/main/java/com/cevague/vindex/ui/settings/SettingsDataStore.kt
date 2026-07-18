@@ -23,6 +23,7 @@ class SettingsDataStore(private val settingsCache: SettingsCache) : PreferenceDa
     override fun getString(key: String, defValue: String?): String? = when (key) {
         Setting.KEY_THEME -> settingsCache.themeMode
         Setting.KEY_LANGUAGE -> settingsCache.userLanguage
+        Setting.KEY_QUERY_LANGUAGE -> settingsCache.queryLanguage
         Setting.KEY_SEARCH_THRESHOLD -> settingsCache.searchThresholdInput
         Setting.KEY_FACE_THRESHOLD_HIGH -> settingsCache.faceThresholdHigh.toString()
         Setting.KEY_FACE_THRESHOLD_MEDIUM -> settingsCache.faceThresholdMedium.toString()
@@ -39,6 +40,7 @@ class SettingsDataStore(private val settingsCache: SettingsCache) : PreferenceDa
         when (key) {
             Setting.KEY_THEME -> settingsCache.themeMode = text
             Setting.KEY_LANGUAGE -> settingsCache.userLanguage = text
+            Setting.KEY_QUERY_LANGUAGE -> settingsCache.queryLanguage = text
             Setting.KEY_SEARCH_THRESHOLD -> settingsCache.searchThresholdInput = text
             // Une saisie invalide est ignorée plutôt qu'écrite : le seuil resterait
             // sinon à zéro, et tout serait identifié comme tout le monde.

@@ -112,6 +112,7 @@ class SearchFragment : Fragment() {
                         }
                     }
                     renderFilterChips(state)
+                    renderTranslation(state)
                     binding.textEmpty.visibility =
                         if (state.hasSearched && state.loading == null && state.results.isEmpty())
                             View.VISIBLE else View.GONE
@@ -146,6 +147,30 @@ class SearchFragment : Fragment() {
                         adapter.notifyDataSetChanged()
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Sous les chips : la requête traduite (debug seulement — savoir ce que
+     * l'encodeur a réellement reçu), ou l'astuce du mode dégradé quand la
+     * langue n'est couverte ni par l'encodeur ni par un traducteur.
+     */
+    private fun renderTranslation(state: SearchViewModel.UiState) {
+        val debugTranslation = state.translatedQuery?.takeIf { settingsCache.showScores }
+        binding.textTranslation.apply {
+            when {
+                debugTranslation != null -> {
+                    text = getString(R.string.search_translated_debug, debugTranslation)
+                    visibility = View.VISIBLE
+                }
+
+                state.translationMissing -> {
+                    text = getString(R.string.search_translation_hint)
+                    visibility = View.VISIBLE
+                }
+
+                else -> visibility = View.GONE
             }
         }
     }

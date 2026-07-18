@@ -88,6 +88,23 @@ class QueryParser(
     private val today: () -> LocalDate = { LocalDate.now() }
 ) {
 
+    /** Résultat de la première passe : personnes extraites + texte restant. */
+    data class PersonPass(val persons: List<PersonFilter>, val remainingText: String)
+
+    /**
+     * Première passe, AVANT traduction : seules les **personnes** sont extraites
+     * (négation comprise — « sans Alice »). Ensemble fermé de noms propres,
+     * elles ne doivent jamais passer par le traducteur : « Alice » n'a pas de
+     * traduction, mais un traducteur peut lui en inventer une. Le texte restant
+     * part en traduction puis dans [parse] (décision 2026-07-15/18 : un seul
+     * lexique effectif, l'anglais, pour tout le reste).
+     */
+    fun extractPersonsOnly(query: String, knownPersons: List<KnownPerson>): PersonPass {
+        val tokens = tokenize(query).toMutableList()
+        val persons = extractPersons(tokens, knownPersons)
+        return PersonPass(persons, tokens.joinToString(" ") { it.original })
+    }
+
     fun parse(
         query: String,
         knownCities: List<KnownCity> = emptyList(),

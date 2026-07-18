@@ -110,6 +110,16 @@
             app:summary="@string/settings_models_summary"
             app:title="@string/settings_models" />
 
+        <!-- Pas de defaultValue : le PreferenceDataStore court-circuite le
+             mécanisme de défaut du framework, SettingsCache est la seule source. -->
+        <ListPreference
+            app:entries="@array/query_language_entries"
+            app:entryValues="@array/query_language_values"
+            app:icon="@drawable/vector_language"
+            app:key="query_language"
+            app:title="@string/settings_query_language"
+            app:useSimpleSummaryProvider="true" />
+
         <Preference
             app:icon="@drawable/vector_percent"
             app:key="advanced_settings"

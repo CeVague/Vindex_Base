@@ -17,6 +17,12 @@ object OnnxValidator {
         return try {
             val env = OrtEnvironment.getEnvironment()
             OrtSession.SessionOptions().use { options ->
+                // La validation répond à « est-ce un ONNX chargeable ? », pas à
+                // « l'optimiseur d'ORT est-il exempt de bugs ? » : au niveau ALL
+                // (défaut), la fusion SimplifiedLayerNormFusion refuse des exports
+                // Marian fp16 pourtant valides (cf. TranslationEngine.openSession).
+                // Chaque moteur choisit son propre niveau à l'exécution.
+                options.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.BASIC_OPT)
                 env.createSession(file.absolutePath, options).use { session ->
                     when {
                         session.inputInfo.isEmpty() -> "aucune entrée (${file.name})"
